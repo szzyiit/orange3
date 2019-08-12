@@ -2,6 +2,7 @@
 build
 dist
 Orange3.egg-info
+Orange3_zh.egg-info
 Orange/version.py
 doc/build
 *.so
@@ -30,6 +31,7 @@ _som.c
 .pydevproject
 .settings/*
 .DS_Store
+.vscode
 
 # Windows temp files
 Thumbs.db
@@ -42,3 +44,12 @@ htmlcov/*
 
 .tox
 pip-wheel-metadata/
+
+# other datasets
+Orange/datasets/recommendation
+
+# binary files
+Orange/widgets/binaries
+
+# environment
+orange-env
