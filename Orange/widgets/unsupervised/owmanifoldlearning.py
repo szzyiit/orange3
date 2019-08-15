@@ -89,38 +89,38 @@ class ManifoldParametersEditor(QWidget, gui.OWComponent):
 
 class TSNEParametersEditor(ManifoldParametersEditor):
     _metrics = ("euclidean", "manhattan", "chebyshev", "jaccard")
+    chinese_metrics = ("欧几里德", "曼哈顿", "切比雪夫", "杰卡德(Jaccard)")
     metric_index = Setting(0)
-    metric_values = [(x, x.capitalize()) for x in _metrics]
-
+    metric_values = [(x, chinese_x) for x,chinese_x in zip(_metrics,chinese_metrics)]
     perplexity = Setting(30)
     early_exaggeration = Setting(12)
     learning_rate = Setting(200)
     n_iter = Setting(1000)
 
     initialization_index = Setting(0)
-    initialization_values = [("pca", "PCA"), ("random", "Random")]
+    initialization_values = [("pca", "主成分分析(PCA)"), ("random", "随机")]
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._create_combo_parameter("metric", "Metric:")
-        self._create_spin_parameter("perplexity", 1, 100, "Perplexity:")
+        self._create_combo_parameter("metric", "度量:")
+        self._create_spin_parameter("perplexity", 1, 100, "困惑度:")
         self._create_spin_parameter("early_exaggeration", 1, 100,
-                                    "Early exaggeration:")
-        self._create_spin_parameter("learning_rate", 1, 1000, "Learning rate:")
-        self._create_spin_parameter("n_iter", 250, 1e5, "Max iterations:")
-        self._create_radio_parameter("initialization", "Initialization:")
+                                    "早期夸大(Early exaggeration):")
+        self._create_spin_parameter("learning_rate", 1, 1000, "学习率:")
+        self._create_spin_parameter("n_iter", 250, 1e5, "最大迭代次数:")
+        self._create_radio_parameter("initialization", "初始化:")
 
 
 class MDSParametersEditor(ManifoldParametersEditor):
     max_iter = Setting(300)
     init_type_index = Setting(0)
     init_type_values = (("PCA", "PCA (Torgerson)"),
-                        ("random", "Random"))
+                        ("random", "随机"))
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._create_spin_parameter("max_iter", 10, 10 ** 4, "Max iterations:")
-        self._create_radio_parameter("init_type", "Initialization:")
+        self._create_spin_parameter("max_iter", 10, 10 ** 4, "最大迭代次数:")
+        self._create_radio_parameter("init_type", "初始化:")
 
     def get_parameters(self):
         par = super().get_parameters()
@@ -133,49 +133,48 @@ class IsomapParametersEditor(ManifoldParametersEditor):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._create_spin_parameter("n_neighbors", 1, 10 ** 2, "Neighbors:")
+        self._create_spin_parameter("n_neighbors", 1, 10 ** 2, "邻近:")
 
 
 class LocallyLinearEmbeddingParametersEditor(ManifoldParametersEditor):
     n_neighbors = Setting(5)
     max_iter = Setting(100)
     method_index = Setting(0)
-    method_values = (("standard", "Standard"),
-                     ("modified", "Modified"),
-                     ("hessian", "Hessian eigenmap"),
-                     ("ltsa", "Local"))
+    method_values = (("standard", "标准(Standard)"),
+                     ("modified", "调整(Modified)"),
+                     ("hessian", "黑森特征图(Hessian eigenmap)"),
+                     ("ltsa", "局部(Local)"))
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._create_combo_parameter("method", "Method:")
-        self._create_spin_parameter("n_neighbors", 1, 10 ** 2, "Neighbors:")
-        self._create_spin_parameter("max_iter", 10, 10 ** 4, "Max iterations:")
+        self._create_combo_parameter("method", "方法:")
+        self._create_spin_parameter("n_neighbors", 1, 10 ** 2, "邻近:")
+        self._create_spin_parameter("max_iter", 10, 10 ** 4, "最大迭代次数:")
 
 
 class SpectralEmbeddingParametersEditor(ManifoldParametersEditor):
     affinity_index = Setting(0)
-    affinity_values = (("nearest_neighbors", "Nearest neighbors"),
-                       ("rbf", "RBF kernel"))
+    affinity_values = (("nearest_neighbors", "最近的邻居(Nearest neighbors)"),
+                       ("rbf", "径向基核函数(RBF kernel)"))
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._create_combo_parameter("affinity", "Affinity:")
+        self._create_combo_parameter("affinity", "类同(Affinity):")
 
 
 class OWManifoldLearning(OWWidget):
-    name = "Manifold Learning"
-    description = "Nonlinear dimensionality reduction."
+    name = "流形学习(Manifold Learning)"
+    description = "非线性降维。"
     icon = "icons/Manifold.svg"
     priority = 2200
     keywords = []
     settings_version = 2
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        transformed_data = Output("Transformed Data", Table, dynamic=False,
-                                  replaces=["Transformed data"])
+        transformed_data = Output("转换的数据(Transformed data)", Table, dynamic=False)
 
     MANIFOLD_METHODS = (TSNE, MDS, Isomap, LocallyLinearEmbedding,
                         SpectralEmbedding)
@@ -222,7 +221,7 @@ class OWManifoldLearning(OWWidget):
         self.data = None
 
         # GUI
-        method_box = gui.vBox(self.controlArea, "Method")
+        method_box = gui.vBox(self.controlArea, "方法")
         self.manifold_methods_combo = gui.comboBox(
             method_box, self, "manifold_method_index",
             items=[m.name for m in self.MANIFOLD_METHODS],
@@ -245,9 +244,9 @@ class OWManifoldLearning(OWWidget):
         self.params_widget = self.parameter_editors[self.manifold_method_index]
         self.params_widget.show()
 
-        output_box = gui.vBox(self.controlArea, "Output")
+        output_box = gui.vBox(self.controlArea, "输出")
         self.n_components_spin = gui.spin(
-            output_box, self, "n_components", 1, 10, label="Components:",
+            output_box, self, "n_components", 1, 10, label="成分:",
             controlWidth=QFontMetrics(self.font()).horizontalAdvance("0" * 10),
             alignment=Qt.AlignRight, callbackOnReturn=True,
             callback=self.settings_changed)

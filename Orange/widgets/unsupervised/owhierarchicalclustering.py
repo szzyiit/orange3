@@ -28,7 +28,7 @@ from Orange.data.util import get_unique_names
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils import itemmodels, combobox
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, Msg
 
@@ -40,6 +40,7 @@ __all__ = ["OWHierarchicalClustering"]
 
 
 LINKAGE = ["Single", "Average", "Weighted", "Complete", "Ward"]
+LINKAGE_CHINESE = ["单链接", "平均链接", "加权链接", "完全链接", "Ward"]
 
 
 def make_pen(brush=Qt.black, width=1, style=Qt.SolidLine,
@@ -102,19 +103,18 @@ if typing.TYPE_CHECKING:
 
 
 class OWHierarchicalClustering(widget.OWWidget):
-    name = "Hierarchical Clustering"
-    description = "Display a dendrogram of a hierarchical clustering " \
-                  "constructed from the input distance matrix."
+    name = "层次聚类(Hierarchical Clustering)"
+    description = "显示从输入距离矩阵构造的层次聚类的树形图。"
     icon = "icons/HierarchicalClustering.svg"
     priority = 2100
     keywords = []
 
     class Inputs:
-        distances = Input("Distances", Orange.misc.DistMatrix)
+        distances = Input("距离(Distances)", Orange.misc.DistMatrix)
 
     class Outputs:
-        selected_data = Output("Selected Data", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Orange.data.Table)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
 
     settingsHandler = _DomainContextHandler()
 
@@ -144,7 +144,7 @@ class OWHierarchicalClustering(widget.OWWidget):
 
     graph_name = "scene"
 
-    basic_annotations = ["None", "Enumeration"]
+    basic_annotations = ["无", "枚举"]
 
     class Error(widget.OWWidget.Error):
         not_finite_distances = Msg("Some distances are infinite")
@@ -163,13 +163,13 @@ class OWHierarchicalClustering(widget.OWWidget):
         self.cutoff_height = 0.0
 
         gui.comboBox(
-            self.controlArea, self, "linkage", items=LINKAGE, box="Linkage",
+            self.controlArea, self, "linkage", items=LINKAGE_CHINESE, box="链接(Linkage)",
             callback=self._invalidate_clustering)
 
         model = itemmodels.VariableListModel()
         model[:] = self.basic_annotations
 
-        box = gui.widgetBox(self.controlArea, "Annotations")
+        box = gui.widgetBox(self.controlArea, "注释")
         self.label_cb = cb = combobox.ComboBoxSearch(
             minimumContentsLength=14,
             sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
@@ -189,12 +189,12 @@ class OWHierarchicalClustering(widget.OWWidget):
         box.layout().addWidget(self.label_cb)
 
         box = gui.radioButtons(
-            self.controlArea, self, "pruning", box="Pruning",
+            self.controlArea, self, "pruning", box="删除",
             callback=self._invalidate_pruning)
         grid = QGridLayout()
         box.layout().addLayout(grid)
         grid.addWidget(
-            gui.appendRadioButton(box, "None", addToLayout=False),
+            gui.appendRadioButton(box, "无", addToLayout=False),
             0, 0
         )
         self.max_depth_spin = gui.spin(
@@ -204,25 +204,25 @@ class OWHierarchicalClustering(widget.OWWidget):
         )
 
         grid.addWidget(
-            gui.appendRadioButton(box, "Max depth:", addToLayout=False),
+            gui.appendRadioButton(box, "最大深度:", addToLayout=False),
             1, 0)
         grid.addWidget(self.max_depth_spin, 1, 1)
 
         self.selection_box = gui.radioButtons(
             self.controlArea, self, "selection_method",
-            box="Selection",
+            box="选择",
             callback=self._selection_method_changed)
 
         grid = QGridLayout()
         self.selection_box.layout().addLayout(grid)
         grid.addWidget(
             gui.appendRadioButton(
-                self.selection_box, "Manual", addToLayout=False),
+                self.selection_box, "手动", addToLayout=False),
             0, 0
         )
         grid.addWidget(
             gui.appendRadioButton(
-                self.selection_box, "Height ratio:", addToLayout=False),
+                self.selection_box, "高度比例:", addToLayout=False),
             1, 0
         )
         self.cut_ratio_spin = gui.spin(
@@ -245,7 +245,7 @@ class OWHierarchicalClustering(widget.OWWidget):
         grid.addWidget(self.top_n_spin, 2, 1)
 
         self.zoom_slider = gui.hSlider(
-            self.controlArea, self, "zoom_factor", box="Zoom",
+            self.controlArea, self, "zoom_factor", box="缩放",
             minValue=-6, maxValue=3, step=1, ticks=True, createLabel=False,
             callback=self.__update_font_scale)
 

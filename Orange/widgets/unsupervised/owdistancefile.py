@@ -14,16 +14,16 @@ from Orange.widgets.widget import Output
 
 
 class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
-    name = "Distance File"
+    name = "距离文件(Distance File)"
     id = "orange.widgets.unsupervised.distancefile"
-    description = "Read distances from a file."
+    description = "从文件读取距离"
     icon = "icons/DistanceFile.svg"
     priority = 10
     category = "Data"
     keywords = ["load", "read", "open"]
 
     class Outputs:
-        distances = Output("Distances", DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
 
     want_main_area = False
     resizing_enabled = False
@@ -33,7 +33,7 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
         RecentPathsWComboMixin.__init__(self)
         self.loaded_file = ""
 
-        vbox = gui.vBox(self.controlArea, "Distance File")
+        vbox = gui.vBox(self.controlArea, "距离文件")
         box = gui.hBox(vbox)
         self.file_combo.setMinimumWidth(300)
         box.layout().addWidget(self.file_combo)
@@ -45,12 +45,12 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
             QSizePolicy.Maximum, QSizePolicy.Fixed)
 
         button = gui.button(
-            box, self, "Reload", callback=self.reload, default=True)
+            box, self, "重新加载", callback=self.reload, default=True)
         button.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-        box = gui.vBox(self.controlArea, "Info")
-        self.infoa = gui.widgetLabel(box, 'No data loaded.')
+        box = gui.vBox(self.controlArea, "信息")
+        self.infoa = gui.widgetLabel(box, '未加载数据。')
         self.warnings = gui.widgetLabel(box, ' ')
         #Set word wrap, so long warnings won't expand the widget
         self.warnings.setWordWrap(True)
@@ -59,7 +59,7 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
 
         gui.rubber(self.buttonsArea)
         gui.button(
-            self.buttonsArea, self, "Browse documentation datasets",
+            self.buttonsArea, self, "浏览文档数据集",
             callback=lambda: self.browse_file(True), autoDefault=False)
         gui.rubber(self.buttonsArea)
 
@@ -122,14 +122,14 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
         except Exception as exc:
             err_value = str(exc)
             self.error("Invalid file format")
-            self.infoa.setText('Data was not loaded due to an error.')
+            self.infoa.setText('由于错误，数据未加载。')
             self.warnings.setText(err_value)
             distances = None
 
         if distances is not None:
             self.infoa.setText(
-                "{} points(s), ".format(len(distances)) +
-                (["unlabelled", "labelled"][distances.row_items is not None]))
+                "{}  个点, ".format(len(distances)) +
+                (["未标记", "已标记"][distances.row_items is not None]))
             self.warnings.setText("")
             file_name = os.path.split(fn)[1]
             if "." in file_name:

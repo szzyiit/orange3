@@ -104,14 +104,14 @@ class CovarianceEditor(ParametersEditor):
     def __init__(self, parent):
         super().__init__(parent)
 
-        gui.widgetLabel(self.param_box, "Contamination:")
+        gui.widgetLabel(self.param_box, "污染量:")
         gui.hSlider(self.param_box, self, "cont", minValue=0,
                     maxValue=100, ticks=10, labelFormat="%d %%",
                     callback=self.parameter_changed)
 
         ebox = gui.hBox(self.param_box)
         gui.checkBox(ebox, self, "empirical_covariance",
-                     "Support fraction:", callback=self.parameter_changed)
+                     "支持比例(Support fraction:", callback=self.parameter_changed)
         gui.doubleSpin(ebox, self, "support_fraction", step=1e-1,
                        minv=0.1, maxv=10, callback=self.parameter_changed)
 
@@ -132,13 +132,13 @@ class LocalOutlierFactorEditor(ParametersEditor):
     def __init__(self, parent):
         super().__init__(parent)
 
-        gui.widgetLabel(self.param_box, "Contamination:")
+        gui.widgetLabel(self.param_box, "污染量:")
         gui.hSlider(self.param_box, self, "cont", minValue=1,
                     maxValue=50, ticks=5, labelFormat="%d %%",
                     callback=self.parameter_changed)
-        gui.spin(self.param_box, self, "n_neighbors", label="Neighbors:",
+        gui.spin(self.param_box, self, "n_neighbors", label="邻近数:",
                  minv=1, maxv=100000, callback=self.parameter_changed)
-        gui.comboBox(self.param_box, self, "metric_index", label="Metric:",
+        gui.comboBox(self.param_box, self, "metric_index", label="度量:",
                      orientation=Qt.Horizontal,
                      items=[m.capitalize() for m in self.METRICS],
                      callback=self.parameter_changed)
@@ -157,12 +157,12 @@ class IsolationForestEditor(ParametersEditor):
     def __init__(self, parent):
         super().__init__(parent)
 
-        gui.widgetLabel(self.param_box, "Contamination:")
+        gui.widgetLabel(self.param_box, "污染量:")
         gui.hSlider(self.param_box, self, "cont", minValue=0,
                     maxValue=100, ticks=10, labelFormat="%d %%",
                     callback=self.parameter_changed)
         gui.checkBox(self.param_box, self, "replicable",
-                     "Replicable training", callback=self.parameter_changed)
+                     "可重复训练", callback=self.parameter_changed)
 
     def get_parameters(self):
         return {"contamination": self.cont / 100,
@@ -170,20 +170,20 @@ class IsolationForestEditor(ParametersEditor):
 
 
 class OWOutliers(OWWidget, ConcurrentWidgetMixin):
-    name = "Outliers"
-    description = "Detect outliers."
+    name = "异常值(Outliers)"
+    description = "检测异常值。"
     icon = "icons/Outliers.svg"
     priority = 3000
     category = "Data"
     keywords = ["inlier"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        inliers = Output("Inliers", Table)
-        outliers = Output("Outliers", Table)
-        data = Output("Data", Table)
+        inliers = Output("正常值(Inliers)", Table, replaces=["Inliers"])
+        outliers = Output("异常值(Outliers)", Table, replaces=["Outliers"])
+        data = Output("数据(Data)", Table, replaces=["Data"])
 
     want_main_area = False
     resizing_enabled = False
@@ -203,7 +203,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
     MAX_FEATURES = 1500
 
     class Warning(OWWidget.Warning):
-        disabled_cov = Msg("Too many features for covariance estimation.")
+        disabled_cov = Msg("协方差估计的特征过多.")
 
     class Error(OWWidget.Error):
         singular_cov = Msg("Singular covariance matrix.")
@@ -221,7 +221,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
         self.init_gui()
 
     def init_gui(self):
-        box = gui.vBox(self.controlArea, "Method")
+        box = gui.vBox(self.controlArea, "方法")
         self.method_combo = gui.comboBox(box, self, "outlier_method",
                                          items=[m.name for m in self.METHODS],
                                          callback=self.__method_changed)
@@ -236,7 +236,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
         self.lof_editor = LocalOutlierFactorEditor(self)
         self.isf_editor = IsolationForestEditor(self)
 
-        box = gui.vBox(self.controlArea, "Parameters")
+        box = gui.vBox(self.controlArea, "参数")
         self.editors = (self.svm_editor, self.cov_editor,
                         self.lof_editor, self.isf_editor)
         for editor in self.editors:

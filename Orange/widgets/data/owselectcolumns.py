@@ -146,20 +146,19 @@ class SelectAttributesDomainContextHandler(DomainContextHandler):
 
 class OWSelectAttributes(widget.OWWidget):
     # pylint: disable=too-many-instance-attributes
-    name = "Select Columns"
-    description = "Select columns from the data table and assign them to " \
-                  "data features, classes or meta variables."
+    name = "选择列(Select Columns)"
+    description = "从数据表选择列, 并将它们设为特征, 目标或者元属性."
     icon = "icons/SelectColumns.svg"
     priority = 100
     keywords = ["filter", "attributes", "target", "variable"]
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        features = Input("Features", AttributeList)
+        data = Input("数据(Data)", Table, default=True)
+        features = Input("特征(Features)", AttributeList)
 
     class Outputs:
-        data = Output("Data", Table)
-        features = Output("Features", AttributeList, dynamic=False)
+        data = Output("数据(Data)", Table)
+        features = Output("特征(Features)", AttributeList, dynamic=False)
 
     want_main_area = False
     want_control_area = True
@@ -201,7 +200,7 @@ class OWSelectAttributes(widget.OWWidget):
         layout = QGridLayout()
         self.controlArea.setLayout(layout)
         layout.setContentsMargins(0, 0, 0, 0)
-        box = gui.vBox(self.controlArea, "Ignored",
+        box = gui.vBox(self.controlArea, "忽略",
                        addToLayout=False)
 
         self.available_attrs = VariablesListItemModel()
@@ -221,7 +220,7 @@ class OWSelectAttributes(widget.OWWidget):
         layout.addWidget(box, 0, 0, 3, 1)
 
         # 3rd column
-        box = gui.vBox(self.controlArea, "Features", addToLayout=False)
+        box = gui.vBox(self.controlArea, "特征", addToLayout=False)
         self.used_attrs = VariablesListItemModel()
         filter_edit, self.used_attrs_view = variables_filter(
             parent=self, model=self.used_attrs,
@@ -244,7 +243,7 @@ class OWSelectAttributes(widget.OWWidget):
         box.layout().addWidget(self.used_attrs_view)
         layout.addWidget(box, 0, 2, 1, 1)
 
-        box = gui.vBox(self.controlArea, "Target", addToLayout=False)
+        box = gui.vBox(self.controlArea, "目标", addToLayout=False)
         self.class_attrs = VariablesListItemModel()
         self.class_attrs_view = VariablesListItemView(
             acceptedType=(Orange.data.DiscreteVariable,
@@ -258,7 +257,7 @@ class OWSelectAttributes(widget.OWWidget):
         box.layout().addWidget(self.class_attrs_view)
         layout.addWidget(box, 1, 2, 1, 1)
 
-        box = gui.vBox(self.controlArea, "Metas", addToLayout=False)
+        box = gui.vBox(self.controlArea, "元属性", addToLayout=False)
         self.meta_attrs = VariablesListItemModel()
         self.meta_attrs_view = VariablesListItemView(
             acceptedType=Orange.data.Variable)
@@ -295,7 +294,7 @@ class OWSelectAttributes(widget.OWWidget):
         layout.addWidget(bbox, 2, 1, 1, 1)
 
         # footer
-        gui.button(self.buttonsArea, self, "Reset", callback=self.reset)
+        gui.button(self.buttonsArea, self, "重置", callback=self.reset)
 
         bbox = gui.vBox(self.buttonsArea)
         gui.checkBox(

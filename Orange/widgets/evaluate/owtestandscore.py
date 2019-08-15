@@ -128,22 +128,22 @@ class State(enum.Enum):
 
 
 class OWTestAndScore(OWWidget):
-    name = "Test and Score"
-    description = "Cross-validation accuracy estimation."
+    name = "测试和评分(Test and Score)"
+    description = "交叉验证精度估计。"
     icon = "icons/TestLearners1.svg"
     priority = 100
     keywords = ['Cross Validation', 'CV']
     replaces = ["Orange.widgets.evaluate.owtestlearners.OWTestLearners"]
 
     class Inputs:
-        train_data = Input("Data", Table, default=True)
-        test_data = Input("Test Data", Table)
-        learner = Input("Learner", Learner, multiple=True)
-        preprocessor = Input("Preprocessor", Preprocess)
+        train_data = Input("数据(Data)", Table, default=True)
+        test_data = Input("测试数据(Test Data)", Table)
+        learner = Input("学习器(Learner)", Learner, multiple=True)
+        preprocessor = Input("预处理器(Preprocessor)", Preprocess)
 
     class Outputs:
-        predictions = Output("Predictions", Table)
-        evaluations_results = Output("Evaluation Results", Results)
+        predictions = Output("预测(Predictions)", Table)
+        evaluations_results = Output("评价结果(Evaluation Results)", Results)
 
     settings_version = 3
     buttons_area_orientation = None
@@ -185,7 +185,7 @@ class OWTestAndScore(OWWidget):
     rope = settings.Setting(0.1)
     comparison_criterion = settings.Setting(0, schema_only=True)
 
-    TARGET_AVERAGE = "(Average over classes)"
+    TARGET_AVERAGE = "(所有类别的平均值)"
     class_selection = settings.ContextSetting(TARGET_AVERAGE)
 
     class Error(OWWidget.Error):
@@ -238,20 +238,20 @@ class OWTestAndScore(OWWidget):
         self.__task = None  # type: Optional[TaskState]
         self.__executor = ThreadExecutor()
 
-        sbox = gui.vBox(self.controlArea, "Sampling")
+        sbox = gui.vBox(self.controlArea, "抽样")
         rbox = gui.radioButtons(
-            sbox, self, "resampling", callback=self._param_changed)
+            sbox, self, "再次抽样", callback=self._param_changed)
 
-        gui.appendRadioButton(rbox, "Cross validation")
+        gui.appendRadioButton(rbox, "交叉验证")
         ibox = gui.indentedBox(rbox)
         gui.comboBox(
-            ibox, self, "n_folds", label="Number of folds: ",
+            ibox, self, "n_folds", label="折叠次数: ",
             items=[str(x) for x in self.NFolds],
             orientation=Qt.Horizontal, callback=self.kfold_changed)
         gui.checkBox(
-            ibox, self, "cv_stratified", "Stratified",
+            ibox, self, "cv_stratified", "分层",
             callback=self.kfold_changed)
-        gui.appendRadioButton(rbox, "Cross validation by feature")
+        gui.appendRadioButton(rbox, "按特征交叉验证)")
         ibox = gui.indentedBox(rbox)
         self.feature_model = DomainModel(
             order=DomainModel.METAS, valid_types=DiscreteVariable)
@@ -260,42 +260,42 @@ class OWTestAndScore(OWWidget):
             orientation=Qt.Horizontal, searchable=True,
             callback=self.fold_feature_changed)
 
-        gui.appendRadioButton(rbox, "Random sampling")
+        gui.appendRadioButton(rbox, "随机抽样")
         ibox = gui.indentedBox(rbox)
         gui.comboBox(
-            ibox, self, "n_repeats", label="Repeat train/test: ",
+            ibox, self, "n_repeats", label="重复训练/测试: ",
             items=[str(x) for x in self.NRepeats], orientation=Qt.Horizontal,
             callback=self.shuffle_split_changed
         )
         gui.comboBox(
-            ibox, self, "sample_size", label="Training set size: ",
+            ibox, self, "sample_size", label="训练集大小: ",
             items=["{} %".format(x) for x in self.SampleSizes],
             orientation=Qt.Horizontal, callback=self.shuffle_split_changed
         )
         gui.checkBox(
-            ibox, self, "shuffle_stratified", "Stratified",
+            ibox, self, "shuffle_stratified", "分层",
             callback=self.shuffle_split_changed)
 
-        gui.appendRadioButton(rbox, "Leave one out")
+        gui.appendRadioButton(rbox, "留一法")
 
-        gui.appendRadioButton(rbox, "Test on train data")
-        gui.appendRadioButton(rbox, "Test on test data")
+        gui.appendRadioButton(rbox, "测试训练数据")
+        gui.appendRadioButton(rbox, "测试测试数据")
 
-        self.cbox = gui.vBox(self.controlArea, "Target Class")
+        self.cbox = gui.vBox(self.controlArea, "目标类别")
         self.class_selection_combo = gui.comboBox(
             self.cbox, self, "class_selection", items=[],
             sendSelectedValue=True, contentsLength=8, searchable=True,
             callback=self._on_target_class_changed
         )
 
-        self.modcompbox = box = gui.vBox(self.controlArea, "Model Comparison")
+        self.modcompbox = box = gui.vBox(self.controlArea, "模型比较")
         gui.comboBox(
             box, self, "comparison_criterion",
             callback=self.update_comparison_table)
 
         hbox = gui.hBox(box)
         gui.checkBox(hbox, self, "use_rope",
-                     "Negligible difference: ",
+                     "可忽略差别: ",
                      callback=self._on_use_rope_changed)
         gui.lineEdit(hbox, self, "rope", validator=QDoubleValidator(),
                      controlWidth=70, callback=self.update_comparison_table,
@@ -308,10 +308,10 @@ class OWTestAndScore(OWWidget):
         view = self.score_table.view
         view.setSizeAdjustPolicy(view.AdjustToContents)
 
-        box = gui.vBox(self.mainArea, "Evaluation Results")
+        box = gui.vBox(self.mainArea, "评价结果")
         box.layout().addWidget(self.score_table.view)
 
-        self.compbox = box = gui.vBox(self.mainArea, box="Model comparison")
+        self.compbox = box = gui.vBox(self.mainArea, box="模型比较")
         table = self.comparison_table = QTableWidget(
             wordWrap=False, editTriggers=QTableWidget.NoEditTriggers,
             selectionMode=QTableWidget.NoSelection)
@@ -1150,7 +1150,7 @@ def results_add_by_model(x, y):
         res.probabilities = np.vstack((x.probabilities, y.probabilities))
 
     if x.models is not None:
-        res.models = np.hstack((x.models, y.models))
+        res.models = np.hstack((x.models, y.models))   
     return res
 
 

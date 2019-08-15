@@ -13,31 +13,31 @@ from Orange.widgets.widget import OWWidget, Msg
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 METRICS = [
-    ("Euclidean", distance.Euclidean),
-    ("Manhattan", distance.Manhattan),
-    ("Mahalanobis", distance.Mahalanobis),
-    ("Cosine", distance.Cosine),
-    ("Jaccard", distance.Jaccard),
-    ("Spearman", distance.SpearmanR),
-    ("Absolute Spearman", distance.SpearmanRAbsolute),
-    ("Pearson", distance.PearsonR),
-    ("Absolute Pearson", distance.PearsonRAbsolute),
+    ("欧几里德(Euclidean)", distance.Euclidean),
+    ("曼哈顿(Manhattan)", distance.Manhattan),
+    ("马哈拉诺比斯(Mahalanobis)", distance.Mahalanobis),
+    ("余弦(Cosine)", distance.Cosine),
+    ("杰卡德(Jaccard)", distance.Jaccard),
+    ("斯皮尔曼(Spearman)", distance.SpearmanR),
+    ("绝对斯皮尔曼(Absolute Spearman)", distance.SpearmanRAbsolute),
+    ("皮尔逊(Pearson)", distance.PearsonR),
+    ("绝对皮尔逊(Absolute Pearson)", distance.PearsonRAbsolute),
 ]
 
 
 class OWNeighbors(OWWidget):
-    name = "Neighbors"
-    description = "Compute nearest neighbors in data according to reference."
+    name = "邻近(Neighbors)"
+    description = "根据参考数据计算最近邻。"
     icon = "icons/Neighbors.svg"
 
     replaces = ["orangecontrib.prototypes.widgets.owneighbours.OWNeighbours"]
 
     class Inputs:
-        data = Input("Data", Table)
-        reference = Input("Reference", Table)
+        data = Input("数据(Data)", Table)
+        reference = Input("参考(Reference)", Table)
 
     class Outputs:
-        data = Output("Neighbors", Table)
+        data = Output("邻近(Neighbors)", Table)
 
     class Info(OWWidget.Warning):
         removed_references = \
@@ -72,10 +72,10 @@ class OWNeighbors(OWWidget):
         box = gui.vBox(self.controlArea, box=True)
         gui.comboBox(
             box, self, "distance_index", orientation=Qt.Horizontal,
-            label="Distance metric: ", items=[d[0] for d in METRICS],
+            label="距离:", items=[d[0] for d in METRICS],
             callback=self.recompute)
         gui.spin(
-            box, self, "n_neighbors", label="Limit number of neighbors to:",
+            box, self, "n_neighbors", label="限制邻居数为:",
             step=1, spinType=int, minv=0, maxv=100, checked='limit_neighbors',
             # call apply by gui.auto_commit, pylint: disable=unnecessary-lambda
             checkCallback=lambda: self.apply(),

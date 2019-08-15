@@ -30,16 +30,16 @@ class ScatterPlotItem(pg.ScatterPlotItem):
 
 
 class OWCorrespondenceAnalysis(widget.OWWidget):
-    name = "Correspondence Analysis"
-    description = "Correspondence analysis for categorical multivariate data."
+    name = "对应分析(Correspondence Analysis)"
+    description = "分类多元数据的对应分析。"
     icon = "icons/CorrespondenceAnalysis.svg"
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        coordinates = Output("Coordinates", Table)
+        coordinates = Output("坐标(Coordinates)", Table)
 
     Invalidate = QEvent.registerEventType()
 
@@ -61,7 +61,7 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
         self.component_x = 0
         self.component_y = 1
 
-        box = gui.vBox(self.controlArea, "Variables")
+        box = gui.vBox(self.controlArea, "变量")
         self.varlist = itemmodels.VariableListModel()
         self.varview = view = ListViewSearch(
             selectionMode=QListView.MultiSelection,
@@ -72,7 +72,7 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
 
         box.layout().addWidget(view)
 
-        axes_box = gui.vBox(self.controlArea, "Axes")
+        axes_box = gui.vBox(self.controlArea, "轴线")
         self.axis_x_cb = gui.comboBox(
             axes_box, self, "component_x", label="X:",
             callback=self._component_changed, orientation=Qt.Horizontal,
@@ -88,7 +88,7 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
         )
 
         self.infotext = gui.widgetLabel(
-            gui.vBox(self.controlArea, "Contribution to Inertia"), "\n"
+            gui.vBox(self.controlArea, "对惯性的贡献(Contribution to Inertia)"), "\n"
         )
 
         gui.auto_send(self.buttonsArea, self, "auto_commit")
@@ -299,18 +299,18 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
             inertia = 100 * inertia / np.sum(inertia)
 
         ax = self.plot.getAxis("bottom")
-        ax.setLabel("Component {} ({:.1f}%)"
+        ax.setLabel("组分 {} ({:.1f}%)"
                     .format(p_axes[0] + 1, inertia[p_axes[0]]))
         ax = self.plot.getAxis("left")
-        ax.setLabel("Component {} ({:.1f}%)"
+        ax.setLabel("组分 {} ({:.1f}%)"
                     .format(p_axes[1] + 1, inertia[p_axes[1]]))
 
     def _update_info(self):
         if self.ca is None:
             self.infotext.setText("\n\n")
         else:
-            fmt = ("Axis 1: {:.2f}\n"
-                   "Axis 2: {:.2f}")
+            fmt = ("轴线 1: {:.2f}\n"
+                   "轴线 2: {:.2f}")
             inertia = self.ca.inertia_of_axis()
             if np.sum(inertia) == 0:
                 inertia = 100 * inertia

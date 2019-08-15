@@ -138,8 +138,8 @@ class TreeViewWithReturn(QTreeView):
 
 
 class OWDataSets(OWWidget):
-    name = "Datasets"
-    description = "Load a dataset from an online repository"
+    name = "数据集(Datasets)"
+    description = "从联机存储库加载数据集"
     icon = "icons/DataSets.svg"
     priority = 20
     replaces = ["orangecontrib.prototypes.widgets.owdatasets.OWDataSets"]
@@ -158,12 +158,12 @@ class OWDataSets(OWWidget):
     # self.create_model
     HEADER_SCHEMA = [
         ['islocal', {'label': ''}],
-        ['title', {'label': 'Title'}],
-        ['size', {'label': 'Size'}],
-        ['instances', {'label': 'Instances'}],
-        ['variables', {'label': 'Variables'}],
-        ['target', {'label': 'Target'}],
-        ['tags', {'label': 'Tags'}]
+        ['title', {'label': '标题'}],
+        ['size', {'label': '大小'}],
+        ['instances', {'label': '样本数目'}],
+        ['variables', {'label': '变量数目'}],
+        ['target', {'label': '目标'}],
+        ['tags', {'label': '标签'}]
     ]  # type: List[str, dict]
 
     IndicatorBrushes = (QBrush(Qt.darkGray), QBrush(QColor(0, 192, 0)))
@@ -176,7 +176,7 @@ class OWDataSets(OWWidget):
                                   "cached datasets are shown")
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     #: Selected dataset id
     selected_id = settings.Setting(None)   # type: Optional[str]
@@ -223,7 +223,7 @@ class OWDataSets(OWWidget):
         # the method doesn't exists yet, pylint: disable=unnecessary-lambda
         self.view.doubleClicked.connect(self.commit)
         self.view.returnPressed.connect(self.commit)
-        box = gui.widgetBox(self.splitter, "Description", addToLayout=False)
+        box = gui.widgetBox(self.splitter, "说明", addToLayout=False)
         self.descriptionlabel = QLabel(
             wordWrap=True,
             textFormat=Qt.RichText,

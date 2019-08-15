@@ -50,7 +50,7 @@ class DisplayFormatDelegate(QStyledItemDelegate):
 
 
 class AsDefault(impute.BaseImputeMethod):
-    name = "Default (above)"
+    name = "默认(如上)"
     short_name = ""
     format = "{var.name}"
     columns_only = True
@@ -131,18 +131,18 @@ DBL_MAX = np.finfo(float).max
 
 
 class OWImpute(OWWidget):
-    name = "Impute"
-    description = "Impute missing values in the data table."
+    name = "填充(Impute)"
+    description = "在数据表中填充缺失值。"
     icon = "icons/Impute.svg"
     priority = 2130
     keywords = ["substitute", "missing"]
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
-        learner = Input("Learner", Learner)
+        data = Input("数据(Data)", Orange.data.Table)
+        learner = Input("学习器(Learner)", Learner)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     class Error(OWWidget.Error):
         imputation_failed = Msg("Imputation failed for '{}'")
@@ -176,7 +176,7 @@ class OWImpute(OWWidget):
 
         main_layout = self.controlArea.layout()
 
-        box = gui.vBox(self.controlArea, "Default Method")
+        box = gui.vBox(self.controlArea, "默认方法")
 
         box_layout = QGridLayout()
         box_layout.setSpacing(8)
@@ -240,7 +240,7 @@ class OWImpute(OWWidget):
 
         self.default_button_group = button_group
 
-        box = gui.hBox(self.controlArea, self.tr("Individual Attribute Settings"),
+        box = gui.hBox(self.controlArea, self.tr("设置单个属性"),
                        flat=False)
 
         self.varview = ListViewSearch(

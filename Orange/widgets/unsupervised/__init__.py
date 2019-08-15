@@ -9,9 +9,9 @@ Unsupervised learning.
 
 # Category description for the widget registry
 
-NAME = "Unsupervised"
+NAME = "非监督(Unsupervised)"
 
-DESCRIPTION = "Unsupervised learning."
+DESCRIPTION = "非监督学习."
 
 BACKGROUND = "#CAE1EF"
 

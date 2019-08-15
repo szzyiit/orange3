@@ -608,8 +608,8 @@ def default_options_for_mime_type(
 
 
 class OWCSVFileImport(widget.OWWidget):
-    name = "CSV File Import"
-    description = "Import a data table from a CSV formatted file."
+    name = "CSV导入(CSV File Import)"
+    description = "从csv格式文件导入数据表。"
     icon = "icons/CSVFile.svg"
     priority = 11
     category = "Data"
@@ -617,11 +617,11 @@ class OWCSVFileImport(widget.OWWidget):
 
     class Outputs:
         data = widget.Output(
-            name="Data",
+            name="数据(Data)",
             type=Orange.data.Table,
             doc="Loaded data set.")
         data_frame = widget.Output(
-            name="Data Frame",
+            name="数据帧格式(Data Frame)",
             type=pd.DataFrame,
             doc="",
             auto_summary=False
@@ -673,7 +673,7 @@ class OWCSVFileImport(widget.OWWidget):
 
         self.controlArea.layout().setSpacing(-1)  # reset spacing
         grid = QGridLayout()
-        grid.addWidget(QLabel("File:", self), 0, 0, 1, 1)
+        grid.addWidget(QLabel("文件(File):", self), 0, 0, 1, 1)
 
         self.import_items_model = VarPathItemModel(self)
         self.import_items_model.setReplacementEnv(self._replacements())
@@ -713,7 +713,7 @@ class OWCSVFileImport(widget.OWWidget):
         ###########
         # Info text
         ###########
-        box = gui.widgetBox(self.controlArea, "Info")
+        box = gui.widgetBox(self.controlArea, "信息")
         self.summary_text = QTextBrowser(
             verticalScrollBarPolicy=Qt.ScrollBarAsNeeded,
             readOnly=True,
@@ -729,7 +729,7 @@ class OWCSVFileImport(widget.OWWidget):
             standardButtons=QDialogButtonBox.Cancel | QDialogButtonBox.Retry
         )
         self.load_button = b = button_box.button(QDialogButtonBox.Retry)
-        b.setText("Load")
+        b.setText("载入")
         b.clicked.connect(self.__committimer.start)
         b.setEnabled(False)
         b.setDefault(True)
@@ -740,7 +740,7 @@ class OWCSVFileImport(widget.OWWidget):
         b.setAutoDefault(False)
 
         self.import_options_button = QPushButton(
-            "Import Options…", enabled=False, autoDefault=False,
+            "导入选项", enabled=False, autoDefault=False,
             clicked=self._activate_import_dialog
         )
 
@@ -965,7 +965,7 @@ class OWCSVFileImport(widget.OWWidget):
         item = self.current_item()
         assert item is not None
         dlg = CSVImportDialog(
-            self, windowTitle="Import Options", sizeGripEnabled=True,
+            self, windowTitle="导入选项", sizeGripEnabled=True,
         )
         dlg.setWindowModality(Qt.WindowModal)
         dlg.setAttribute(Qt.WA_DeleteOnClose)
@@ -1149,7 +1149,7 @@ class OWCSVFileImport(widget.OWWidget):
         self.setStatusMessage("")
         self.setBlocking(False)
         self.cancel_button.setEnabled(False)
-        self.load_button.setText("Reload")
+        self.load_button.setText("重新加载")
 
     def __set_error_state(self, err):
         self.Error.clear()
@@ -1223,11 +1223,11 @@ class OWCSVFileImport(widget.OWWidget):
             return
 
         def pluralize(seq):
-            return "s" if len(seq) != 1 else ""
+            return "" if len(seq) != 1 else ""
 
-        summary = ("{n_instances} row{plural_1}, "
-                   "{n_features} feature{plural_2}, "
-                   "{n_meta} meta{plural_3}").format(
+        summary = ("{n_instances} 行{plural_1}, "
+                   "{n_features} 个特征{plural_2}, "
+                   "{n_meta} 个meta{plural_3}").format(
                        n_instances=len(data), plural_1=pluralize(data),
                        n_features=len(data.domain.attributes),
                        plural_2=pluralize(data.domain.attributes),

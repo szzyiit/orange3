@@ -20,7 +20,7 @@ from Orange.data import Table
 from Orange.widgets.settings import ContextSetting, ClassValuesContextHandler, \
     Setting
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.visualize.utils.tree.skltreeadapter import SklTreeAdapter
 from Orange.widgets.visualize.utils.tree.treeadapter import TreeAdapter
 
@@ -156,7 +156,7 @@ class TreeNode(GraphicsNode):
 class OWTreeGraph(OWTreeViewer2D):
     """Graphical visualization of tree models"""
 
-    name = "Tree Viewer"
+    name = "查看树(Tree Viewer)"
     icon = "icons/TreeViewer.svg"
     priority = 35
     keywords = []
@@ -164,11 +164,11 @@ class OWTreeGraph(OWTreeViewer2D):
     class Inputs:
         # Had different input names before merging from
         # Classification/Regression tree variants
-        tree = Input("Tree", TreeModel, replaces=["Classification Tree", "Regression Tree"])
+        tree = Input("树(Tree)", TreeModel, replaces=["Classification Tree", "Regression Tree"])
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True, id="selected-data")
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table, id="annotated-data")
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, id="selected-data")
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, id="annotated-data")
 
     settingsHandler = ClassValuesContextHandler()
     target_class_index = ContextSetting(0)
@@ -179,7 +179,7 @@ class OWTreeGraph(OWTreeViewer2D):
         "Orange.widgets.classify.owregressiontreegraph.OWRegressionTreeGraph"
     ]
 
-    COL_OPTIONS = ["Default", "Number of instances", "Mean value", "Variance"]
+    COL_OPTIONS = ["默认", "实例数", "平均值", "方差"]
     COL_DEFAULT, COL_INSTANCE, COL_MEAN, COL_VARIANCE = range(4)
 
     def __init__(self):
@@ -189,8 +189,13 @@ class OWTreeGraph(OWTreeViewer2D):
         self.clf_dataset = None
         self.tree_adapter = None
 
+<<<<<<< HEAD
         self.color_label = QLabel("Target class: ")
         combo = self.color_combo = ComboBoxSearch()
+=======
+        self.color_label = QLabel("目标类别: ")
+        combo = self.color_combo = gui.OrangeComboBox()
+>>>>>>> chinese translation of all widgets
         combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         combo.setSizeAdjustPolicy(
             QComboBox.AdjustToMinimumContentsLengthWithIcon)
@@ -277,18 +282,18 @@ class OWTreeGraph(OWTreeViewer2D):
             class_var = self.domain.class_var
             self.scene.colors = class_var.palette
             if class_var.is_discrete:
-                self.color_label.setText("Target class: ")
-                self.color_combo.addItem("None")
+                self.color_label.setText("目标类别: ")
+                self.color_combo.addItem("无")
                 self.color_combo.addItems(self.domain.class_vars[0].values)
                 self.color_combo.setCurrentIndex(self.target_class_index)
             else:
-                self.color_label.setText("Color by: ")
+                self.color_label.setText("颜色依据: ")
                 self.color_combo.addItems(self.COL_OPTIONS)
                 self.color_combo.setCurrentIndex(self.regression_colors)
             self.openContext(self.domain.class_var)
             # self.root_node = self.walkcreate(model.root, None)
             self.root_node = self.walkcreate(self.tree_adapter.root)
-            self.infolabel.setText('{} nodes, {} leaves'.format(
+            self.infolabel.setText('{} 个节点, {} 片叶子'.format(
                 self.tree_adapter.num_nodes,
                 len(self.tree_adapter.leaves(self.tree_adapter.root))))
         self.setup_scene()

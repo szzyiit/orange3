@@ -35,7 +35,7 @@ except ImportError:
     have_cython = False
 
 
-NAME = 'Orange3'
+NAME = 'Orange3-zh'
 
 VERSION = '3.30.0'
 ISRELEASED = False

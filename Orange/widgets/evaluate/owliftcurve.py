@@ -148,16 +148,15 @@ class ParameterSetter(CommonParameterSetter):
 
 
 class OWLiftCurve(widget.OWWidget):
-    name = "Lift Curve"
-    description = "Construct and display a lift curve " \
-                  "from the evaluation of classifiers."
+    name = "提升曲线(Lift Curve)"
+    description = "根据分类器的评估结果构建并显示提升曲线。"
     icon = "icons/LiftCurve.svg"
     priority = 1020
     keywords = ["lift", "cumulative gain"]
 
     class Inputs:
         evaluation_results = Input(
-            "Evaluation Results", Orange.evaluation.Results)
+            "评估结果(Evaluation Results)", Orange.evaluation.Results)
 
     class Warning(widget.OWWidget.Warning):
         undefined_curves = Msg(

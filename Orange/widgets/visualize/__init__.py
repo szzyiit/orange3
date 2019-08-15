@@ -9,11 +9,11 @@ Widgets for data visualization.
 
 # Category description for the widget registry
 
-NAME = "Visualize"
+NAME = "可视化(Visualize)"
 
 ID = "orange.widgets.visualize"
 
-DESCRIPTION = "Widgets for data visualization."
+DESCRIPTION = "可视化数据."
 
 BACKGROUND = "#FFB7B1"
 

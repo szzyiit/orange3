@@ -14,8 +14,8 @@ _userhome = os.path.expanduser(f"~{os.sep}")
 
 
 class OWSave(OWSaveBase):
-    name = "Save Data"
-    description = "Save data to an output file."
+    name = "保存数据(Save Data)"
+    description = "将数据保存到输出文件。"
     icon = "icons/Save.svg"
     category = "Data"
     keywords = ["export"]
@@ -23,7 +23,7 @@ class OWSave(OWSaveBase):
     settings_version = 2
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Error(OWSaveBase.Error):
         unsupported_sparse = widget.Msg("Use Pickle format for sparse data.")
@@ -37,7 +37,7 @@ class OWSave(OWSaveBase):
         self.grid.addWidget(
             gui.checkBox(
                 None, self, "add_type_annotations",
-                "Add type annotations to header",
+                "向表头添加类型批注",
                 tooltip=
                 "Some formats (Tab-delimited, Comma-separated) can include \n"
                 "additional information about variables types in header rows.",
@@ -82,9 +82,9 @@ class OWSave(OWSaveBase):
         writer = self.writer
         noyes = ["No", "Yes"]
         self.report_items((
-            ("File name", self.filename or "not set"),
-            ("Format", writer.DESCRIPTION),
-            ("Type annotations",
+            ("文件名", self.filename or "为设置"),
+            ("格式", writer.DESCRIPTION),
+            ("格式标注",
              writer.OPTIONAL_TYPE_ANNOTATIONS
              and noyes[self.add_type_annotations])
         ))

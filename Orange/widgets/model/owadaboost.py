@@ -11,9 +11,8 @@ from Orange.widgets.widget import Msg, Input
 
 
 class OWAdaBoost(OWBaseLearner):
-    name = "AdaBoost"
-    description = "An ensemble meta-algorithm that combines weak learners " \
-                  "and adapts to the 'hardness' of each training sample. "
+    name = "自适应提升算法(AdaBoost)"
+    description = "一种集合元算法，组合弱学习器并适应每个训练样本的“难度”。"
     icon = "icons/AdaBoost.svg"
     replaces = [
         "Orange.widgets.classify.owadaboost.OWAdaBoostClassification",
@@ -25,12 +24,13 @@ class OWAdaBoost(OWBaseLearner):
     LEARNER = SklAdaBoostLearner
 
     class Inputs(OWBaseLearner.Inputs):
-        learner = Input("Learner", Learner)
+        learner = Input("学习器(Learner)", Learner)
 
     #: Algorithms for classification problems
     algorithms = ["SAMME", "SAMME.R"]
     #: Losses for regression problems
     losses = ["Linear", "Square", "Exponential"]
+    Chinese_losses = ["线性的", "平方的", "指数"]
 
     n_estimators = Setting(50)
     learning_rate = Setting(1.)
@@ -46,33 +46,33 @@ class OWAdaBoost(OWBaseLearner):
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.widgetBox(self.controlArea, "Parameters")
+        box = gui.widgetBox(self.controlArea, "参数")
         self.base_estimator = self.DEFAULT_BASE_ESTIMATOR
         self.base_label = gui.label(
-            box, self, "Base estimator: " + self.base_estimator.name.title())
+            box, self, "基学习器(Base estimator): " + self.base_estimator.name.title())
 
         self.n_estimators_spin = gui.spin(
-            box, self, "n_estimators", 1, 10000, label="Number of estimators:",
+            box, self, "n_estimators", 1, 10000, label="基学习器数目:",
             alignment=Qt.AlignRight, controlWidth=80,
             callback=self.settings_changed)
         self.learning_rate_spin = gui.doubleSpin(
             box, self, "learning_rate", 1e-5, 1.0, 1e-5,
-            label="Learning rate:", decimals=5, alignment=Qt.AlignRight,
+            label="学习率:", decimals=5, alignment=Qt.AlignRight,
             controlWidth=80, callback=self.settings_changed)
         self.random_seed_spin = gui.spin(
             box, self, "random_seed", 0, 2 ** 31 - 1, controlWidth=80,
-            label="Fixed seed for random generator:", alignment=Qt.AlignRight,
+            label="随机发生器的固定种子:", alignment=Qt.AlignRight,
             callback=self.settings_changed, checked="use_random_seed",
             checkCallback=self.settings_changed)
 
         # Algorithms
-        box = gui.widgetBox(self.controlArea, "Boosting method")
+        box = gui.widgetBox(self.controlArea, "提升方法(Boosting method)")
         self.cls_algorithm_combo = gui.comboBox(
-            box, self, "algorithm_index", label="Classification algorithm:",
+            box, self, "algorithm_index", label="分类算法(Classification algorithm):",
             items=self.algorithms,
             orientation=Qt.Horizontal, callback=self.settings_changed)
         self.reg_algorithm_combo = gui.comboBox(
-            box, self, "loss_index", label="Regression loss function:",
+            box, self, "loss_index", label="回归损失函数(Regression loss function):",
             items=self.losses,
             orientation=Qt.Horizontal, callback=self.settings_changed)
 

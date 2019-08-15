@@ -45,21 +45,21 @@ PredictorSlot = namedtuple(
 
 
 class OWPredictions(OWWidget):
-    name = "Predictions"
+    name = "预测(Predictions)"
     icon = "icons/Predictions.svg"
     priority = 200
-    description = "Display predictions of models for an input dataset."
+    description = "显示输入数据集的模型预测。"
     keywords = []
 
     buttons_area_orientation = None
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
-        predictors = Input("Predictors", Model, multiple=True)
+        data = Input("数据(Data)", Orange.data.Table)
+        predictors = Input("预测器(Predictors)", Model, multiple=True)
 
     class Outputs:
-        predictions = Output("Predictions", Orange.data.Table)
-        evaluation_results = Output("Evaluation Results", Results)
+        predictions = Output("预测(Predictions)", Orange.data.Table)
+        evaluation_results = Output("评价结果(Evaluation Results)", Results)
 
     class Warning(OWWidget.Warning):
         empty_data = Msg("Empty dataset")
@@ -97,7 +97,7 @@ class OWPredictions(OWWidget):
                     sizeHint=QSize(1, 350),
                     minimumHeight=100)
         self.reset_button = gui.button(
-            controlBox, self, "Restore Original Order",
+            controlBox, self, "恢复原始顺序",
             callback=self._reset_order,
             tooltip="Show rows in the original order")
 

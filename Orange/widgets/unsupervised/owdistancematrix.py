@@ -162,18 +162,18 @@ class DistanceMatrixContextHandler(ContextHandler):
 
 
 class OWDistanceMatrix(widget.OWWidget):
-    name = "Distance Matrix"
-    description = "View distance matrix."
+    name = "距离矩阵(Distance Matrix)"
+    description = "查看距离矩阵"
     icon = "icons/DistanceMatrix.svg"
     priority = 200
     keywords = []
 
     class Inputs:
-        distances = Input("Distances", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix)
 
     class Outputs:
-        distances = Output("Distances", DistMatrix, dynamic=False)
-        table = Output("Selected Data", Table, replaces=["Table"])
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
+        table = Output("选定的数据(Selected Data)", Table, replaces=["Table"])
 
     settingsHandler = DistanceMatrixContextHandler()
     auto_commit = Setting(True)
@@ -209,11 +209,11 @@ class OWDistanceMatrix(widget.OWWidget):
         self.controlArea.layout().addWidget(view)
 
         self.annot_combo = gui.comboBox(
-            self.buttonsArea, self, "annotation_idx", label="Labels: ",
+            self.buttonsArea, self, "annotation_idx", label="标签: ",
             orientation=Qt.Horizontal,
             callback=self._invalidate_annotations, contentsLength=12)
         self.annot_combo.setModel(VariableListModel())
-        self.annot_combo.model()[:] = ["None", "Enumeration"]
+        self.annot_combo.model()[:] = ["无", "枚举"]
         gui.rubber(self.buttonsArea)
         acb = gui.auto_send(self.buttonsArea, self, "auto_commit", box=False)
         acb.setFixedWidth(200)
@@ -232,7 +232,7 @@ class OWDistanceMatrix(widget.OWWidget):
         self.tableview.selectionModel().clear()
 
         self.items = items = distances is not None and distances.row_items
-        annotations = ["None", "Enumerate"]
+        annotations = ["无", "枚举"]
         pending_idx = 1
         if items and not distances.axis:
             annotations.append("Attribute names")

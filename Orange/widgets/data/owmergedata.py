@@ -246,43 +246,38 @@ class MergeDataContextHandler(ContextHandler):
 
 
 class OWMergeData(widget.OWWidget):
-    name = "Merge Data"
-    description = "Merge datasets based on the values of selected features."
+    name = "合并数据(Merge Data)"
+    description = "根据选择的特征合并数据集."
     icon = "icons/MergeData.svg"
     priority = 1110
     keywords = ["join"]
 
     class Inputs:
-        data = Input("Data", Orange.data.Table, default=True, replaces=["Data A"])
-        extra_data = Input("Extra Data", Orange.data.Table, replaces=["Data B"])
+        data = Input(" 数据(Data)", Orange.data.Table, default=True, replaces=["Data A"])
+        extra_data = Input("附加数据(Extra Data)", Orange.data.Table, replaces=["Data B"])
 
     class Outputs:
-        data = Output("Data",
+        data = Output("数据(Data)",
                       Orange.data.Table,
                       replaces=["Merged Data A+B", "Merged Data B+A", "Merged Data"])
 
     LeftJoin, InnerJoin, OuterJoin = range(3)
-    OptionNames = ("Append columns from Extra data",
-                   "Find matching pairs of rows",
-                   "Concatenate tables")
+    OptionNames = ("从附加数据添加列(Left Join)",
+                   "寻找匹配行(Inner Join)",
+                   "连接表格 (Outer Join)")
     OptionDescriptions = (
-        "The first table may contain, for instance, city names,\n"
-        "and the second would be a list of cities and their coordinates.\n"
-        "Columns with coordinates would then be appended to the output.",
+        "附加数据中的列将添加到数据中. 没有匹配行的实例将添加缺失值。",
 
-        "Input tables contain different features describing the same data "
-        "instances.\n"
-        "Output contains matched instances. Rows without matches are removed.",
+        "输入表包含描述相同数据的不同特征实例. \n"
+        "输出包含匹配的实例, 删除没有匹配的行.",
 
-        "Input tables contain different features describing the same data "
-        "instances.\n"
-        "Output contains all instances. Data from merged instances is "
-        "merged into single rows."
+        "平等对待两个数据源, 输入表包含描述相同数据的不同特征实例, \n"
+        "数据和额外数据中的行都将全部出现在输出中。如果无法匹配行，则会显示缺失值。"
     )
 
     UserAdviceMessages = [
         widget.Message(
-            "Confused about merging options?\nSee the tooltips!",
+            "不明白怎么使用?\n看看提示信息!",
             "merging_types")]
 
     settingsHandler = MergeDataContextHandler()
@@ -295,23 +290,17 @@ class OWMergeData(widget.OWWidget):
     resizing_enabled = False
 
     class Warning(widget.OWWidget.Warning):
-        renamed_vars = Msg("Some variables have been renamed "
-                           "to avoid duplicates.\n{}")
+        renamed_vars = Msg("为防止重名, 某些变量已重命名.\n{}")
 
     class Error(widget.OWWidget.Error):
         matching_numeric_with_nonnum = Msg(
-            "Numeric and non-numeric columns ({} and {}) cannot be matched.")
-        matching_index_with_sth = Msg("Row index cannot be matched with {}.")
-        matching_id_with_sth = Msg("Instance cannot be matched with {}.")
+            "数值数据和非数值数据 ({} 和 {}) 无法匹配.")
+        matching_index_with_sth = Msg("行索引(Row index)无法与 {} 匹配.")
+        matching_id_with_sth = Msg("实例无法与 {} 匹配.")
         nonunique_left = Msg(
-            "Some combinations of values on the left appear in multiple rows.\n"
-            "For this type of merging, every possible combination of values "
-            "on the left should appear at most once.")
+            "左侧的某些组合值显示在多行中, 对于这种合并，每种可能的组合, 左边最多出现一次")
         nonunique_right = Msg(
-            "Some combinations of values on the right appear in multiple rows."
-            "\n"
-            "Every possible combination of values on the right should appear "
-            "at most once.")
+            "右侧的某些组合值显示在多行中, 对于这种合并，每种可能的组合, 右边最多出现一次")
 
     def __init__(self):
         super().__init__()
@@ -326,14 +315,14 @@ class OWMergeData(widget.OWWidget):
         self.extra_model = DomainModelWithTooltips(content)
 
         grp = gui.radioButtons(
-            self.controlArea, self, "merging", box="Merging",
+            self.controlArea, self, "merging", box="合并",
             btnLabels=self.OptionNames, tooltips=self.OptionDescriptions,
             callback=self.change_merging)
 
         self.attr_boxes = ConditionBox(
-            self, self.model, self.extra_model, "", "matches")
+            self, self.model, self.extra_model, "", "匹配")
         self.attr_boxes.add_row()
-        box = gui.vBox(self.controlArea, box="Row matching")
+        box = gui.vBox(self.controlArea, box="行匹配")
         box.layout().addWidget(self.attr_boxes)
 
         gui.auto_apply(self.buttonsArea, self)

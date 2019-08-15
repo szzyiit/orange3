@@ -253,16 +253,16 @@ def show_tip(
 
 class OWDiscretize(widget.OWWidget):
     # pylint: disable=too-many-instance-attributes
-    name = "Discretize"
-    description = "Discretize the numeric data features."
+    name = "离散化(Discretize)"
+    description = "离散化数值型特征."
     icon = "icons/Discretize.svg"
     keywords = ["bin", "categorical", "nominal", "ordinal"]
 
     class Inputs:
-        data = Input("Data", Orange.data.Table, doc="Input data table")
+        data = Input("数据(Data)", Orange.data.Table, doc="Input data table")
 
     class Outputs:
-        data = Output("Data", Orange.data.Table, doc="Table with discretized features")
+        data = Output("数据(Data)", Orange.data.Table, doc="Table with discretized features")
 
     settingsHandler = settings.DomainContextHandler()
     settings_version = 2
@@ -297,7 +297,7 @@ class OWDiscretize(widget.OWWidget):
         self.k = 5
         self.cutpoints = ()
 
-        box = gui.vBox(self.controlArea, self.tr("Default Discretization"))
+        box = gui.vBox(self.controlArea, self.tr("默认离散化"))
         self._default_method_ = 0
         self.default_bbox = rbox = gui.radioButtons(
             box, self, "_default_method_", callback=self._default_disc_changed)
@@ -310,13 +310,13 @@ class OWDiscretize(widget.OWWidget):
         rb.layout().setStretch(0, 1)
         rb.layout().setStretch(1, 1)
         self.options = [
-            (Methods.Default, self.tr("Default")),
-            (Methods.Leave, self.tr("Leave numeric")),
-            (Methods.MDL, self.tr("Entropy-MDL discretization")),
-            (Methods.EqualFreq, self.tr("Equal-frequency discretization")),
-            (Methods.EqualWidth, self.tr("Equal-width discretization")),
-            (Methods.Remove, self.tr("Remove numeric variables")),
-            (Methods.Custom, self.tr("Manual")),
+            (Methods.Default, self.tr("默认")),
+            (Methods.Leave, self.tr("保留原值")),
+            (Methods.MDL, self.tr("熵MDL离散化(Entropy-MDL discretization)")),
+            (Methods.EqualFreq, self.tr("等频离散化(Equal-frequency discretization)")),
+            (Methods.EqualWidth, self.tr("等宽离散化(Equal-width discretization)")),
+            (Methods.Remove, self.tr("删除数值变量")),
+            (Methods.Custom, self.tr("手动")),
         ]
 
         for id_, opt in self.options[1:]:
@@ -328,7 +328,7 @@ class OWDiscretize(widget.OWWidget):
         def _intbox(parent, attr, callback):
             box = gui.indentedBox(parent)
             s = gui.spin(
-                box, self, attr, minv=2, maxv=10, label="Num. of intervals:",
+                box, self, attr, minv=2, maxv=10, label="间隔数(Num. of intervals):",
                 callback=callback)
             s.setMaximumWidth(60)
             s.setAlignment(Qt.AlignRight)
@@ -401,7 +401,7 @@ class OWDiscretize(widget.OWWidget):
         )
         vlayout = QHBoxLayout()
         box = gui.widgetBox(
-            self.controlArea, "Individual Attribute Settings",
+            self.controlArea, "单个属性设置",
             orientation=vlayout, spacing=8
         )
 
@@ -430,8 +430,8 @@ class OWDiscretize(widget.OWWidget):
 
         self.k_specific = _intbox(controlbox, "k", self._disc_method_changed)
 
-        gui.appendRadioButton(controlbox, "Remove attribute", id=Methods.Remove)
-        b = gui.appendRadioButton(controlbox, "Manual", id=Methods.Custom)
+        gui.appendRadioButton(controlbox, "删除属性", id=Methods.Remove)
+        b = gui.appendRadioButton(controlbox, "手动", id=Methods.Custom)
 
         self.manual_cuts_specific = manual_cut_editline(
             text=", ".join(map(str, self.cutpoints)),

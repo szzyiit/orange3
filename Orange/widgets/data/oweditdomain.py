@@ -444,7 +444,7 @@ class DictItemsModel(QStandardItemModel):
     def __init__(self, parent=None, a_dict=None):
         super().__init__(parent)
         self._dict = {}
-        self.setHorizontalHeaderLabels(["Key", "Value"])
+        self.setHorizontalHeaderLabels(["键(Key)", "值(Value)"])
         if a_dict is not None:
             self.set_dict(a_dict)
 
@@ -494,7 +494,7 @@ class VariableEditor(QWidget):
         self.name_edit.editingFinished.connect(
             lambda: self.name_edit.isModified() and self.on_name_changed()
         )
-        form.addRow("Name:", self.name_edit)
+        form.addRow("名称:", self.name_edit)
 
         self.unlink_var_cb = QCheckBox(
             "Unlink variable from its source variable", self,
@@ -579,7 +579,7 @@ class VariableEditor(QWidget):
         hlayout.addWidget(button)
         hlayout.addStretch(10)
         vlayout.addLayout(hlayout)
-        form.addRow("Labels:", vlayout)
+        form.addRow("标签:", vlayout)
 
     def set_data(self, var, transform=()):
         # type: (Optional[Variable], Sequence[Transform]) -> None
@@ -1026,13 +1026,13 @@ class CategoriesEditDelegate(QStyledItemDelegate):
             option.state &= ~QStyle.State_Enabled
             option.font.setStrikeOut(True)
             text = sourcename
-            suffix = "(dropped)"
+            suffix = "(已删除)"
         elif editstate == ItemEditState.Added:
-            suffix = "(added)"
+            suffix = "(已添加)"
         else:
             text = f"{sourcename} \N{RIGHTWARDS ARROW} {text}"
             if counts > 1:
-                suffix = "(merged)"
+                suffix = "(已合并)"
         if suffix is not None:
             text = text + " " + suffix
         option.text = text
@@ -1109,6 +1109,10 @@ class DiscreteVariableEditor(VariableEditor):
 
         form = self.layout().itemAt(0)
         assert isinstance(form, QFormLayout)
+        self.ordered_cb = QCheckBox(
+            "有序的(Ordered)", self, toolTip="是否为有序分类数据"
+        )
+        self.ordered_cb.toggled.connect(self._set_ordered)
         #: A list model of discrete variable's values.
         self.values_model = CountedStateModel(
             flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
@@ -1172,10 +1176,10 @@ class DiscreteVariableEditor(VariableEditor):
             shortcutContext=Qt.WidgetShortcut,
         )
         self.rename_selected_items = QAction(
-            "Rename selected items", group,
+            "重命名选中的项目", group,
             iconText="=",
             objectName="action-rename-selected-items",
-            toolTip="Rename selected items.",
+            # toolTip="Rename selected items.",
             shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_Equal),
             shortcutContext=Qt.WidgetShortcut,
         )
@@ -1244,7 +1248,7 @@ class DiscreteVariableEditor(VariableEditor):
         hlayout.addStretch(10)
         vlayout.addLayout(hlayout)
 
-        form.insertRow(2, "Values:", vlayout)
+        form.insertRow(2, "值:", vlayout)
 
         QWidget.setTabOrder(self.name_edit, self.values_edit)
         QWidget.setTabOrder(self.values_edit, button1)
@@ -1792,17 +1796,17 @@ class ReinterpretVariableEditor(VariableEditor):
 
 
 class OWEditDomain(widget.OWWidget):
-    name = "Edit Domain"
-    description = "Rename variables, edit categories and variable annotations."
+    name = "编辑列(Edit Domain)"
+    description = "重命名变量，编辑分类和变量注释。"
     icon = "icons/EditDomain.svg"
     priority = 3125
     keywords = ["rename", "drop", "reorder", "order"]
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     class Error(widget.OWWidget.Error):
         duplicate_var_name = widget.Msg("A variable name is duplicated.")
@@ -1826,7 +1830,7 @@ class OWEditDomain(widget.OWWidget):
         self.typeindex = 0
 
         main = gui.hBox(self.controlArea, spacing=6)
-        box = gui.vBox(main, "Variables")
+        box = gui.vBox(main, "变量")
 
         self.variables_model = VariableListModel(parent=self)
         self.variables_view = self.domain_view = QListView(
@@ -1840,35 +1844,35 @@ class OWEditDomain(widget.OWWidget):
         )
         box.layout().addWidget(self.variables_view)
 
-        box = gui.vBox(main, "Edit")
+        box = gui.vBox(main, "编辑")
         self._editor = ReinterpretVariableEditor()
         box.layout().addWidget(self._editor)
 
         self.le_output_name = gui.lineEdit(
-            self.buttonsArea, self, "output_table_name", "Output table name: ",
+            self.buttonsArea, self, "output_table_name", "输出表名: ",
             orientation=Qt.Horizontal)
 
         gui.rubber(self.buttonsArea)
 
         bbox = gui.hBox(self.buttonsArea)
         breset_all = gui.button(
-            bbox, self, "Reset All",
+            bbox, self, "全部重置",
             objectName="button-reset-all",
-            toolTip="Reset all variables to their input state.",
+            toolTip="重置所有变量为输入状态.",
             autoDefault=False,
             callback=self.reset_all
         )
         breset = gui.button(
-            bbox, self, "Reset Selected",
+            bbox, self, "重置选中",
             objectName="button-reset",
             toolTip="Rest selected variable to its input state.",
             autoDefault=False,
             callback=self.reset_selected
         )
         bapply = gui.button(
-            bbox, self, "Apply",
+            bbox, self, "应用",
             objectName="button-apply",
-            toolTip="Apply changes and commit data on output.",
+            toolTip="应用变化.",
             default=True,
             autoDefault=False,
             callback=self.commit

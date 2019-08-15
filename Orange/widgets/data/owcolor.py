@@ -374,7 +374,7 @@ class ContColorTableModel(ColorTableModel):
             if role == Qt.ForegroundRole:
                 return QBrush(Qt.blue)
             if row == self.mouse_row and role == Qt.DisplayRole:
-                return "Copy to all"
+                return "复制到所有"
             return None
 
         row, col = index.row(), index.column()
@@ -534,15 +534,15 @@ class ContinuousTable(ColorTable):
 
 
 class OWColor(widget.OWWidget):
-    name = "Color"
-    description = "Set color legend for variables."
+    name = "颜色(Color)"
+    description = "设置变量的颜色图例。"
     icon = "icons/Colors.svg"
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     settingsHandler = settings.PerfectDomainContextHandler(
         match_values=settings.PerfectDomainContextHandler.MATCH_VALUES_ALL)
@@ -560,13 +560,13 @@ class OWColor(widget.OWWidget):
         self.data = None
         self.orig_domain = self.domain = None
 
-        box = gui.hBox(self.controlArea, "Discrete Variables")
+        box = gui.hBox(self.controlArea, "离散变量")
         self.disc_model = DiscColorTableModel()
         self.disc_view = DiscreteTable(self.disc_model)
         self.disc_model.dataChanged.connect(self._on_data_changed)
         box.layout().addWidget(self.disc_view)
 
-        box = gui.hBox(self.controlArea, "Numeric Variables")
+        box = gui.hBox(self.controlArea, "数值变量")
         self.cont_model = ContColorTableModel()
         self.cont_view = ContinuousTable(self.cont_model)
         self.cont_model.dataChanged.connect(self._on_data_changed)

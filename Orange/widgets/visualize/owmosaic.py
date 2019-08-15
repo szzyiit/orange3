@@ -24,7 +24,7 @@ from Orange.widgets.settings import (
     Setting, DomainContextHandler, ContextSetting, SettingProvider)
 from Orange.widgets.utils import to_html, get_variable_values_sorted
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.visualize.utils import (
@@ -35,7 +35,7 @@ from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 class MosaicVizRank(VizRankDialog, OWComponent):
     """VizRank dialog for Mosaic"""
-    captionTitle = "Mosaic Ranking"
+    captionTitle = "马赛克排名(Mosaic Ranking)"
     max_attrs = ContextSetting(6)
 
     pairSelected = Signal(Variable, Variable, Variable, Variable)
@@ -47,11 +47,18 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         OWComponent.__init__(self, master)
 
         box = gui.hBox(self)
+<<<<<<< HEAD
         self.max_attr_combo = gui.comboBox(
             box, self, "max_attrs",
             label="Number of variables:", orientation=Qt.Horizontal,
             items=["one", "two", "three", "four",
                    "at most two", "at most three", "at most four"],
+=======
+        self.max_attr_spin = gui.spin(
+            box, self, "max_attrs", 2, 4,
+            label="将属性数量限制为: ",
+            controlWidth=50, alignment=Qt.AlignRight,
+>>>>>>> chinese translation of all widgets
             callback=self.max_attr_changed)
         gui.rubber(box)
         self.layout().addWidget(self.button)
@@ -288,19 +295,19 @@ class MosaicVizRank(VizRankDialog, OWComponent):
 
 
 class OWMosaicDisplay(OWWidget):
-    name = "Mosaic Display"
-    description = "Display data in a mosaic plot."
+    name = "马赛克显示(Mosaic Display)"
+    description = "在马赛克图中显示数据。"
     icon = "icons/MosaicDisplay.svg"
     priority = 220
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        data_subset = Input("Data Subset", Table)
+        data = Input("数据(Data)", Table, default=True)
+        data_subset = Input("数据子集(Data Subset)", Table)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     settingsHandler = DomainContextHandler()
     vizrank = SettingProvider(MosaicVizRank)
@@ -358,7 +365,7 @@ class OWMosaicDisplay(OWWidget):
             order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE)
         self.model_234 = DomainModel(
             order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(None)")
+            placeholder="(无)")
         self.attr_combos = [
             gui.comboBox(
                 box, self, value="variable{}".format(i),
@@ -368,19 +375,19 @@ class OWMosaicDisplay(OWWidget):
                 model=self.model_1 if i == 1 else self.model_234)
             for i in range(1, 5)]
         self.vizrank, self.vizrank_button = MosaicVizRank.add_vizrank(
-            box, self, "Find Informative Mosaics", self.set_attr)
+            box, self, "寻找信息马赛克(Find Informative Mosaics)", self.set_attr)
 
-        box2 = gui.vBox(self.controlArea, box="Interior Coloring")
+        box2 = gui.vBox(self.controlArea, box="内部着色")
         self.color_model = DomainModel(
             order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(Pearson residuals)")
+            placeholder="(皮尔逊残值Pearson residuals)")
         self.cb_attr_color = gui.comboBox(
             box2, self, value="variable_color",
             orientation=Qt.Horizontal, contentsLength=12, labelWidth=50,
             searchable=True,
             callback=self.set_color_data, model=self.color_model)
         self.bar_button = gui.checkBox(
-            box2, self, 'use_boxes', label='Compare with total',
+            box2, self, 'use_boxes', label='与总数比较',
             callback=self.update_graph)
         gui.rubber(self.controlArea)
 

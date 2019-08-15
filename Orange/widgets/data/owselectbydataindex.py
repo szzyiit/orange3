@@ -10,28 +10,28 @@ from Orange.widgets.utils.annotated_data import (create_annotated_table)
 
 
 class OWSelectByDataIndex(widget.OWWidget):
-    name = "Select by Data Index"
-    description = "Match instances by index from data subset."
+    name = "按数据索引选择(Select by Data Index)"
+    description = "根据数据子集的索引匹配实例。"
     icon = "icons/SelectByDataIndex.svg"
     priority = 1112
 
     class Inputs:
-        data = Input("Data", Table)
-        data_subset = Input("Data Subset", Table)
+        data = Input("数据(Data)", Table)
+        data_subset = Input("数据子集(Data Subset)", Table)
 
     class Outputs:
-        matching_data = Output("Matching Data", Table, replaces=["Data"], default=True)
-        non_matching_data = Output("Unmatched Data", Table)
+        matching_data = Output("匹配数据(Matching Data)", Table, replaces=["Data"], default=True)
+        non_matching_data = Output("不匹配的数据(Unmatched Data)", Table)
         # avoiding the default annotated output name (Data), as it was used
         # for Matching Data previously
-        annotated_data = Output("Annotated Data", Table)
+        annotated_data = Output("带批注的数据(Annotated Data)", Table)
 
     want_main_area = False
     buttons_area_orientation = None
     resizing_enabled = False
 
     class Warning(widget.OWWidget.Warning):
-        instances_not_matching = widget.Msg("Input tables do not share any instances.")
+        instances_not_matching = widget.Msg("输入表没有共同的实例Input tables do not share any instances.")
 
     def __init__(self):
         super().__init__()
@@ -46,9 +46,9 @@ class OWSelectByDataIndex(widget.OWWidget):
 
         box = gui.hBox(self.controlArea, box=None)
         self.infoBoxData = gui.label(
-            box, self, self.data_info_text(None), box="Data")
+            box, self, self.data_info_text(None), box="数据(Data)")
         self.infoBoxExtraData = gui.label(
-            box, self, self.data_info_text(None), box="Data Subset")
+            box, self, self.data_info_text(None), box="数据子集(Data Subset)")
 
     @Inputs.data
     @check_sql_input
@@ -68,9 +68,9 @@ class OWSelectByDataIndex(widget.OWWidget):
     @staticmethod
     def data_info_text(data):
         if data is None:
-            return "No data."
+            return "没有数据。"
         else:
-            return "{}\n{} instances\n{} variables".format(
+            return "{}\n{} 个实例\n{} 个变量".format(
                 data.name, len(data), len(data.domain.variables) + len(data.domain.metas))
 
     def commit(self):

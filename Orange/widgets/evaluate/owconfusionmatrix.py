@@ -18,7 +18,7 @@ from Orange.widgets import widget, gui
 from Orange.widgets.settings import \
     Setting, ContextSetting, ClassValuesContextHandler
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Msg, Input, Output
 
@@ -83,23 +83,25 @@ class BorderedItemDelegate(QStyledItemDelegate):
 class OWConfusionMatrix(widget.OWWidget):
     """Confusion matrix widget"""
 
-    name = "Confusion Matrix"
-    description = "Display a confusion matrix constructed from " \
-                  "the results of classifier evaluations."
+    name = "混淆矩阵(Confusion Matrix)"
+    description = "显示根据分类器评估结果构造的混淆矩阵。"
     icon = "icons/ConfusionMatrix.svg"
     priority = 1001
     keywords = []
 
     class Inputs:
-        evaluation_results = Input("Evaluation Results", Orange.evaluation.Results)
+        evaluation_results = Input("评价结果(Evaluation Results)", Orange.evaluation.Results)
 
     class Outputs:
-        selected_data = Output("Selected Data", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Orange.data.Table)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
 
     quantities = ["Number of instances",
                   "Proportion of predicted",
                   "Proportion of actual"]
+    Chinese_quantities = ["实例数",
+                  "预测比例",
+                  "实际比例"]
 
     settings_version = 1
     settingsHandler = ClassValuesContextHandler()
@@ -138,9 +140,9 @@ class OWConfusionMatrix(widget.OWWidget):
         self.outputbox = gui.vBox(self.buttonsArea)
         box = gui.hBox(self.outputbox)
         gui.checkBox(box, self, "append_predictions",
-                     "Predictions", callback=self._invalidate)
+                     "预测", callback=self._invalidate)
         gui.checkBox(box, self, "append_probabilities",
-                     "Probabilities",
+                     "概率",
                      callback=self._invalidate)
 
         gui.auto_apply(self.outputbox, self, "autocommit", box=False)
@@ -150,7 +152,7 @@ class OWConfusionMatrix(widget.OWWidget):
         sbox = gui.hBox(box)
         gui.rubber(sbox)
         gui.comboBox(sbox, self, "selected_quantity",
-                     items=self.quantities, label="Show: ",
+                     items=self.Chinese_quantities, label="显示: ",
                      orientation=Qt.Horizontal, callback=self._update)
 
         self.tablemodel = QStandardItemModel(self)
@@ -169,11 +171,11 @@ class OWConfusionMatrix(widget.OWWidget):
         box.layout().addWidget(view)
 
         selbox = gui.hBox(box)
-        gui.button(selbox, self, "Select Correct",
+        gui.button(selbox, self, "选择正确分类",
                    callback=self.select_correct, autoDefault=False)
-        gui.button(selbox, self, "Select Misclassified",
+        gui.button(selbox, self, "选择错误分类",
                    callback=self.select_wrong, autoDefault=False)
-        gui.button(selbox, self, "Clear Selection",
+        gui.button(selbox, self, "清除选定内容",
                    callback=self.select_none, autoDefault=False)
 
     @staticmethod

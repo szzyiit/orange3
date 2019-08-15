@@ -30,7 +30,7 @@ from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils.stickygraphicsview import StickyGraphicsView
 from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.graphicstextlist import TextListWidget
 from Orange.widgets.utils.graphicslayoutitem import SimpleLayoutItem
 from Orange.widgets.utils.sql import check_sql_input
@@ -56,20 +56,19 @@ class ValidationError(InputValidationError):
 
 
 class OWSilhouettePlot(widget.OWWidget):
-    name = "Silhouette Plot"
-    description = "Visually assess cluster quality and " \
-                  "the degree of cluster membership."
+    name = "Silhouette图"
+    description = "视觉评估聚类质量和聚类成员的程度。"
 
     icon = "icons/SilhouettePlot.svg"
     priority = 300
     keywords = []
 
     class Inputs:
-        data = Input("Data", (Orange.data.Table, Orange.misc.DistMatrix))
+        data = Input("数据(Data)", (Orange.data.Table, Orange.misc.DistMatrix))
 
     class Outputs:
-        selected_data = Output("Selected Data", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Orange.data.Table)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
 
     replaces = [
         "orangecontrib.prototypes.widgets.owsilhouetteplot.OWSilhouettePlot",
@@ -93,9 +92,9 @@ class OWSilhouettePlot(widget.OWWidget):
 
     pending_selection = settings.Setting(None, schema_only=True)
 
-    Distances = [("Euclidean", Orange.distance.Euclidean),
-                 ("Manhattan", Orange.distance.Manhattan),
-                 ("Cosine", Orange.distance.Cosine)]
+    Distances = [("欧几里德", Orange.distance.Euclidean),
+                 ("曼哈顿", Orange.distance.Manhattan),
+                 ("余弦", Orange.distance.Cosine)]
 
     graph_name = "scene"
 
@@ -135,7 +134,7 @@ class OWSilhouettePlot(widget.OWWidget):
         controllayout = self.controlArea.layout()
         assert isinstance(controllayout, QVBoxLayout)
         self._distances_gui_box = distbox = gui.widgetBox(
-            None, "Distance"
+            None, "距离"
         )
         self._distances_gui_cb = gui.comboBox(
             distbox, self, "distance_idx",
@@ -143,38 +142,53 @@ class OWSilhouettePlot(widget.OWWidget):
             orientation=Qt.Horizontal, callback=self._invalidate_distances)
         controllayout.addWidget(distbox)
 
-        box = gui.vBox(self.controlArea, "Cluster Label")
+        box = gui.vBox(self.controlArea, "聚类标签")
         self.cluster_var_cb = gui.comboBox(
             box, self, "cluster_var_idx", contentsLength=14,
             searchable=True, callback=self._invalidate_scores
         )
         gui.checkBox(
-            box, self, "group_by_cluster", "Group by cluster",
+            box, self, "group_by_cluster", "按聚类分组(Group by cluster)",
             callback=self._replot)
         self.cluster_var_model = itemmodels.VariableListModel(parent=self)
         self.cluster_var_cb.setModel(self.cluster_var_model)
 
-        box = gui.vBox(self.controlArea, "Bars")
-        gui.widgetLabel(box, "Bar width:")
+        box = gui.vBox(self.controlArea, "条")
+        gui.widgetLabel(box, "条宽度:")
         gui.hSlider(
             box, self, "bar_size", minValue=1, maxValue=10, step=1,
             callback=self._update_bar_size)
-        gui.widgetLabel(box, "Annotations:")
+        gui.widgetLabel(box, "注释:")
         self.annotation_cb = gui.comboBox(
             box, self, "annotation_var_idx", contentsLength=14,
             callback=self._update_annotations)
         self.annotation_var_model = itemmodels.VariableListModel(parent=self)
-        self.annotation_var_model[:] = ["None"]
+        self.annotation_var_model[:] = ["无"]
         self.annotation_cb.setModel(self.annotation_var_model)
         ibox = gui.indentedBox(box, 5)
         self.ann_hidden_warning = warning = gui.widgetLabel(
-            ibox, "(increase the width to show)")
+            ibox, "(增加要显示的宽度)")
         ibox.setFixedWidth(ibox.sizeHint().width())
         warning.setVisible(False)
 
         gui.rubber(self.controlArea)
 
+<<<<<<< HEAD
         gui.auto_send(self.buttonsArea, self, "auto_commit")
+=======
+<<<<<<< HEAD
+        box = gui.vBox(self.buttonsArea, box=True)
+=======
+        gui.separator(self.buttonsArea)
+        box = gui.vBox(self.buttonsArea, "输出")
+        # Thunk the call to commit to call conditional commit
+        gui.checkBox(box, self, "add_scores", "添加silhouette分数",
+                     callback=lambda: self.commit())
+>>>>>>> chinese translation of all widgets
+        gui.auto_send(box, self, "auto_commit", box=False)
+        # Ensure that the controlArea is not narrower than buttonsArea
+        self.controlArea.layout().addWidget(self.buttonsArea)
+>>>>>>> chinese translation of all widgets
 
         self.scene = QGraphicsScene(self)
         self.view = StickyGraphicsView(self.scene)

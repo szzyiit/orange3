@@ -31,7 +31,7 @@ from Orange.widgets.settings import (
     DomainContextHandler, ContextSetting, Setting)
 from Orange.widgets.utils import itemmodels, colorpalettes
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, Msg
@@ -60,20 +60,19 @@ class VennVariableListModel(itemmodels.VariableListModel):
 
 
 class OWVennDiagram(widget.OWWidget):
-    name = "Venn Diagram"
-    description = "A graphical visualization of the overlap of data instances " \
-                  "from a collection of input datasets."
+    name = "维恩图(Venn Diagram)"
+    description = "可视化数据实例的重叠(数据来自输入数据集集合)"
     icon = "icons/VennDiagram.svg"
     priority = 280
     keywords = []
     settings_version = 2
 
     class Inputs:
-        data = Input("Data", Table, multiple=True)
+        data = Input("数据(Data)", Table, multiple=True)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     class Error(widget.OWWidget.Error):
         instances_mismatch = Msg("Data sets do not contain the same instances.")

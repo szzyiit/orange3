@@ -60,7 +60,7 @@ class ColorPixmap(QIcon):
 class ColorPaletteDlg(QDialog, gui.OWComponent):
     shemaChanged = pyqtSignal()
 
-    def __init__(self, parent, windowTitle="Color Palette"):
+    def __init__(self, parent, windowTitle="调色板(Color Palette)"):
         super().__init__(parent, windowTitle=windowTitle)
 
         if PYQT_VERSION < 0x50000:
@@ -79,12 +79,12 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         self.mainArea = gui.vBox(self, spacing=4)
         self.layout().addWidget(self.mainArea)
         self.schemaCombo = gui.comboBox(
-            self.mainArea, self, "selectedSchemaIndex", box="Saved Profiles",
+            self.mainArea, self, "selectedSchemaIndex", box="保存的配置",
             callback=self.paletteSelected)
 
         self.hbox = gui.hBox(self)
-        self.okButton = gui.button(self.hbox, self, "OK", self.acceptChanges)
-        self.cancelButton = gui.button(self.hbox, self, "Cancel", self.reject)
+        self.okButton = gui.button(self.hbox, self, "确认", self.acceptChanges)
+        self.cancelButton = gui.button(self.hbox, self, "取消", self.reject)
         self.setMinimumWidth(230)
         self.resize(350, 200)
 
@@ -138,7 +138,7 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         _set("passThroughBlack", passThroughBlack)
         _set("passThroughBlackCheckbox", gui.checkBox(
             buttBox, self, "cont" + paletteName + "passThroughBlack",
-            "Pass through black", callback=self.colorSchemaChange))
+            "穿过黑色", callback=self.colorSchemaChange))
         self.contPaletteNames.append(paletteName)
 
     def createExtendedContinuousPalette(
@@ -277,11 +277,11 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         self.schemaCombo.clear()
 
         if not schemas or type(schemas) != list:
-            schemas = [("Default", self.getCurrentState())]
+            schemas = [("默认", self.getCurrentState())]
 
         self.colorSchemas = schemas
         self.schemaCombo.addItems([s[0] for s in schemas])
-        self.schemaCombo.addItem("Save current palette as...")
+        self.schemaCombo.addItem("将当前调色板另存为…")
         self.selectedSchemaIndex = selectedSchemaIndex
         self.schemaCombo.setCurrentIndex(self.selectedSchemaIndex)
         self.paletteSelected()
@@ -332,19 +332,19 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
 
         # if we selected "Save current palette as..." option then add another option to the list
         if self.selectedSchemaIndex == self.schemaCombo.count() - 1:
-            message = "Name the current color settings.\n" \
-                      "Pressing 'Cancel' will cancel your changes and close the dialog."
+            message = "命名当前颜色设置\n" \
+                      "按“取消”将取消更改并关闭对话框。"
             ok = 0
             while not ok:
-                text, ok = QInputDialog.getText(self, "Name Your Color Settings", message)
+                text, ok = QInputDialog.getText(self, "命名颜色设置", message)
                 if (ok):
                     newName = str(text)
                     oldNames = [str(self.schemaCombo.itemText(i)).lower()
                                 for i in range(self.schemaCombo.count() - 1)]
                     if newName.lower() == "default":
                         ok = False
-                        message = "The 'Default' settings cannot be changed." \
-                                  "Enter a different name:"
+                        message = "无法更改'默认'设置。" \
+                                  "输入其他名称："
                     elif newName.lower() in oldNames:
                         index = oldNames.index(newName.lower())
                         self.colorSchemas.pop(index)

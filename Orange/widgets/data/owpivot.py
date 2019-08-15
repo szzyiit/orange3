@@ -38,8 +38,22 @@ class AggregationFunctionsEnum(Enum):
     (Count, Count_defined, Sum, Mean, Min, Max,
      Mode, Median, Var, Majority) = range(10)
 
+
+
     def __init__(self, *_, **__):
         super().__init__()
+        self.chinese_dict = {
+            'Count': '数目',
+            'Count_defined': '非缺失数目',
+            'Sum': '总和',
+            'Mean': '平均值',
+            'Min': '最小值',
+            'Max': '最大值',
+            'Mode': '众数',
+            'Median': '中位数',
+            'Var': '方差',
+            'Majority': '最常见',
+        }       
         self.func = None
 
     @property
@@ -50,7 +64,8 @@ class AggregationFunctionsEnum(Enum):
         return self.func(args)  # pylint: disable=not-callable
 
     def __str__(self):
-        return self._name_.replace("_", " ")
+        # return self._name_.replace("_", " ")
+        return self.chinese_dict[self._name_]
 
     def __gt__(self, other):
         return self._value_ > other.value
@@ -723,28 +738,27 @@ class PivotTableView(QTableView):
 
 
 class OWPivot(OWWidget):
-    name = "Pivot Table"
-    description = "Reshape data table based on column values."
+    name = "数据透视表(Pivot Table)"
+    description = "根据列值重新调整数据表的形状。"
     icon = "icons/Pivot.svg"
     priority = 1000
     keywords = ["pivot", "group", "aggregate"]
 
     class Inputs:
-        data = Input("Data", Table, default=True)
+        data = Input("数据(Data)", Table, default=True)
 
     class Outputs:
-        pivot_table = Output("Pivot Table", Table, default=True)
-        filtered_data = Output("Filtered Data", Table)
-        grouped_data = Output("Grouped Data", Table)
+        pivot_table = Output("数据透视表(Pivot Table)", Table, default=True)
+        filtered_data = Output("筛选的数据(Filtered Data)", Table)
+        grouped_data = Output("分组数据(Grouped Data)", Table)
 
     class Warning(OWWidget.Warning):
         # TODO - inconsistent for different variable types
         no_col_feature = Msg("Column feature should be selected.")
-        cannot_aggregate = Msg("Some aggregations ({}) cannot be computed.")
-        renamed_vars = Msg("Some variables have been renamed in some tables"
-                           "to avoid duplicates.\n{}")
-        too_many_values = Msg("Selected variable has too many values.")
-        no_variables = Msg("At least 1 primitive variable is required.")
+        cannot_aggregate = Msg("某些聚合 ({}) 无法执行.")
+        renamed_vars = Msg("为防止重复, 某些变量已经重命名\n{}")
+        too_many_values = Msg("选中的变量有过多的值.")
+        no_variables = Msg("至少需要一个原始变量.")
 
     settingsHandler = DomainContextHandler()
     row_feature = ContextSetting(None)
@@ -779,26 +793,26 @@ class OWPivot(OWWidget):
         self._add_main_area_controls()
 
     def _add_control_area_controls(self):
-        gui.comboBox(gui.vBox(self.controlArea, box="Rows"),
+        gui.comboBox(gui.vBox(self.controlArea, box="行"),
                      self, "row_feature",
                      contentsLength=14,
                      searchable=True,
                      model=DomainModel(valid_types=DomainModel.PRIMITIVE),
                      callback=self.__feature_changed,
                      orientation=Qt.Horizontal)
-        gui.comboBox(gui.vBox(self.controlArea, box="Columns"),
+        gui.comboBox(gui.vBox(self.controlArea, box="列"),
                      self, "col_feature",
                      contentsLength=14,
                      searchable=True,
-                     model=DomainModel(placeholder="(Same as rows)",
+                     model=DomainModel(placeholder="(与行相同)",
                                        valid_types=DiscreteVariable),
                      callback=self.__feature_changed,
                      orientation=Qt.Horizontal)
-        gui.comboBox(gui.vBox(self.controlArea, box="Values"),
+        gui.comboBox(gui.vBox(self.controlArea, box="值"),
                      self, "val_feature",
                      contentsLength=14,
                      searchable=True,
-                     model=DomainModel(placeholder="(None)"),
+                     model=DomainModel(placeholder="(无)"),
                      callback=self.__val_feature_changed,
                      orientation=Qt.Horizontal)
         self.__add_aggregation_controls()
@@ -815,7 +829,7 @@ class OWPivot(OWWidget):
             box.layout().addWidget(inbox)
             row = col = 0
 
-        box = gui.vBox(self.controlArea, "Aggregations")
+        box = gui.vBox(self.controlArea, "聚合")
         row = col = 0
         inbox = None
         new_inbox()

@@ -25,7 +25,7 @@ from Orange.widgets.settings import (Setting, DomainContextHandler,
                                      ContextSetting)
 from Orange.widgets.utils.itemmodels import VariableListModel
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output
 
@@ -117,18 +117,18 @@ class SortProxyModel(QSortFilterProxyModel):
         return r_score is not None and (l_score is None or l_score < r_score)
 
 class OWBoxPlot(widget.OWWidget):
-    name = "Box Plot"
-    description = "Visualize the distribution of feature values in a box plot."
+    name = "箱线图(Box Plot)"
+    description = "在箱线图中可视化特征值的分布。"
     icon = "icons/BoxPlot.svg"
     priority = 100
     keywords = ["whisker"]
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        selected_data = Output("Selected Data", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Orange.data.Table)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
 
     class Warning(widget.OWWidget.Warning):
         no_vars = widget.Msg(
@@ -202,7 +202,7 @@ class OWBoxPlot(widget.OWWidget):
         sorted_model = SortProxyModel(sortRole=Qt.UserRole)
         sorted_model.setSourceModel(self.attrs)
         sorted_model.sort(0)
-        box = gui.vBox(self.controlArea, "Variable")
+        box = gui.vBox(self.controlArea, "变量")
         view = self.attr_list = ListViewSearch()
         view.setModel(sorted_model)
         view.setSelectionMode(view.SingleSelection)
@@ -215,7 +215,7 @@ class OWBoxPlot(widget.OWWidget):
         box.layout().addWidget(view)
         gui.checkBox(
             box, self, "order_by_importance",
-            "Order by relevance to subgroups",
+            "按相关性排序",
             tooltip="Order by 𝜒² or ANOVA over the subgroups",
             callback=self.apply_attr_sorting)
 
@@ -241,30 +241,30 @@ class OWBoxPlot(widget.OWWidget):
         # TODO: move Compare median/mean to grouping box
         # The vertical size policy is needed to let only the list views expand
         self.display_box = gui.vBox(
-            self.controlArea, "Display",
+            self.controlArea, "显示",
             sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Maximum))
 
-        gui.checkBox(self.display_box, self, "show_annotations", "Annotate",
+        gui.checkBox(self.display_box, self, "show_annotations", "注释",
                      callback=self.update_graph)
         self.compare_rb = gui.radioButtonsInBox(
             self.display_box, self, 'compare',
-            btnLabels=["No comparison", "Compare medians", "Compare means"],
+            btnLabels=["不比较", "比较中间值", "比较平均值"],
             callback=self.update_graph)
 
         # The vertical size policy is needed to let only the list views expand
         self.stretching_box = box = gui.vBox(
-            self.controlArea, box="Display",
+            self.controlArea, box="显示",
             sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.stretching_box.sizeHint = self.display_box.sizeHint
         gui.checkBox(
-            box, self, 'stretched', "Stretch bars",
+            box, self, 'stretched', "拉伸框条",
             callback=self.update_graph,
             stateWhenDisabled=False)
         gui.checkBox(
-            box, self, 'show_labels', "Show box labels",
+            box, self, 'show_labels', "显示标签",
             callback=self.update_graph)
         self.sort_cb = gui.checkBox(
-            box, self, 'sort_freqs', "Sort by subgroup frequencies",
+            box, self, 'sort_freqs', "按子组频率排序",
             callback=self.update_graph,
             stateWhenDisabled=False)
 
@@ -838,7 +838,7 @@ class OWBoxPlot(widget.OWWidget):
             else:
                 F, p = stat_ANOVA()
                 t = "" if np.isnan(F) else f"ANOVA: {F:.3f} (p={p:.3f}, N={n})"
-        self.stat_test = t
+                self.stat_test = t
 
     def _compute_tests_disc(self):
         if self.group_var is None or self.attribute is None:

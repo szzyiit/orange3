@@ -38,7 +38,7 @@ MAX_LABEL_LEN = 20
 
 
 class LinearProjectionVizRank(VizRankDialog, OWComponent):
-    captionTitle = "Score Plots"
+    captionTitle = "评分图(Score Plots)"
     n_attrs = Setting(3)
     minK = 10
 
@@ -53,7 +53,7 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
         box = gui.hBox(self)
         max_n_attrs = len(master.model_selected)
         self.n_attrs_spin = gui.spin(
-            box, self, "n_attrs", 3, max_n_attrs, label="Number of variables: ",
+            box, self, "n_attrs", 3, max_n_attrs, label="变量数量: ",
             controlWidth=50, alignment=Qt.AlignRight, callback=self._n_attrs_changed)
         gui.rubber(box)
         self.last_run_n_attrs = None
@@ -261,16 +261,15 @@ Placement = Enum("Placement", dict(Circular=0, LDA=1, PCA=2), type=int,
 
 
 class OWLinearProjection(OWAnchorProjectionWidget):
-    name = "Linear Projection"
-    description = "A multi-axis projection of data onto " \
-                  "a two-dimensional plane."
+    name = "线性投影(Linear Projection)"
+    description = "数据在二维平面上的多轴投影。"
     icon = "icons/LinearProjection.svg"
     priority = 240
     keywords = []
 
-    Projection_name = {Placement.Circular: "Circular Placement",
-                       Placement.LDA: "Linear Discriminant Analysis",
-                       Placement.PCA: "Principal Component Analysis"}
+    Projection_name = {Placement.Circular: "圆形布局",
+                       Placement.LDA: "线性判别分析(Linear Discriminant Analysis)",
+                       Placement.PCA: "主成分分析(Principal Component Analysis)"}
 
     settings_version = 6
 
@@ -289,7 +288,7 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         self._add_controls_placement(box)
         super()._add_controls()
         self.gui.add_control(
-            self._effects_box, gui.hSlider, "Hide radius:", master=self.graph,
+            self._effects_box, gui.hSlider, "隐藏半径:", master=self.graph,
             value="hide_radius", minValue=0, maxValue=100, step=10,
             createLabel=False, callback=self.__radius_slider_changed
         )
@@ -300,7 +299,7 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         self.model_selected.selection_changed.connect(
             self.__model_selected_changed)
         self.vizrank, self.btn_vizrank = LinearProjectionVizRank.add_vizrank(
-            None, self, "Suggest Features", self.__vizrank_set_attrs)
+            None, self, "建议特征", self.__vizrank_set_attrs)
         box.layout().addWidget(self.btn_vizrank)
 
     def _add_controls_placement(self, box):

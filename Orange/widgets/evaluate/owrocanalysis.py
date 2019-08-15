@@ -294,15 +294,14 @@ class InfiniteLine(pg.InfiniteLine):
 
 
 class OWROCAnalysis(widget.OWWidget):
-    name = "ROC Analysis"
-    description = "Display the Receiver Operating Characteristics curve " \
-                  "based on the evaluation of classifiers."
+    name = "ROC分析(ROC Analysis)"
+    description = "根据分类器的评估结果显示接受者操作曲线。"
     icon = "icons/ROCAnalysis.svg"
     priority = 1010
     keywords = []
 
     class Inputs:
-        evaluation_results = Input("Evaluation Results", Orange.evaluation.Results)
+        evaluation_results = Input("评价结果", Orange.evaluation.Results)
 
     buttons_area_orientation = None
     settingsHandler = EvaluationResultsContextHandler()
@@ -338,14 +337,14 @@ class OWROCAnalysis(widget.OWWidget):
         self._perf_line = None
         self._tooltip_cache = None
 
-        box = gui.vBox(self.controlArea, "Plot")
+        box = gui.vBox(self.controlArea, "绘制")
         self.target_cb = gui.comboBox(
             box, self, "target_index",
-            label="Target", orientation=Qt.Horizontal,
+            label="目标", orientation=Qt.Horizontal,
             callback=self._on_target_changed,
             contentsLength=8, searchable=True)
 
-        gui.widgetLabel(box, "Classifiers")
+        gui.widgetLabel(box, "分类器")
         line_height = 4 * QFontMetrics(self.font()).lineSpacing()
         self.classifiers_list_box = gui.listBox(
             box, self, "selected_classifiers", "classifier_names",
@@ -353,24 +352,24 @@ class OWROCAnalysis(widget.OWWidget):
             callback=self._on_classifiers_changed,
             sizeHint=QSize(0, line_height))
 
-        abox = gui.vBox(self.controlArea, "Curves")
+        abox = gui.vBox(self.controlArea, "曲线")
         gui.comboBox(abox, self, "roc_averaging",
-                     items=["Merge Predictions from Folds", "Mean TP Rate",
-                            "Mean TP and FP at Threshold", "Show Individual Curves"],
+                     items=["从折叠合并预测", "平均真阳性率",
+                            "阈值处的平均真阳性率和假阳性率", "显示单个曲线"],
                      callback=self._replot)
 
-        gui.checkBox(abox, self, "display_convex_curve",
-                     "Show convex ROC curves", callback=self._replot)
-        gui.checkBox(abox, self, "display_convex_hull",
-                     "Show ROC convex hull", callback=self._replot)
+        gui.checkBox(hbox, self, "display_convex_curve",
+                     "显示凸ROC曲线", callback=self._replot)
+        gui.checkBox(hbox, self, "display_convex_hull",
+                     "显示ROC凸包", callback=self._replot)
 
-        box = gui.vBox(self.controlArea, "Analysis")
+        box = gui.vBox(self.controlArea, "分析(Analysis)")
 
         gui.checkBox(box, self, "display_def_threshold",
-                     "Default threshold (0.5) point",
+                     "默认阈值（0.5）点",
                      callback=self._on_display_def_threshold_changed)
 
-        gui.checkBox(box, self, "display_perf_line", "Show performance line",
+        gui.checkBox(box, self, "display_perf_line", "显示性能行",
                      callback=self._on_display_perf_line_changed)
         grid = QGridLayout()
         gui.indentedBox(box, orientation=grid)
@@ -378,20 +377,20 @@ class OWROCAnalysis(widget.OWWidget):
         sp = gui.spin(box, self, "fp_cost", 1, 1000, 10,
                       alignment=Qt.AlignRight,
                       callback=self._on_display_perf_line_changed)
-        grid.addWidget(QLabel("FP Cost:"), 0, 0)
+        grid.addWidget(QLabel("假阳性率损失:"), 0, 0)
         grid.addWidget(sp, 0, 1)
 
         sp = gui.spin(box, self, "fn_cost", 1, 1000, 10,
                       alignment=Qt.AlignRight,
                       callback=self._on_display_perf_line_changed)
-        grid.addWidget(QLabel("FN Cost:"))
+        grid.addWidget(QLabel("假阴性率损失:"))
         grid.addWidget(sp, 1, 1)
         self.target_prior_sp = gui.spin(box, self, "target_prior", 1, 99,
                                         alignment=Qt.AlignRight,
                                         callback=self._on_target_prior_changed)
         self.target_prior_sp.setSuffix(" %")
         self.target_prior_sp.addAction(QAction("Auto", sp))
-        grid.addWidget(QLabel("Prior probability:"))
+        grid.addWidget(QLabel("先验概率:"))
         grid.addWidget(self.target_prior_sp, 2, 1)
 
         self.plotview = pg.GraphicsView(background="w")
@@ -410,13 +409,13 @@ class OWROCAnalysis(widget.OWWidget):
         axis = self.plot.getAxis("bottom")
         axis.setTickFont(tickfont)
         axis.setPen(pen)
-        axis.setLabel("FP Rate (1-Specificity)")
+        axis.setLabel("假阳性率 (1-特异度)")
         axis.setGrid(16)
 
         axis = self.plot.getAxis("left")
         axis.setTickFont(tickfont)
         axis.setPen(pen)
-        axis.setLabel("TP Rate (Sensitivity)")
+        axis.setLabel("真阳性率 (灵敏度)")
         axis.setGrid(16)
 
         self.plot.showGrid(True, True, alpha=0.1)

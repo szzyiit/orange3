@@ -74,17 +74,17 @@ class LineEditSelectOnFocus(QLineEdit):
 
 
 class OWFile(widget.OWWidget, RecentPathsWComboMixin):
-    name = "File"
+    name = "文件(File)"
     id = "orange.widgets.data.file"
-    description = "Read data from an input file or network " \
-                  "and send a data table to the output."
+    description = "从输入文件或网络读取数据并将数据表发送到输出。"
+                  
     icon = "icons/File.svg"
     priority = 10
     category = "Data"
     keywords = ["file", "load", "read", "open"]
 
     class Outputs:
-        data = Output("Data", Table,
+        data = Output("数据(Data)", Table,
                       doc="Attribute-valued dataset read from the input file.")
 
     want_main_area = False
@@ -166,7 +166,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         vbox = gui.radioButtons(None, self, "source", box=True,
                                 callback=self.load_data, addToLayout=False)
 
-        rb_button = gui.appendRadioButton(vbox, "File:", addToLayout=False)
+        rb_button = gui.appendRadioButton(vbox, "文件:", addToLayout=False)
         layout.addWidget(rb_button, 0, 0, Qt.AlignVCenter)
 
         box = gui.hBox(None, addToLayout=False, margin=0)
@@ -183,7 +183,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         layout.addWidget(file_button, 0, 2)
 
         reload_button = gui.button(
-            None, self, "Reload", callback=self.load_data, autoDefault=False)
+            None, self, "重新加载", callback=self.load_data, autoDefault=False)
         reload_button.setIcon(self.style().standardIcon(
             QStyle.SP_BrowserReload))
         reload_button.setSizePolicy(Policy.Fixed, Policy.Fixed)
@@ -227,23 +227,23 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         completer.setCaseSensitivity(Qt.CaseSensitive)
         url_combo.setCompleter(completer)
 
-        box = gui.vBox(self.controlArea, "Info")
-        self.infolabel = gui.widgetLabel(box, 'No data loaded.')
+        box = gui.vBox(self.controlArea, "信息")
+        self.infolabel = gui.widgetLabel(box, '未加载数据。')
         self.warnings = gui.widgetLabel(box, '')
 
-        box = gui.widgetBox(self.controlArea, "Columns (Double click to edit)")
+        box = gui.widgetBox(self.controlArea, "列(双击编辑)")
         self.domain_editor = DomainEditor(self)
         self.editor_model = self.domain_editor.model()
         box.layout().addWidget(self.domain_editor)
 
         box = gui.hBox(box)
         gui.button(
-            box, self, "Reset", callback=self.reset_domain_edit,
+            box, self, "重置", callback=self.reset_domain_edit,
             autoDefault=False
         )
         gui.rubber(box)
         self.apply_button = gui.button(
-            box, self, "Apply", callback=self.apply_domain_edit)
+            box, self, "应用", callback=self.apply_domain_edit)
         self.apply_button.setEnabled(False)
         self.apply_button.setFixedWidth(170)
         self.editor_model.dataChanged.connect(
@@ -305,8 +305,8 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             start_file = get_sample_datasets_dir()
             if not os.path.exists(start_file):
                 QMessageBox.information(
-                    None, "File",
-                    "Cannot find the directory with documentation datasets")
+                    None, "文件",
+                    "无法找到文件")
                 return
         else:
             start_file = self.last_path() or os.path.expanduser("~/")
@@ -340,7 +340,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             self.data = None
             self.sheet_box.hide()
             self.Outputs.data.send(None)
-            self.infolabel.setText("No data.")
+            self.infolabel.setText("无数据.")
 
     def _try_load(self):
         # pylint: disable=broad-except
@@ -425,9 +425,9 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
     def _describe(table):
         def missing_prop(prop):
             if prop:
-                return f"({prop * 100:.1f}% missing values)"
+                return f"({prop * 100:.1f}% 个缺失值)"
             else:
-                return "(no missing values)"
+                return "(无缺失值)"
 
         domain = table.domain
         text = ""
@@ -440,25 +440,25 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         if descs:
             text += f"<p>{'<br/>'.join(descs)}</p>"
 
-        text += f"<p>{len(table)} instance(s)"
+        text += f"<p>{len(table)} 条数据"
 
         missing_in_attr = missing_prop(table.has_missing_attribute()
                                        and table.get_nan_frequency_attribute())
         missing_in_class = missing_prop(table.has_missing_class()
                                         and table.get_nan_frequency_class())
-        text += f"<br/>{len(domain.attributes)} feature(s) {missing_in_attr}"
+        text += f"<br/>特征数目: {len(domain.attributes)} {missing_in_attr}"
         if domain.has_continuous_class:
-            text += f"<br/>Regression; numerical class {missing_in_class}"
+            text += f"<br/>回归; 数值类 {missing_in_class}"
         elif domain.has_discrete_class:
-            text += "<br/>Classification; categorical class " \
-                f"with {len(domain.class_var.values)} values {missing_in_class}"
+            text += "<br/>分类: 分类种类共 " \
+                f"{len(domain.class_var.values)} 个 {missing_in_class}"
         elif table.domain.class_vars:
             text += "<br/>Multi-target; " \
                 f"{len(table.domain.class_vars)} target variables " \
                 f"{missing_in_class}"
         else:
             text += "<br/>Data has no target variable."
-        text += f"<br/>{len(domain.metas)} meta attribute(s)"
+        text += f"<br/>元属性: { len(domain.metas)}"
         text += "</p>"
 
         if 'Timestamp' in table.domain:

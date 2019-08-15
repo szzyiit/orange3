@@ -29,7 +29,10 @@ from Orange.widgets.utils import vartype
 from Orange.widgets import report
 from Orange.widgets.widget import Msg
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_NAME,
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+from Orange.widgets.utils.state_summary import format_summary_details
+
 
 
 class SelectRowsContextHandler(DomainContextHandler):
@@ -152,21 +155,21 @@ def _plural(s):
 
 
 class OWSelectRows(widget.OWWidget):
-    name = "Select Rows"
+    name = "选择行(Select Rows)"
     id = "Orange.widgets.data.file"
-    description = "Select rows from the data based on values of variables."
+    description = "根据变量值从数据中选择行。"
     icon = "icons/SelectRows.svg"
     priority = 100
     category = "Data"
     keywords = ["filter"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        matching_data = Output("Matching Data", Table, default=True)
-        unmatched_data = Output("Unmatched Data", Table)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        matching_data = Output("匹配的数据(Matching Data)", Table, default=True)
+        unmatched_data = Output("不匹配的数据(Unmatched Data)", Table)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     want_main_area = False
 
@@ -181,35 +184,35 @@ class OWSelectRows(widget.OWWidget):
 
     Operators = {
         ContinuousVariable: [
-            (FilterContinuous.Equal, "equals"),
-            (FilterContinuous.NotEqual, "is not"),
-            (FilterContinuous.Less, "is below"),
-            (FilterContinuous.LessEqual, "is at most"),
-            (FilterContinuous.Greater, "is greater than"),
-            (FilterContinuous.GreaterEqual, "is at least"),
-            (FilterContinuous.Between, "is between"),
-            (FilterContinuous.Outside, "is outside"),
-            (FilterContinuous.IsDefined, "is defined"),
+            (FilterContinuous.Equal, "等于(equals)"),
+            (FilterContinuous.NotEqual, "不是(is not)"),
+            (FilterContinuous.Less, "低于(is below)"),
+            (FilterContinuous.LessEqual, "最多(is at most)"),
+            (FilterContinuous.Greater, "大于(is greater than)"),
+            (FilterContinuous.GreaterEqual, "至少(is at least)"),
+            (FilterContinuous.Between, "介于(is between)"),
+            (FilterContinuous.Outside, "超出(is outside)"),
+            (FilterContinuous.IsDefined, "已定义(is defined)"),
         ],
         DiscreteVariable: [
-            (FilterDiscreteType.Equal, "is"),
-            (FilterDiscreteType.NotEqual, "is not"),
-            (FilterDiscreteType.In, "is one of"),
-            (FilterDiscreteType.IsDefined, "is defined")
+            (FilterDiscreteType.Equal, "是(is)"),
+            (FilterDiscreteType.NotEqual, "不是(is not)"),
+            (FilterDiscreteType.In, "是...中的一个(is one of)"),
+            (FilterDiscreteType.IsDefined, "已定义(is defined)")
         ],
         StringVariable: [
-            (FilterString.Equal, "equals"),
-            (FilterString.NotEqual, "is not"),
-            (FilterString.Less, "is before"),
-            (FilterString.LessEqual, "is equal or before"),
-            (FilterString.Greater, "is after"),
-            (FilterString.GreaterEqual, "is equal or after"),
-            (FilterString.Between, "is between"),
-            (FilterString.Outside, "is outside"),
-            (FilterString.Contains, "contains"),
-            (FilterString.StartsWith, "begins with"),
-            (FilterString.EndsWith, "ends with"),
-            (FilterString.IsDefined, "is defined"),
+            (FilterString.Equal, "等于(equals)"),
+            (FilterString.NotEqual, "不是(is not)"),
+            (FilterString.Less, "在...之前(is before)"),
+            (FilterString.LessEqual, "等于或早于(is equal or before)"),
+            (FilterString.Greater, "在之后(is after)"),
+            (FilterString.GreaterEqual, "等于或大于(is equal or after)"),
+            (FilterString.Between, "介于(is between)"),
+            (FilterString.Outside, "超出(is outside)"),
+            (FilterString.Contains, "包含(contains)"),
+            (FilterString.StartsWith, "以...开始(begins with)"),
+            (FilterString.EndsWith, "以...结尾(ends with)"),
+            (FilterString.IsDefined, "已定义(is defined)"),
         ]
     }
 
@@ -217,11 +220,11 @@ class OWSelectRows(widget.OWWidget):
 
     AllTypes = {}
     for _all_name, _all_type, _all_ops in (
-            ("All variables", 0,
+            ("所有变量", 0,
              [(None, "are defined")]),
-            ("All numeric variables", 2,
+            ("所有数值变量", 2,
              [(v, _plural(t)) for v, t in Operators[ContinuousVariable]]),
-            ("All string variables", 3,
+            ("所有字符串变量", 3,
              [(v, _plural(t)) for v, t in Operators[StringVariable]])):
         Operators[_all_name] = _all_ops
         AllTypes[_all_name] = _all_type
@@ -245,7 +248,7 @@ class OWSelectRows(widget.OWWidget):
             [list(self.AllTypes), DomainModel.Separator,
              DomainModel.CLASSES, DomainModel.ATTRIBUTES, DomainModel.METAS])
 
-        box = gui.vBox(self.controlArea, 'Conditions', stretch=100)
+        box = gui.vBox(self.controlArea, '条件', stretch=100)
         self.cond_list = QTableWidget(
             box, showGrid=False, selectionMode=QTableWidget.NoSelection)
         box.layout().addWidget(self.cond_list)
@@ -260,20 +263,21 @@ class OWSelectRows(widget.OWWidget):
 
         box2 = gui.hBox(box)
         gui.rubber(box2)
+        # TODO: button style
         self.add_button = gui.button(
-            box2, self, "Add Condition", callback=self.add_row)
+            box2, self, "添加条件", callback=self.add_row)
         self.add_all_button = gui.button(
-            box2, self, "Add All Variables", callback=self.add_all)
+            box2, self, "添加所有变量", callback=self.add_all)
         self.remove_all_button = gui.button(
-            box2, self, "Remove All", callback=self.remove_all)
+            box2, self, "删除全部", callback=self.remove_all)
         gui.rubber(box2)
 
         box_setting = gui.vBox(self.buttonsArea)
         self.cb_pa = gui.checkBox(
-            box_setting, self, "purge_attributes", "Remove unused features",
+            box_setting, self, "purge_attributes", "删除未使用的特征",
             callback=self.conditions_changed)
         self.cb_pc = gui.checkBox(
-            box_setting, self, "purge_classes", "Remove unused classes",
+            box_setting, self, "purge_classes", "删除未使用的分类",
             callback=self.conditions_changed)
 
         self.report_button.setFixedWidth(120)
@@ -317,9 +321,8 @@ class OWSelectRows(widget.OWWidget):
         if self.cond_list.rowCount():
             Mb = QMessageBox
             if Mb.question(
-                    self, "Remove existing filters",
-                    "This will replace the existing filters with "
-                    "filters for all variables.", Mb.Ok | Mb.Cancel) != Mb.Ok:
+                    self, "删除现有过滤器",
+                    "这将用所有变量的过滤器替换现有的过滤器。", Mb.Ok | Mb.Cancel) != Mb.Ok:
                 return
             self.remove_all()
         for attr in self.variable_model[len(self.AllTypes) + 1:]:

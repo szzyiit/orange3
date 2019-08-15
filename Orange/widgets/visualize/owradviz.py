@@ -33,7 +33,7 @@ MAX_LABEL_LEN = 16
 
 
 class RadvizVizRank(VizRankDialog, OWComponent):
-    captionTitle = "Score Plots"
+    captionTitle = "评分图(Score Plots)"
     n_attrs = Setting(3)
     minK = 10
 
@@ -53,7 +53,7 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         box = gui.hBox(self)
         max_n_attrs = min(MAX_DISPLAYED_VARS, len(master.model_selected))
         self.n_attrs_spin = gui.spin(
-            box, self, "n_attrs", 3, max_n_attrs, label="Maximum number of variables: ",
+            box, self, "n_attrs", 3, max_n_attrs, label="最大变量个数(Maximum number of variables): ",
             controlWidth=50, alignment=Qt.AlignRight, callback=self._n_attrs_changed)
         gui.rubber(box)
         self.last_run_n_attrs = None
@@ -311,7 +311,7 @@ class OWRadvizGraph(OWGraphWithAnchors):
 
 class OWRadviz(OWAnchorProjectionWidget):
     name = "Radviz"
-    description = "Display Radviz projection"
+    description = "显示RadViz投影"
     icon = "icons/Radviz.svg"
     priority = 241
     keywords = ["viz"]
@@ -337,7 +337,7 @@ class OWRadviz(OWAnchorProjectionWidget):
         self.model_selected.selection_changed.connect(
             self.__model_selected_changed)
         self.vizrank, self.btn_vizrank = RadvizVizRank.add_vizrank(
-            None, self, "Suggest features", self.vizrank_set_attrs)
+            None, self, "建议特征", self.vizrank_set_attrs)
         box.layout().addWidget(self.btn_vizrank)
         super()._add_controls()
 

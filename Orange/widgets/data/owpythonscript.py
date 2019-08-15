@@ -418,30 +418,31 @@ if TYPE_CHECKING:
 
 
 class OWPythonScript(OWWidget):
-    name = "Python Script"
-    description = "Write a Python script and run it on input data or models."
+    name = "python脚本(Python Script)"
+    description = "编写一个 python 脚本并在输入数据或模型上运行它。"
     icon = "icons/PythonScript.svg"
     priority = 3150
     keywords = ["file", "program", "function"]
 
     class Inputs:
-        data = Input("Data", Table, replaces=["in_data"],
+        data = Input("数据(Data)", Table, replaces=["in_data"],
                      default=True, multiple=True)
-        learner = Input("Learner", Learner, replaces=["in_learner"],
+        learner = Input("学习器(Learner)", Learner, replaces=["in_learner"],
                         default=True, multiple=True)
-        classifier = Input("Classifier", Model, replaces=["in_classifier"],
+        classifier = Input("分类器(Classifier)", Model, replaces=["in_classifier"],
                            default=True, multiple=True)
-        object = Input("Object", object, replaces=["in_object"],
+        object = Input("对象(Object)", object, replaces=["in_object"],
                        default=False, multiple=True)
 
     class Outputs:
-        data = Output("Data", Table, replaces=["out_data"])
-        learner = Output("Learner", Learner, replaces=["out_learner"])
-        classifier = Output("Classifier", Model, replaces=["out_classifier"])
-        object = Output("Object", object, replaces=["out_object"])
+        data = Output("数据(Data)", Table, replaces=["out_data"])
+        learner = Output("学习器(Learner)", Learner, replaces=["out_learner"])
+        classifier = Output("分类器(Classifier)", Model, replaces=["out_classifier"])
+        object = Output("对象(Object)", object, replaces=["out_object"])
 
     signal_names = ("data", "learner", "classifier", "object")
 
+    signal_names2 = ("数据", "学习器", "分类器", "对象")
     settings_version = 2
     scriptLibrary: 'List[_ScriptData]' = Setting([{
         "name": "Table from numpy",
@@ -472,13 +473,13 @@ class OWPythonScript(OWWidget):
 
         self._cachedDocuments = {}
 
-        self.infoBox = gui.vBox(self.controlArea, 'Info')
+        self.infoBox = gui.vBox(self.controlArea, '信息')
         gui.label(
             self.infoBox, self,
-            "<p>Execute python script.</p><p>Input variables:<ul><li> " +
-            "<li>".join(map("in_{0}, in_{0}s".format, self.signal_names)) +
-            "</ul></p><p>Output variables:<ul><li>" +
-            "<li>".join(map("out_{0}".format, self.signal_names)) +
+            "<p>执行python脚本.</p><p>输入变量:<ul><li> " +
+            "<li>".join(map("输入{0}, 输入{0}".format, self.signal_names2)) +
+            "</ul></p><p>输出变量:<ul><li>" +
+            "<li>".join(map("输出{0}".format, self.signal_names2)) +
             "</ul></p>"
         )
 
@@ -488,7 +489,7 @@ class OWPythonScript(OWWidget):
 
         self.libraryList.wrap(self.libraryListSource)
 
-        self.controlBox = gui.vBox(self.controlArea, 'Library')
+        self.controlBox = gui.vBox(self.controlArea, '库(Library)')
         self.controlBox.layout().setSpacing(1)
 
         self.libraryView = QListView(
@@ -517,17 +518,17 @@ class OWPythonScript(OWWidget):
         action.triggered.connect(self.onRemoveScript)
         w.addAction(action)
 
-        action = QAction("Update", self)
+        action = QAction("更新", self)
         action.setToolTip("Save changes in the editor to library")
         action.setShortcut(QKeySequence(QKeySequence.Save))
         action.triggered.connect(self.commitChangesToLibrary)
         w.addAction(action)
 
-        action = QAction("More", self, toolTip="More actions")
+        action = QAction("更多", self, toolTip="More actions")
 
-        new_from_file = QAction("Import Script from File", self)
-        save_to_file = QAction("Save Selected Script to File", self)
-        restore_saved = QAction("Undo Changes to Selected Script", self)
+        new_from_file = QAction("从文件导入脚本", self)
+        save_to_file = QAction("保存选定脚本到文件", self)
+        restore_saved = QAction("撤消对所选脚本的更改", self)
         save_to_file.setShortcut(QKeySequence(QKeySequence.SaveAs))
 
         new_from_file.triggered.connect(self.onAddScriptFromFile)
@@ -546,7 +547,7 @@ class OWPythonScript(OWWidget):
 
         self.controlBox.layout().addWidget(w)
 
-        self.execute_button = gui.button(self.buttonsArea, self, 'Run', callback=self.commit)
+        self.execute_button = gui.button(self.buttonsArea, self, '运行', callback=self.commit)
 
         run = QAction("Run script", self, triggered=self.commit,
                       shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_R))
@@ -558,7 +559,7 @@ class OWPythonScript(OWWidget):
         self.defaultFont = defaultFont = \
             "Monaco" if sys.platform == "darwin" else "Courier"
 
-        self.textBox = gui.vBox(self.splitCanvas, 'Python Script')
+        self.textBox = gui.vBox(self.splitCanvas, 'python 脚本')
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
 
@@ -572,7 +573,7 @@ class OWPythonScript(OWWidget):
         action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
         action.triggered.connect(self.saveScript)
 
-        self.consoleBox = gui.vBox(self.splitCanvas, 'Console')
+        self.consoleBox = gui.vBox(self.splitCanvas, '控制台')
         self.console = PythonConsole({}, self)
         self.consoleBox.layout().addWidget(self.console)
         self.console.document().setDefaultFont(QFont(defaultFont))

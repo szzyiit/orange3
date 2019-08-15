@@ -116,14 +116,14 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
         @property
         def name(self):
             return {self.ICON: '',
-                    self.NAME: 'Name',
-                    self.DISTRIBUTION: 'Distribution',
-                    self.CENTER: 'Mean',
-                    self.MEDIAN: 'Median',
-                    self.DISPERSION: 'Dispersion',
-                    self.MIN: 'Min.',
-                    self.MAX: 'Max.',
-                    self.MISSING: 'Missing',
+                    self.NAME: '名称',
+                    self.DISTRIBUTION: '分布',
+                    self.CENTER: '平均',
+                    self.MEDIAN: '中位数',
+                    self.DISPERSION: '分散',
+                    self.MIN: '最小.',
+                    self.MAX: '最大.',
+                    self.MISSING: '缺失',
                     }[self.value]
 
         @property
@@ -731,16 +731,16 @@ class DistributionDelegate(QStyledItemDelegate):
 
 
 class OWFeatureStatistics(widget.OWWidget):
-    name = 'Feature Statistics'
-    description = 'Show basic statistics for data features.'
+    name = '特征统计(Feature Statistics)'
+    description = '显示数据特征的基本统计信息。'
     icon = 'icons/FeatureStatistics.svg'
 
     class Inputs:
-        data = Input('Data', Table, default=True)
+        data = Input('数据(Data)', Table, default=True)
 
     class Outputs:
-        reduced_data = Output('Reduced Data', Table, default=True)
-        statistics = Output('Statistics', Table)
+        reduced_data = Output('选中的数据(Reduced Data)', Table, default=True)
+        statistics = Output('统计(Statistics)', Table)
 
     want_main_area = False
 
@@ -769,11 +769,11 @@ class OWFeatureStatistics(widget.OWWidget):
 
         self.color_var_model = DomainModel(
             valid_types=(ContinuousVariable, DiscreteVariable),
-            placeholder='None',
+            placeholder='无',
         )
         self.cb_color_var = gui.comboBox(
             self.buttonsArea, master=self, value='color_var', model=self.color_var_model,
-            label='Color:', orientation=Qt.Horizontal, contentsLength=13,
+            label='颜色:', orientation=Qt.Horizontal, contentsLength=13,
             searchable=True
         )
         self.cb_color_var.activated.connect(self.__color_var_changed)

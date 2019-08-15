@@ -37,8 +37,10 @@ class Place:
 class VarTableModel(QAbstractTableModel):
     DISCRETE_VALUE_DISPLAY_LIMIT = 20
 
-    places = "feature", "target", "meta", "skip"
-    typenames = "categorical", "numeric", "text", "datetime"
+    # places = "feature", "target", "meta", "skip"
+    # typenames = "categorical", "numeric", "text", "datetime"
+    places = '特征', '目标', '元数据', '忽略'
+    typenames = '分类数据', '数值数据', '文本数据', '时间数据'
     vartypes = DiscreteVariable, ContinuousVariable, StringVariable, TimeVariable
     name2type = dict(zip(typenames, vartypes))
     type2name = dict(zip(vartypes, typenames))
@@ -118,7 +120,7 @@ class VarTableModel(QAbstractTableModel):
 
     def headerData(self, i, orientation, role=Qt.DisplayRole):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and i < 4:
-            return ("Name", "Type", "Role", "Values")[i]
+            return ("名称", "类型", "作用", "取值")[i]
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft
         return super().headerData(i, orientation, role)

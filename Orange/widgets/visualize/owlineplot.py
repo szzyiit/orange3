@@ -23,7 +23,7 @@ from Orange.widgets.settings import (
     Setting, ContextSetting, DomainContextHandler
 )
 from Orange.widgets.utils.annotated_data import (
-    create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME
+    create_annotated_table, ANNOTATED_DATA_SIGNAL_Chinese_NAME
 )
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.plot import OWPlotGUI, SELECT, PANNING, ZOOMING
@@ -590,8 +590,8 @@ SEL_MAX_INSTANCES = 10000
 
 
 class OWLinePlot(OWWidget):
-    name = "Line Plot"
-    description = "Visualization of data profiles (e.g., time series)."
+    name = "折线图(Line Plot)"
+    description = "数据轮廓的可视化（例如，时间序列）。"
     icon = "icons/LinePlot.svg"
     priority = 180
 
@@ -599,12 +599,12 @@ class OWLinePlot(OWWidget):
     enable_selection = Signal(bool)
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        data_subset = Input("Data Subset", Table)
+        data = Input("数据(Data)", Table, default=True)
+        data_subset = Input("数据子集(Data Subset)", Table)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     settingsHandler = DomainContextHandler()
     group_var = ContextSetting(None)
@@ -658,24 +658,24 @@ class OWLinePlot(OWWidget):
         box.layout().addWidget(self.graph)
 
     def _add_controls(self):
-        displaybox = gui.widgetBox(self.controlArea, "Display")
-        gui.checkBox(displaybox, self, "show_profiles", "Lines",
+        displaybox = gui.widgetBox(self.controlArea, "显示")
+        gui.checkBox(displaybox, self, "show_profiles", "线",
                      callback=self.__show_profiles_changed,
                      tooltip="Plot lines")
-        gui.checkBox(displaybox, self, "show_range", "Range",
+        gui.checkBox(displaybox, self, "show_range", "范围",
                      callback=self.__show_range_changed,
                      tooltip="Plot range between 10th and 90th percentile")
-        gui.checkBox(displaybox, self, "show_mean", "Mean",
+        gui.checkBox(displaybox, self, "show_mean", "平均",
                      callback=self.__show_mean_changed,
                      tooltip="Plot mean curve")
-        gui.checkBox(displaybox, self, "show_error", "Error bars",
+        gui.checkBox(displaybox, self, "show_error", "误差线",
                      callback=self.__show_error_changed,
                      tooltip="Show standard deviation")
 
         self.group_vars = DomainModel(
-            placeholder="None", separators=False, valid_types=DiscreteVariable)
+            placeholder="无", separators=False, valid_types=DiscreteVariable)
         self.group_view = gui.listView(
-            self.controlArea, self, "group_var", box="Group by",
+            self.controlArea, self, "group_var", box="分组依据",
             model=self.group_vars, callback=self.__group_var_changed,
             sizeHint=QSize(30, 100), viewType=ListViewSearch,
             sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Expanding)
