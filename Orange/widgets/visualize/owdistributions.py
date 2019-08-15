@@ -17,7 +17,8 @@ from Orange.preprocess.discretize import decimal_binnings, time_binnings, \
 from Orange.statistics import distribution, contingency
 from Orange.widgets import gui, settings
 from Orange.widgets.utils.annotated_data import \
-    create_groups_table, create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME
+    create_groups_table, create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME, \
+    ANNOTATED_DATA_SIGNAL_Chinese_NAME
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.utils.state_summary import format_summary_details
@@ -246,19 +247,19 @@ class ElidedAxisNoUnits(ElidedLabelsAxis):
 
 
 class OWDistributions(OWWidget):
-    name = "Distributions"
-    description = "Display value distributions of a data feature in a graph."
+    name = "分布(Distributions)"
+    description = "在图形中显示数据特征的值分布。"
     icon = "icons/Distribution.svg"
     priority = 120
     keywords = ["histogram"]
 
     class Inputs:
-        data = Input("Data", Table, doc="Set the input dataset")
+        data = Input("数据(Data)", Table, doc="Set the input dataset")
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
-        histogram_data = Output("Histogram Data", Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        histogram_data = Output("直方图数据(Histogram Data)", Table)
 
     class Error(OWWidget.Error):
         no_defined_values_var = \
@@ -290,14 +291,14 @@ class OWDistributions(OWWidget):
 
     Fitters = (
         ("None", None, (), ()),
-        ("Normal", norm, ("loc", "scale"), ("μ", "σ")),
+        ("正态分布", norm, ("loc", "scale"), ("μ", "σ")),
         ("Beta", beta, ("a", "b", "loc", "scale"),
          ("α", "β", "-loc", "-scale")),
         ("Gamma", gamma, ("a", "loc", "scale"), ("α", "β", "-loc", "-scale")),
         ("Rayleigh", rayleigh, ("loc", "scale"), ("-loc", "σ")),
         ("Pareto", pareto, ("b", "loc", "scale"), ("α", "-loc", "-scale")),
-        ("Exponential", expon, ("loc", "scale"), ("-loc", "λ")),
-        ("Kernel density", AshCurve, ("a",), ("",))
+        ("指数分布(Exponential)", expon, ("loc", "scale"), ("-loc", "λ")),
+        ("核密度(Kernel density)", AshCurve, ("a",), ("",))
     )
 
     DragNone, DragAdd, DragRemove = range(3)
@@ -317,7 +318,7 @@ class OWDistributions(OWWidget):
         self._user_var_bins = {}
 
         varview = gui.listView(
-            self.controlArea, self, "var", box="Variable",
+            self.controlArea, self, "var", box="变量",
             model=DomainModel(valid_types=DomainModel.PRIMITIVE,
                               separators=False),
             callback=self._on_var_changed,
@@ -327,10 +328,10 @@ class OWDistributions(OWWidget):
             varview.box, self, "sort_by_freq", "Sort categories by frequency",
             callback=self._on_sort_by_freq, stateWhenDisabled=False)
 
-        box = self.continuous_box = gui.vBox(self.controlArea, "Distribution")
+        box = self.continuous_box = gui.vBox(self.controlArea, "分布")
         slider = gui.hSlider(
             box, self, "number_of_bins",
-            label="Bin width", orientation=Qt.Horizontal,
+            label="Bin 宽度", orientation=Qt.Horizontal,
             minValue=0, maxValue=max(1, len(self.binnings) - 1),
             createLabel=False, callback=self._on_bins_changed)
         self.bin_width_label = gui.widgetLabel(slider.box)
@@ -338,31 +339,31 @@ class OWDistributions(OWWidget):
         self.bin_width_label.setAlignment(Qt.AlignRight)
         slider.sliderReleased.connect(self._on_bin_slider_released)
         gui.comboBox(
-            box, self, "fitted_distribution", label="Fitted distribution",
+            box, self, "fitted_distribution", label="拟合分布",
             orientation=Qt.Horizontal, items=(name[0] for name in self.Fitters),
             callback=self._on_fitted_dist_changed)
         self.smoothing_box = gui.indentedBox(box, 40)
         gui.hSlider(
             self.smoothing_box, self, "kde_smoothing",
-            label="Smoothing", orientation=Qt.Horizontal,
+            label="平滑化", orientation=Qt.Horizontal,
             minValue=2, maxValue=20, callback=self.replot)
         gui.checkBox(
-            box, self, "hide_bars", "Hide bars", stateWhenDisabled=False,
+            box, self, "hide_bars", "隐藏柱子", stateWhenDisabled=False,
             callback=self._on_hide_bars_changed,
             disabled=not self.fitted_distribution)
 
-        box = gui.vBox(self.controlArea, "Columns")
+        box = gui.vBox(self.controlArea, "列")
         gui.comboBox(
-            box, self, "cvar", label="Split by", orientation=Qt.Horizontal,
+            box, self, "cvar", label="由...分割", orientation=Qt.Horizontal,
             searchable=True,
             model=DomainModel(placeholder="(None)",
                               valid_types=(DiscreteVariable), ),
             callback=self._on_cvar_changed, contentsLength=18)
         gui.checkBox(
-            box, self, "stacked_columns", "Stack columns",
+            box, self, "stacked_columns", "堆叠列",
             callback=self.replot)
         gui.checkBox(
-            box, self, "show_probs", "Show probabilities",
+            box, self, "show_probs", "显示概率",
             callback=self._on_show_probabilities_changed)
         gui.checkBox(
             box, self, "cumulative_distr", "Show cumulative distribution",
@@ -516,11 +517,11 @@ class OWDistributions(OWWidget):
     def _on_show_probabilities_changed(self):
         label = self.controls.fitted_distribution.label
         if self.show_probs:
-            label.setText("Fitted probability")
+            label.setText("拟合概率")
             label.setToolTip(
                 "Chosen distribution is used to compute Bayesian probabilities")
         else:
-            label.setText("Fitted distribution")
+            label.setText("拟合分布")
             label.setToolTip("")
         self.replot()
 

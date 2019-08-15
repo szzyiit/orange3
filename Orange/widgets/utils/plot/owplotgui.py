@@ -141,7 +141,7 @@ class VariablesDelegate(QStyledItemDelegate):
         full_selection = index.model().sourceModel().is_full()
         if option.state & QStyle.State_MouseOver:
             if not full_selection or (full_selection and is_selected):
-                txt = [" Add ", " Remove "][is_selected]
+                txt = [" 添加 ", " 删除 "][is_selected]
                 txtw = painter.fontMetrics().width(txt)
                 painter.save()
                 painter.setPen(Qt.NoPen)
@@ -463,12 +463,12 @@ class OWPlotGUI:
         self._master = master
         self._plot = master.graph
         self.color_model = DomainModel(
-            placeholder="(Same color)", valid_types=DomainModel.PRIMITIVE)
+            placeholder="(相同的颜色)", valid_types=DomainModel.PRIMITIVE)
         self.shape_model = DomainModel(
-            placeholder="(Same shape)", valid_types=DiscreteVariable)
+            placeholder="(相同形状)", valid_types=DiscreteVariable)
         self.size_model = DomainModel(
-            placeholder="(Same size)", valid_types=ContinuousVariable)
-        self.label_model = DomainModel(placeholder="(No labels)")
+            placeholder="(相同大小)", valid_types=ContinuousVariable)
+        self.label_model = DomainModel(placeholder="(没有标签)")
         self.points_models = [self.color_model, self.shape_model,
                               self.size_model, self.label_model]
 
@@ -534,10 +534,10 @@ class OWPlotGUI:
     ]
 
     _buttons = {
-        Zoom: ('Zoom', 'state', ZOOMING, None, 'Dlg_zoom'),
-        ZoomReset: ('Reset zoom', None, None, None, 'Dlg_zoom_reset'),
-        Pan: ('Pan', 'state', PANNING, None, 'Dlg_pan_hand'),
-        SimpleSelect: ('Select', 'state', SELECT, None, 'Dlg_arrow'),
+        Zoom: ('缩放', 'state', ZOOMING, None, 'Dlg_zoom'),
+        ZoomReset: ('重置缩放', None, None, None, 'Dlg_zoom_reset'),
+        Pan: ('抓取', 'state', PANNING, None, 'Dlg_pan_hand'),
+        SimpleSelect: ('选择', 'state', SELECT, None, 'Dlg_arrow'),
         Select: ('Select', 'state', SELECT, None, 'Dlg_arrow'),
         SelectionAdd: ('Add to selection', 'selection_behavior', SELECTION_ADD, None,
                        'Dlg_select_add'),
@@ -599,7 +599,7 @@ class OWPlotGUI:
         '''
         self._check_box(widget, 'use_antialiasing', 'Use antialiasing', 'update_antialiasing')
 
-    def jitter_size_slider(self, widget, label="Jittering: "):
+    def jitter_size_slider(self, widget, label="抖动: "):
         return self.add_control(
             widget, gui.valueSlider, label,
             master=self._plot, value='jitter_size',
@@ -616,38 +616,38 @@ class OWPlotGUI:
         '''
             Creates a check box that shows and hides the plot legend
         '''
-        self._check_box(widget, 'show_legend', 'Show legend',
+        self._check_box(widget, 'show_legend', '显示图例',
                         'update_legend_visibility')
 
     def tooltip_shows_all_check_box(self, widget):
         gui.checkBox(
             widget=widget, master=self._master, value="tooltip_shows_all",
-            label='Show all data on mouse hover')
+            label='鼠标悬停时显示所有数据')
 
     def class_density_check_box(self, widget):
         self._master.cb_class_density = \
             self._check_box(widget=widget, value="class_density",
-                            label="Show color regions",
+                            label="显示颜色区域",
                             cb_name=self._plot.update_density,
                             stateWhenDisabled=False)
 
     def regression_line_check_box(self, widget):
         self._master.cb_reg_line = \
             self._check_box(widget=widget, value="show_reg_line",
-                            label="Show regression line",
+                            label="显示回归线",
                             cb_name=self._plot.update_regression_line)
 
     def label_only_selected_check_box(self, widget):
         self._check_box(widget=widget, value="label_only_selected",
-                        label="Label only selection and subset",
+                        label="仅标记所选内容和子集",
                         cb_name=self._plot.update_labels)
 
     def filled_symbols_check_box(self, widget):
-        self._check_box(widget, 'show_filled_symbols', 'Show filled symbols',
+        self._check_box(widget, 'show_filled_symbols', '显示填充符号',
                         'update_filled_symbols')
 
     def grid_lines_check_box(self, widget):
-        self._check_box(widget, 'show_grid', 'Show gridlines',
+        self._check_box(widget, 'show_grid', '显示网格线',
                         'update_grid_visibility')
 
     def animations_check_box(self, widget):
@@ -676,13 +676,13 @@ class OWPlotGUI:
             maxValue=max_value, step=step, createLabel=show_number,
             callback=self._get_callback(cb_name, self._master))
 
-    def point_size_slider(self, widget, label="Symbol size: "):
+    def point_size_slider(self, widget, label="符号大小: "):
         '''
             Creates a slider that controls point size
         '''
         return self._slider(widget, 'point_width', label, 1, 20, 1, 'sizes_changed')
 
-    def alpha_value_slider(self, widget, label="Opacity: "):
+    def alpha_value_slider(self, widget, label="不透明度: "):
         '''
             Creates a slider that controls point transparency
         '''
@@ -697,22 +697,22 @@ class OWPlotGUI:
             sendSelectedValue=True, contentsLength=12,
             labelWidth=50, searchable=True)
 
-    def color_value_combo(self, widget, label="Color: "):
+    def color_value_combo(self, widget, label="颜色: "):
         """Creates a combo box that controls point color"""
         self._combo(widget, "attr_color", label, "colors_changed",
                     model=self.color_model)
 
-    def shape_value_combo(self, widget, label="Shape: "):
+    def shape_value_combo(self, widget, label="形状: "):
         """Creates a combo box that controls point shape"""
         self._combo(widget, "attr_shape", label, "shapes_changed",
                     model=self.shape_model)
 
-    def size_value_combo(self, widget, label="Size: "):
+    def size_value_combo(self, widget, label="大小: "):
         """Creates a combo box that controls point size"""
         self._combo(widget, "attr_size", label, "sizes_changed",
                     model=self.size_model)
 
-    def label_value_combo(self, widget, label="Label: "):
+    def label_value_combo(self, widget, label="标签: "):
         """Creates a combo box that controls point label"""
         self._combo(widget, "attr_label", label, "labels_changed",
                     model=self.label_model)
@@ -910,7 +910,7 @@ class OWPlotGUI:
         return c
 
     def box_zoom_select(self, parent):
-        box_zoom_select = gui.vBox(parent, "Zoom/Select")
+        box_zoom_select = gui.vBox(parent, "缩放/选择")
         zoom_select_toolbar = self.zoom_select_toolbar(
             box_zoom_select, nomargin=True,
             buttons=[self.StateButtonsBegin,

@@ -8,9 +8,8 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
 class OWNaiveBayes(OWBaseLearner):
-    name = "Naive Bayes"
-    description = "A fast and simple probabilistic classifier based on " \
-                  "Bayes' theorem with the assumption of feature independence."
+    name = "朴素贝叶斯(Naive Bayes)"
+    description = "特征独立假设基础上, 基于贝叶斯定理的的快速简单的概率分类器"
     icon = "icons/NaiveBayes.svg"
     replaces = [
         "Orange.widgets.classify.ownaivebayes.OWNaiveBayes",

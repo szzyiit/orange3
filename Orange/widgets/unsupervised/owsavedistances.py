@@ -4,9 +4,9 @@ from Orange.widgets.utils.save.owsavebase import OWSaveBase
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
-class OWSaveDistances(OWSaveBase):
-    name = "Save Distance Matrix"
-    description = "Save distance matrix to an output file."
+class OWSaveDistances(widget.OWWidget):
+    name = "保存距离矩阵(Save Distance Matrix)"
+    description = "将距离矩阵保存到输出文件。"
     icon = "icons/SaveDistances.svg"
     keywords = ["distance matrix", "save"]
 
@@ -17,7 +17,7 @@ class OWSaveDistances(OWSaveBase):
         part_not_saved = Msg("Data associated with {} was not saved.")
 
     class Inputs:
-        distances = Input("Distances", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
 
     @Inputs.distances
     def set_distances(self, data):

@@ -51,11 +51,11 @@ ScoreMeta = namedtuple("score_meta", ["name", "shortname", "scorer", 'problem_ty
 
 # Default scores.
 CLS_SCORES = [
-    ScoreMeta("Information Gain", "Info. gain",
+    ScoreMeta("信息增益(Information Gain)", "信息增益",
               score.InfoGain, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("Information Gain Ratio", "Gain ratio",
+    ScoreMeta("信息增益比(Information Gain Ratio)", "增益比",
               score.GainRatio, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("Gini Decrease", "Gini",
+    ScoreMeta("基尼下降(Gini Decrease)", "基尼",
               score.Gini, ProblemType.CLASSIFICATION, True),
     ScoreMeta("ANOVA", "ANOVA",
               score.ANOVA, ProblemType.CLASSIFICATION, False),
@@ -67,7 +67,7 @@ CLS_SCORES = [
               score.FCBF, ProblemType.CLASSIFICATION, False)
 ]
 REG_SCORES = [
-    ScoreMeta("Univariate Regression", "Univar. reg.",
+    ScoreMeta("单变量回归(Univariate Regression)", "单变量回归",
               score.UnivariateLinearRegression, ProblemType.REGRESSION, True),
     ScoreMeta("RReliefF", "RReliefF",
               score.RReliefF, ProblemType.REGRESSION, True)
@@ -240,8 +240,8 @@ def run(
 
 
 class OWRank(OWWidget, ConcurrentWidgetMixin):
-    name = "Rank"
-    description = "Rank and filter data features by their relevance."
+    name = "排名(Rank)"
+    description = "根据数据特征的相关性对其进行排名和筛选。"
     icon = "icons/Rank.svg"
     priority = 1102
     keywords = []
@@ -249,13 +249,13 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
-        data = Input("Data", Table)
-        scorer = Input("Scorer", score.Scorer, multiple=True)
+        data = Input("数据(Data)", Table)
+        scorer = Input("评分器(Scorer)", score.Scorer, multiple=True)
 
     class Outputs:
-        reduced_data = Output("Reduced Data", Table, default=True)
-        scores = Output("Scores", Table)
-        features = Output("Features", AttributeList, dynamic=False)
+        reduced_data = Output("选中的数据(Reduced Data)", Table, default=True)
+        scores = Output("分数(Scores)", Table)
+        features = Output("特征(Features)", AttributeList, dynamic=False)
 
     SelectNone, SelectAll, SelectManual, SelectNBest = range(4)
 
@@ -320,7 +320,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         for scoring_methods in (CLS_SCORES,
                                 REG_SCORES,
                                 []):
-            box = gui.vBox(None, "Scoring Methods" if scoring_methods else None)
+            box = gui.vBox(None, "评分方法(Scoring Methods)" if scoring_methods else None)
             stacked.addWidget(box)
             for method in scoring_methods:
                 box.layout().addWidget(QCheckBox(
@@ -333,7 +333,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         gui.rubber(self.controlArea)
         self.switchProblemType(ProblemType.CLASSIFICATION)
 
-        selMethBox = gui.vBox(self.controlArea, "Select Attributes", addSpace=True)
+        selMethBox = gui.vBox(self.controlArea, "选择属性", addSpace=True)
 
         grid = QGridLayout()
         grid.setContentsMargins(6, 0, 6, 0)
@@ -347,10 +347,10 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
                 b.setToolTip(toolTip)
             return b
 
-        b1 = button(self.tr("None"), OWRank.SelectNone)
-        b2 = button(self.tr("All"), OWRank.SelectAll)
-        b3 = button(self.tr("Manual"), OWRank.SelectManual)
-        b4 = button(self.tr("Best ranked:"), OWRank.SelectNBest)
+        b1 = button(self.tr("无"), OWRank.SelectNone)
+        b2 = button(self.tr("所有"), OWRank.SelectAll)
+        b3 = button(self.tr("手动"), OWRank.SelectManual)
+        b4 = button(self.tr("最佳排名:"), OWRank.SelectNBest)
 
         s = gui.spin(selMethBox, self, "nSelected", 1, 999,
                      callback=lambda: self.setSelectionMethod(OWRank.SelectNBest))

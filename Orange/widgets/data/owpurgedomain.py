@@ -12,18 +12,17 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWPurgeDomain(widget.OWWidget):
-    name = "Purge Domain"
-    description = "Remove redundant values and features from the dataset. " \
-                  "Sort values."
+    name = "清除列(Purge Domain)"
+    description = "从数据集中删除冗余值和特征,对值进行排序。"
     icon = "icons/PurgeDomain.svg"
     category = "Data"
     keywords = ["remove", "delete", "unused"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        data = Output("Data", Table)
+        data = Output("数据(Data)", Table)
 
     removeValues = Setting(1)
     removeAttributes = Setting(1)
@@ -39,25 +38,25 @@ class OWPurgeDomain(widget.OWWidget):
     resizing_enabled = False
     buttons_area_orientation = Qt.Vertical
 
-    feature_options = (('sortValues', 'Sort categorical feature values'),
-                       ('removeValues', 'Remove unused feature values'),
-                       ('removeAttributes', 'Remove constant features'))
+    feature_options = (('sortValues', '分类特征值排序'),
+                       ('removeValues', '删除未使用的特征值'),
+                       ('removeAttributes', '删除常数特征'))
 
-    class_options = (('sortClasses', 'Sort categorical class values'),
-                     ('removeClasses', 'Remove unused class variable values'),
-                     ('removeClassAttribute', 'Remove constant class variables'))
+    class_options = (('sortClasses', '分类值排序'),
+                     ('removeClasses', '删除未使用的类别'),
+                     ('removeClassAttribute', '移除常数类别'))
 
-    meta_options = (('removeMetaAttributeValues', 'Remove unused meta attribute values'),
-                    ('removeMetaAttributes', 'Remove constant meta attributes'))
+    meta_options = (('removeMetaAttributeValues', '删除未使用的元属性值'),
+                    ('removeMetaAttributes', '移除常数元属性'))
 
-    stat_labels = (('Sorted features', 'resortedAttrs'),
-                   ('Reduced features', 'reducedAttrs'),
-                   ('Removed features', 'removedAttrs'),
-                   ('Sorted classes', 'resortedClasses'),
-                   ('Reduced classes', 'reducedClasses'),
-                   ('Removed classes', 'removedClasses'),
-                   ('Reduced metas', 'reducedMetas'),
-                   ('Removed metas', 'removedMetas'))
+    stat_labels = (('已排序的特征', 'resortedAttrs'),
+                   ('减少的特征', 'reducedAttrs'),
+                   ('删除的特征', 'removedAttrs'),
+                   ('已排序的类别', 'resortedClasses'),
+                   ('减少的分类', 'reducedClasses'),
+                   ('删除的类别', 'removedClasses'),
+                   ('减少的元属性', 'reducedMetas'),
+                   ('删除的元属性', 'removedMetas'))
 
     def __init__(self):
         super().__init__()
@@ -80,7 +79,7 @@ class OWPurgeDomain(widget.OWWidget):
             parent.layout().addWidget(frame)
             parent.layout().addSpacing(6)
 
-        boxAt = gui.vBox(self.controlArea, "Features")
+        boxAt = gui.vBox(self.controlArea, "特征")
         for not_first, (value, label) in enumerate(self.feature_options):
             if not_first:
                 gui.separator(boxAt, 2)
@@ -91,7 +90,7 @@ class OWPurgeDomain(widget.OWWidget):
                   "Sorted: %(resortedAttrs)s, "
                   "reduced: %(reducedAttrs)s, removed: %(removedAttrs)s")
 
-        boxAt = gui.vBox(self.controlArea, "Classes", addSpace=True)
+        boxAt = gui.vBox(self.controlArea, "类别(Classes)", addSpace=True)
         for not_first, (value, label) in enumerate(self.class_options):
             if not_first:
                 gui.separator(boxAt, 2)
@@ -102,7 +101,7 @@ class OWPurgeDomain(widget.OWWidget):
                   "Sorted: %(resortedClasses)s,"
                   "reduced: %(reducedClasses)s, removed: %(removedClasses)s")
 
-        boxAt = gui.vBox(self.controlArea, "Meta attributes", addSpace=True)
+        boxAt = gui.vBox(self.controlArea, "元属性", addSpace=True)
         for not_first, (value, label) in enumerate(self.meta_options):
             if not_first:
                 gui.separator(boxAt, 2)
@@ -110,7 +109,7 @@ class OWPurgeDomain(widget.OWWidget):
                          callback=self.optionsChanged)
         add_line(boxAt)
         gui.label(boxAt, self,
-                  "Reduced: %(reducedMetas)s, removed: %(removedMetas)s")
+                  "减少了: %(reducedMetas)s, 删除了: %(removedMetas)s")
 
         gui.auto_send(self.buttonsArea, self, "autoSend")
         gui.rubber(self.controlArea)

@@ -9,16 +9,16 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWDistanceTransformation(widget.OWWidget):
-    name = "Distance Transformation"
-    description = "Transform distances according to selected criteria."
+    name = "距离变换(Distance Transformation)"
+    description = "根据所选标准变换距离。"
     icon = "icons/DistancesTransformation.svg"
     keywords = []
 
     class Inputs:
-        distances = Input("Distances", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix)
 
     class Outputs:
-        distances = Output("Distances", DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
 
     want_main_area = False
     resizing_enabled = False
@@ -34,12 +34,25 @@ class OWDistanceTransformation(widget.OWWidget):
         ("To interval [-1, 1]", lambda x: scale(x, min=-1, max=1)),
         ("Sigmoid function: 1/(1+exp(-X))", lambda x: 1/(1+np.exp(-x))),
     )
+    Chinese_normalization_options = (
+        ("无归一化", lambda x: x),
+        ("到间隔[0，1]", lambda x: scale(x, min=0, max=1)),
+        ("到间隔[-1，1]", lambda x: scale(x, min=-1, max=1)),
+        ("Sigmoid函数: 1/(1+exp(-X))", lambda x: 1/(1+np.exp(-x))),
+    )
 
     inversion_options = (
         ("No inversion", lambda x: x),
         ("-X", lambda x: -x),
         ("1 - X", lambda x: 1-x),
         ("max(X) - X", lambda x: np.max(x) - x),
+        ("1/X", lambda x: 1/x),
+    )
+    Chinese_inversion_options = (
+        ("无反转", lambda x: x),
+        ("-X", lambda x: -x),
+        ("1 - X", lambda x: 1-x),
+        ("最大值(X) - X", lambda x: np.max(x) - x),
         ("1/X", lambda x: 1/x),
     )
 
@@ -49,13 +62,13 @@ class OWDistanceTransformation(widget.OWWidget):
         self.data = None
 
         gui.radioButtons(self.controlArea, self, "normalization_method",
-                         box="Normalization",
-                         btnLabels=[x[0] for x in self.normalization_options],
+                         box="归一化",
+                         btnLabels=[x[0] for x in self.Chinese_normalization_options],
                          callback=self._invalidate)
 
         gui.radioButtons(self.controlArea, self, "inversion_method",
-                         box="Inversion",
-                         btnLabels=[x[0] for x in self.inversion_options],
+                         box="反转",
+                         btnLabels=[x[0] for x in self.Chinese_inversion_options],
                          callback=self._invalidate)
 
         gui.auto_apply(self.controlArea, self, "autocommit")

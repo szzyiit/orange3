@@ -208,8 +208,8 @@ def variables_filter(model, parent=None, accepted_type=Orange.data.Variable,
     original_completer_items = []
 
     filter_edit = QLineEdit()
-    filter_edit.setToolTip("Filter the list of available variables.")
-    filter_edit.setPlaceholderText("Filter")
+    filter_edit.setToolTip("过滤可用变量列表.")
+    filter_edit.setPlaceholderText("过滤")
 
     completer_model = QStringListModel()
     completer = QCompleter(completer_model, filter_edit)

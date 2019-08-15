@@ -2,9 +2,9 @@
 Widgets from Evaluate category
 
 """
-NAME = "Evaluate"
+NAME = "评估(Evaluate)"
 
-DESCRIPTION = "Evaluate classification/regression performance."
+DESCRIPTION = "评估分类/回归性能."
 
 BACKGROUND = "#C3F3F3"
 

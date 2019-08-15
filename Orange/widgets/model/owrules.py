@@ -208,8 +208,8 @@ class CustomRuleLearner(_RuleLearner):
 
 
 class OWRuleLearner(OWBaseLearner):
-    name = "CN2 Rule Induction"
-    description = "Induce rules from data using CN2 algorithm."
+    name = "CN2 规则归纳(CN2 Rule Induction)"
+    description = "使用 CN2 算法从数据中归纳规则。"
     icon = "icons/CN2RuleInduction.svg"
     replaces = [
         "Orange.widgets.classify.owrules.OWRuleLearner",
@@ -246,19 +246,19 @@ class OWRuleLearner(OWBaseLearner):
         # top-level control procedure
         top_box = gui.hBox(widget=self.controlArea, box=None, addSpace=2)
 
-        rule_ordering_box = gui.hBox(widget=top_box, box="Rule ordering")
+        rule_ordering_box = gui.hBox(widget=top_box, box="规则排序")
         rule_ordering_rbs = gui.radioButtons(
             widget=rule_ordering_box, master=self, value="rule_ordering",
-            callback=self.settings_changed, btnLabels=("Ordered", "Unordered"))
+            callback=self.settings_changed, btnLabels=("有序的", "无序的"))
         rule_ordering_rbs.layout().setSpacing(7)
 
         covering_algorithm_box = gui.hBox(
-            widget=top_box, box="Covering algorithm")
+            widget=top_box, box="覆盖算法(Covering algorithm)")
         covering_algorithm_rbs = gui.radioButtons(
             widget=covering_algorithm_box, master=self,
             value="covering_algorithm",
             callback=self.settings_changed,
-            btnLabels=("Exclusive", "Weighted"))
+            btnLabels=("互斥的(Exclusive)", "加权(Weighted)"))
         covering_algorithm_rbs.layout().setSpacing(7)
 
         insert_gamma_box = gui.vBox(widget=covering_algorithm_box, box=None)
@@ -270,45 +270,45 @@ class OWRuleLearner(OWBaseLearner):
             enabled=self.storage_covers[self.covering_algorithm] == "weighted")
 
         # bottom-level search procedure (search bias)
-        middle_box = gui.vBox(widget=self.controlArea, box="Rule search")
+        middle_box = gui.vBox(widget=self.controlArea, box="规则搜索")
 
         gui.comboBox(
             widget=middle_box, master=self, value="evaluation_measure",
-            label="Evaluation measure:", orientation=Qt.Horizontal,
-            items=("Entropy", "Laplace accuracy", "WRAcc"),
+            label="评价措施:", orientation=Qt.Horizontal,
+            items=("熵值(Entropy)", "拉普拉斯精度(Laplace accuracy)", "WRAcc"),
             callback=self.settings_changed, contentsLength=3)
 
         gui.spin(
             widget=middle_box, master=self, value="beam_width", minv=1,
-            maxv=100, step=1, label="Beam width:", orientation=Qt.Horizontal,
+            maxv=100, step=1, label="集束宽度(Beam width):", orientation=Qt.Horizontal,
             callback=self.settings_changed, alignment=Qt.AlignRight,
             controlWidth=80)
 
         # bottom-level search procedure (over-fitting avoidance bias)
-        bottom_box = gui.vBox(widget=self.controlArea, box="Rule filtering")
+        bottom_box = gui.vBox(widget=self.controlArea, box="规则筛选")
 
         gui.spin(
             widget=bottom_box, master=self, value="min_covered_examples", minv=1,
-            maxv=10000, step=1, label="Minimum rule coverage:",
+            maxv=10000, step=1, label="最小规则覆盖范围:",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80)
 
         gui.spin(
             widget=bottom_box, master=self, value="max_rule_length",
-            minv=1, maxv=100, step=1, label="Maximum rule length:",
+            minv=1, maxv=100, step=1, label="最大规则长度:",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80)
 
         gui.doubleSpin(
             widget=bottom_box, master=self, value="default_alpha", minv=0.0,
-            maxv=1.0, step=0.01, label="Statistical significance\n(default α):",
+            maxv=1.0, step=0.01, label="统计显著性\n(默认 α):",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80,
             checked="checked_default_alpha")
 
         gui.doubleSpin(
             widget=bottom_box, master=self, value="parent_alpha", minv=0.0,
-            maxv=1.0, step=0.01, label="Relative significance\n(parent α):",
+            maxv=1.0, step=0.01, label="相对显著性\n(父 α):",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80,
             checked="checked_parent_alpha")

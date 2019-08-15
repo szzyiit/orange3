@@ -136,17 +136,17 @@ class ValueFromDiscreteSubstring(Lookup):
 
 
 class OWCreateClass(widget.OWWidget):
-    name = "Create Class"
-    description = "Create class attribute from a string attribute"
+    name = "创建类别(Create Class)"
+    description = "从字符串属性创类别属性"
     icon = "icons/CreateClass.svg"
     category = "Data"
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        data = Output("Data", Table)
+        data = Output("数据(Data)", Table)
 
     want_main_area = False
 
@@ -191,7 +191,7 @@ class OWCreateClass(widget.OWWidget):
         self.counts = []
 
         combo = gui.comboBox(
-            self.controlArea, self, "attribute", label="From column: ",
+            self.controlArea, self, "attribute", label="来自列: ",
             box=True, orientation=Qt.Horizontal, searchable=True,
             callback=self.update_rules,
             model=DomainModel(valid_types=(StringVariable, DiscreteVariable)))
@@ -214,27 +214,27 @@ class OWCreateClass(widget.OWWidget):
         self.rules_box.setColumnStretch(0, 1)
         self.rules_box.setColumnStretch(1, 1)
         self.rules_box.setColumnStretch(2, 100)
-        rules_box.addWidget(QLabel("Name"), 0, 1)
-        rules_box.addWidget(QLabel("Substring"), 0, 2)
-        rules_box.addWidget(QLabel("#Instances"), 0, 3, 1, 2)
+        rules_box.addWidget(QLabel("名称"), 0, 1)
+        rules_box.addWidget(QLabel("子字符串"), 0, 2)
+        rules_box.addWidget(QLabel("实例数目"), 0, 3, 1, 2)
         self.update_rules()
 
         gui.lineEdit(
             self.controlArea, self, "class_name",
-            label="Name for the new class:",
+            label="新分类名称:",
             box=True, orientation=Qt.Horizontal)
 
         optionsbox = gui.vBox(self.controlArea, box=True)
         gui.checkBox(
-            optionsbox, self, "match_beginning", "Match only at the beginning",
+            optionsbox, self, "match_beginning", "只在开头匹配",
             callback=self.options_changed)
         gui.checkBox(
-            optionsbox, self, "case_sensitive", "Case sensitive",
+            optionsbox, self, "case_sensitive", "区分大小写",
             callback=self.options_changed)
 
         box = gui.hBox(self.controlArea)
         gui.rubber(box)
-        gui.button(box, self, "Apply", autoDefault=False, width=180,
+        gui.button(box, self, "应用", autoDefault=False, width=180,
                    callback=self.apply)
 
         self.info.set_input_summary(self.info.NoInput)
@@ -456,7 +456,7 @@ class OWCreateClass(widget.OWWidget):
             for n_matched, (_, patt) in zip(matches, self.line_edits):
                 if not patt.text():
                     patt.setPlaceholderText(
-                        "(remaining instances)" if n_matched else "(unused)")
+                        "(剩余实例)" if n_matched else "(未使用)")
 
             labels = self.class_labels()
             for label, (lab_edit, _) in zip(labels, self.line_edits):

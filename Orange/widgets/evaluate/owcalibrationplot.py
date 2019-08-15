@@ -31,35 +31,30 @@ MetricDefinition = namedtuple(
     ("name", "functions", "short_names", "explanation"))
 
 Metrics = [MetricDefinition(*args) for args in (
-    ("Calibration curve", None, (), ""),
-    ("Classification accuracy", (Curves.ca, ), (), ""),
+    ("校准曲线", None, (), ""),
+    ("分类准确度", (Curves.ca, ), (), ""),
     ("F1", (Curves.f1, ), (), ""),
-    ("Sensitivity and specificity",
+    ("灵敏度和特异度",
      (Curves.sensitivity, Curves.specificity),
-     ("sens", "spec"),
-     "<p><b>Sensitivity</b> (falling) is the proportion of correctly "
-     "detected positive instances (TP&nbsp;/&nbsp;P).</p>"
-     "<p><b>Specificity</b> (rising) is the proportion of detected "
-     "negative instances (TN&nbsp;/&nbsp;N).</p>"),
-    ("Precision and recall",
+     ("sens", "spec"), ""),
+    #  "<p><b>灵敏度:</b> (降) 是指实际为阳性的样本中，判断为阳性的比例 "
+    #  "(真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;P).</p>"
+    #  "<p><b>特异度:</b> (升) 实际为阴性的样本中，判断为阴性的比例" 
+    #  "(真阴性&nbsp;/&nbsp;阴性 TN&nbsp;/&nbsp;N).</p>"),
+    ("精度和召回",
      (Curves.precision, Curves.recall),
-     ("prec", "recall"),
-     "<p><b>Precision</b> (rising) is the fraction of retrieved instances "
-     "that are relevant, TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-     "<p><b>Recall</b> (falling) is the proportion of discovered relevant "
-     "instances, TP&nbsp;/&nbsp;P.</p>"),
-    ("Pos and neg predictive value",
+     ("prec", "recall"), ""),
+    #  "<p><b>精度</b> (升) 检索到的实例中相关实例的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性) TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+    #  "<p><b>召回</b> (降) 检索到的相关实例的比例, 真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;阳性.</p>"),
+    ("阳/阴性预测值",
      (Curves.ppv, Curves.npv),
-     ("PPV", "TPV"),
-     "<p><b>Positive predictive value</b> (rising) is the proportion of "
-     "correct positives, TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-     "<p><b>Negative predictive value</b> is the proportion of correct "
-     "negatives, TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
-    ("True and false positive rate",
+     ("PPV", "TPV"), ""),
+    #  "<p><b>阳性预测值</b> (升) 正确预测为真的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性), TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+    #  "<p><b>阴性预测值</b> 正确预测为假的比例, 真阴性&nbsp;/&nbsp;(真阴性&nbsp;+&nbsp;假阴性) TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
+    ("真假阳性率",
      (Curves.tpr, Curves.fpr),
-     ("TPR", "FPR"),
-     "<p><b>True and false positive rate</b> are proportions of detected "
-     "and omitted positive instances</p>"),
+     ("TPR", "FPR"), ""),
+    #  "<p><b>真假阳性率</b> 检测到的和错检的阳性实例比例</p>"),
 )]
 
 
@@ -92,17 +87,17 @@ class ParameterSetter(CommonParameterSetter):
 
 
 class OWCalibrationPlot(widget.OWWidget):
-    name = "Calibration Plot"
-    description = "Calibration plot based on evaluation of classifiers."
+    name = "校准图(Calibration Plot)"
+    description = "基于分类器评估的校准图。"
     icon = "icons/CalibrationPlot.svg"
     priority = 1030
     keywords = []
 
     class Inputs:
-        evaluation_results = Input("Evaluation Results", Results)
+        evaluation_results = Input("评估结果(Evaluation Results)", Results)
 
     class Outputs:
-        calibrated_model = Output("Calibrated Model", Model)
+        calibrated_model = Output("校准的模型(Calibrated Model)", Model)
 
     class Error(widget.OWWidget.Error):
         non_discrete_target = Msg("Calibration plot requires a categorical "
@@ -150,26 +145,26 @@ class OWCalibrationPlot(widget.OWWidget):
 
         self._last_score_value = -1
 
-        box = gui.vBox(self.controlArea, box="Settings")
+        box = gui.vBox(self.controlArea, box="设置")
         self.target_cb = gui.comboBox(
-            box, self, "target_index", label="Target:",
+            box, self, "target_index", label="目标:",
             orientation=Qt.Horizontal, callback=self.target_index_changed,
             contentsLength=8, searchable=True)
         gui.checkBox(
-            box, self, "display_rug", "Show rug",
+            box, self, "display_rug", "显示须线(Show rug)",
             callback=self._on_display_rug_changed)
         gui.checkBox(
-            box, self, "fold_curves", "Curves for individual folds",
+            box, self, "fold_curves", "单个折叠的曲线(Curves for individual folds)",
             callback=self._replot)
 
         self.classifiers_list_box = gui.listBox(
             self.controlArea, self, "selected_classifiers", "classifier_names",
-            box="Classifier", selectionMode=QListWidget.ExtendedSelection,
+            box="分类器", selectionMode=QListWidget.ExtendedSelection,
             sizePolicy=(QSizePolicy.Preferred, QSizePolicy.Preferred),
             sizeHint=QSize(150, 40),
             callback=self._on_selection_changed)
 
-        box = gui.vBox(self.controlArea, "Metrics")
+        box = gui.vBox(self.controlArea, "度量")
         combo = gui.comboBox(
             box, self, "score", items=(metric.name for metric in Metrics),
             callback=self.score_changed)
@@ -183,10 +178,10 @@ class OWCalibrationPlot(widget.OWWidget):
 
         gui.radioButtons(
             box, self, value="output_calibration",
-            btnLabels=("Sigmoid calibration", "Isotonic calibration"),
-            label="Output model calibration", callback=self.apply)
+            btnLabels=("Sigmoid 校准", "Isotonic 校准"),
+            label="输出模型校准", callback=self.apply)
 
-        self.info_box = gui.widgetBox(self.controlArea, "Info")
+        self.info_box = gui.widgetBox(self.controlArea, "信息")
         self.info_label = gui.widgetLabel(self.info_box)
 
         gui.auto_apply(self.controlArea, self, "auto_commit", commit=self.apply)
@@ -280,8 +275,8 @@ class OWCalibrationPlot(widget.OWWidget):
             self.info_box.show()
 
         axis = self.plot.getAxis("bottom")
-        axis.setLabel("Predicted probability" if self.score == 0
-                      else "Threshold probability to classify as positive")
+        axis.setLabel("预测的概率" if self.score == 0
+                      else "分类为正的阈值概率")
 
         axis = self.plot.getAxis("left")
         axis.setLabel(Metrics[self.score].name)

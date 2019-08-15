@@ -13,9 +13,8 @@ from Orange.widgets.widget import Msg
 
 
 class OWLogisticRegression(OWBaseLearner):
-    name = "Logistic Regression"
-    description = "The logistic regression classification algorithm with " \
-                  "LASSO (L1) or ridge (L2) regularization."
+    name = "逻辑回归(Logistic Regression)"
+    description = "具有LASSO（L1）或ridge（L2）正则化的逻辑回归分类算法。"
     icon = "icons/LogisticRegression.svg"
     replaces = [
         "Orange.widgets.classify.owlogisticregression.OWLogisticRegression",
@@ -26,7 +25,7 @@ class OWLogisticRegression(OWBaseLearner):
     LEARNER = LogisticRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("Coefficients", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table, explicit=True)
 
     penalty_type = settings.Setting(1)
     C_index = settings.Setting(61)
@@ -46,6 +45,7 @@ class OWLogisticRegression(OWBaseLearner):
     max_iter = 10000
 
     penalty_types = ("Lasso (L1)", "Ridge (L2)")
+    Chinese_penalty_types = ("套索Lasso (L1)", "脊Ridge (L2)")
     penalty_types_short = ["l1", "l2"]
 
     class Warning(OWBaseLearner.Warning):
@@ -55,17 +55,17 @@ class OWLogisticRegression(OWBaseLearner):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         box = gui.widgetBox(self.controlArea, box=True)
         self.penalty_combo = gui.comboBox(
-            box, self, "penalty_type", label="Regularization type: ",
-            items=self.penalty_types, orientation=Qt.Horizontal,
+            box, self, "penalty_type", label="正则化类型: ",
+            items=self.Chinese_penalty_types, orientation=Qt.Horizontal,
             addSpace=4, callback=self.settings_changed)
-        gui.widgetLabel(box, "Strength:")
+        gui.widgetLabel(box, "强度:")
         box2 = gui.hBox(gui.indentedBox(box))
-        gui.widgetLabel(box2, "Weak").setStyleSheet("margin-top:6px")
+        gui.widgetLabel(box2, "弱").setStyleSheet("margin-top:6px")
         self.c_slider = gui.hSlider(
             box2, self, "C_index", minValue=0, maxValue=len(self.C_s) - 1,
             callback=self.set_c, callback_finished=self.settings_changed,
             createLabel=False)
-        gui.widgetLabel(box2, "Strong").setStyleSheet("margin-top:6px")
+        gui.widgetLabel(box2, "强").setStyleSheet("margin-top:6px")
         box2 = gui.hBox(box)
         box2.layout().setAlignment(Qt.AlignCenter)
         self.c_label = gui.widgetLabel(box2)

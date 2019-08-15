@@ -625,10 +625,10 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
     def _create_drag_tooltip(self):
         tip_parts = [
             (Qt.ControlModifier,
-             "{}: Append to group".
+             "{}: 添加到组".
              format("Cmd" if sys.platform == "darwin" else "Ctrl")),
-            (Qt.ShiftModifier, "Shift: Add group"),
-            (Qt.AltModifier, "Alt: Remove")
+            (Qt.ShiftModifier, "Shift: 添加组"),
+            (Qt.AltModifier, "Alt: 删除")
         ]
         all_parts = "<center>" + \
                     ", ".join(part for _, part in tip_parts) + \

@@ -12,26 +12,26 @@ from Orange.data import Table
 from Orange.classification.rules import _RuleClassifier
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
 class OWRuleViewer(widget.OWWidget):
-    name = "CN2 Rule Viewer"
-    description = "Review rules induced from data."
+    name = "CN2规则查看器(CN2 Rule Viewer)"
+    description = "查看由数据引发的规则。"
     icon = "icons/CN2RuleViewer.svg"
     priority = 1140
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
-        classifier = Input("Classifier", _RuleClassifier)
+        data = Input("数据(Data)", Table)
+        classifier = Input("分类器(Classifier)", _RuleClassifier)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     compact_view = settings.Setting(False)
 
@@ -51,8 +51,8 @@ class OWRuleViewer(widget.OWWidget):
 
         self.model = CustomRuleViewerTableModel(parent=self)
         self.model.set_horizontal_header_labels(
-            ["IF conditions", "", "THEN class", "Distribution",
-             "Probabilities [%]", "Quality", "Length"])
+            ["如果条件", "", "然后类别", "分布",
+             "概率 [%]", "质量", "长度"])
 
         self.proxy_model = QSortFilterProxyModel(parent=self)
         self.proxy_model.setSourceModel(self.model)
@@ -73,14 +73,14 @@ class OWRuleViewer(widget.OWWidget):
                               margin=0, spacing=0)
 
         original_order_button = QPushButton(
-            "Restore original order", autoDefault=False)
+            "恢复原始顺序", autoDefault=False)
         original_order_button.setFixedWidth(180)
         bottom_box.layout().addWidget(original_order_button)
         original_order_button.clicked.connect(self.restore_original_order)
 
         gui.separator(bottom_box, width=5, height=0)
         gui.checkBox(widget=bottom_box, master=self, value="compact_view",
-                     label="Compact view", callback=self.on_update)
+                     label="紧凑型视图", callback=self.on_update)
 
     @Inputs.data
     def set_data(self, data):

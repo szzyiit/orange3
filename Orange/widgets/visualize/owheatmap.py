@@ -30,7 +30,8 @@ from Orange.widgets.utils.graphicsview import GraphicsWidgetView
 from Orange.widgets.utils.colorpalettes import Palette
 
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                ANNOTATED_DATA_SIGNAL_Chinese_NAME,
+                                                ANNOTATED_DATA_SIGNAL_NAME)
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.widget import Msg, Input, Output
 
@@ -133,18 +134,18 @@ def create_list_model(
 
 
 class OWHeatMap(widget.OWWidget):
-    name = "Heat Map"
-    description = "Plot a data matrix heatmap."
+    name = "热图(Heat Map)"
+    description = "为一对属性绘制热图。"
     icon = "icons/Heatmap.svg"
     priority = 260
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     settings_version = 3
 
@@ -251,7 +252,7 @@ class OWHeatMap(widget.OWWidget):
         self.info.set_output_summary(self.info.NoOutput)
 
         # GUI definition
-        colorbox = gui.vBox(self.controlArea, "Color")
+        colorbox = gui.vBox(self.controlArea, "颜色")
 
         self.color_map_widget = cmw = ColorGradientSelection(
             thresholds=(self.threshold_low, self.threshold_high),
@@ -277,15 +278,15 @@ class OWHeatMap(widget.OWWidget):
 
         colorbox.layout().addWidget(self.color_map_widget)
 
-        mergebox = gui.vBox(self.controlArea, "Merge",)
-        gui.checkBox(mergebox, self, "merge_kmeans", "Merge by k-means",
+        mergebox = gui.vBox(self.controlArea, "合并",)
+        gui.checkBox(mergebox, self, "merge_kmeans", "以k-均值方式合并",
                      callback=self.__update_row_clustering)
         ibox = gui.indentedBox(mergebox)
         gui.spin(ibox, self, "merge_kmeans_k", minv=5, maxv=500,
-                 label="Clusters:", keyboardTracking=False,
+                 label="聚类:", keyboardTracking=False,
                  callbackOnReturn=True, callback=self.update_merge)
 
-        cluster_box = gui.vBox(self.controlArea, "Clustering")
+        cluster_box = gui.vBox(self.controlArea, "聚类")
         # Row clustering
         self.row_cluster_cb = cb = ComboBox()
         cb.setModel(create_list_model(ClusteringModelData, self))
@@ -314,10 +315,10 @@ class OWHeatMap(widget.OWWidget):
             labelAlignment=Qt.AlignLeft, formAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
         )
-        form.addRow("Rows:", self.row_cluster_cb)
-        form.addRow("Columns:", self.col_cluster_cb)
+        form.addRow("行:", self.row_cluster_cb)
+        form.addRow("列:", self.col_cluster_cb)
         cluster_box.layout().addLayout(form)
-        box = gui.vBox(self.controlArea, "Split By")
+        box = gui.vBox(self.controlArea, "以...划分")
         form = QFormLayout(
             formAlignment=Qt.AlignLeft, labelAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
@@ -325,7 +326,7 @@ class OWHeatMap(widget.OWWidget):
         box.layout().addLayout(form)
 
         self.row_split_model = DomainModel(
-            placeholder="(None)",
+            placeholder="(无)",
             valid_types=(Orange.data.DiscreteVariable,),
             parent=self,
         )
@@ -367,21 +368,21 @@ class OWHeatMap(widget.OWWidget):
         form.addRow("Rows:", self.row_split_cb)
         form.addRow("Columns:", self.col_split_cb)
 
-        box = gui.vBox(self.controlArea, 'Annotation && Legends')
+        box = gui.vBox(self.controlArea, '注释和图例')
 
-        gui.checkBox(box, self, 'legend', 'Show legend',
+        gui.checkBox(box, self, 'legend', '显示图例',
                      callback=self.update_legend)
 
-        gui.checkBox(box, self, 'averages', 'Stripes with averages',
+        gui.checkBox(box, self, 'averages', '带平均线的条纹',
                      callback=self.update_averages_stripe)
-        annotbox = QGroupBox("Row Annotations", flat=True)
+        annotbox = QGroupBox("行注释", flat=True)
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
             labelAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
         )
-        self.annotation_model = DomainModel(placeholder="(None)")
+        self.annotation_model = DomainModel(placeholder="(无)")
         self.annotation_text_cb = ComboBoxSearch(
             minimumContentsLength=12,
             sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
@@ -393,7 +394,7 @@ class OWHeatMap(widget.OWWidget):
         self.row_side_color_model = DomainModel(
             order=(DomainModel.CLASSES, DomainModel.Separator,
                    DomainModel.METAS),
-            placeholder="(None)", valid_types=DomainModel.PRIMITIVE,
+            placeholder="(无)", valid_types=DomainModel.PRIMITIVE,
             flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled,
             parent=self,
         )
@@ -404,10 +405,10 @@ class OWHeatMap(widget.OWWidget):
         self.row_side_color_cb.setModel(self.row_side_color_model)
         self.row_side_color_cb.activated.connect(self.set_annotation_color_var)
         self.connect_control("annotation_color_var", self.annotation_color_var_changed)
-        form.addRow("Text", self.annotation_text_cb)
-        form.addRow("Color", self.row_side_color_cb)
+        form.addRow("文本", self.annotation_text_cb)
+        form.addRow("颜色", self.row_side_color_cb)
         box.layout().addWidget(annotbox)
-        annotbox = QGroupBox("Column annotations", flat=True)
+        annotbox = QGroupBox("列注释", flat=True)
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
@@ -415,7 +416,7 @@ class OWHeatMap(widget.OWWidget):
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
         )
         self.col_side_color_model = DomainModel(
-            placeholder="(None)",
+            placeholder="(无)",
             valid_types=(DiscreteVariable, ContinuousVariable),
             parent=self
         )
@@ -436,12 +437,12 @@ class OWHeatMap(widget.OWWidget):
             callback=self.update_column_annotations)
         cb.setModel(create_list_model(ColumnLabelsPosData, parent=self))
         cb.setCurrentIndex(self.column_label_pos)
-        form.addRow("Color", self.col_side_color_cb)
-        form.addRow("Label position", cb)
+        form.addRow("颜色", self.col_side_color_cb)
+        form.addRow("标签位置", cb)
         box.layout().addWidget(annotbox)
 
         gui.checkBox(self.controlArea, self, "keep_aspect",
-                     "Keep aspect ratio", box="Resize",
+                     "保持纵横比", box="调整大小",
                      callback=self.__aspect_mode_changed)
 
         gui.rubber(self.controlArea)
@@ -466,9 +467,9 @@ class OWHeatMap(widget.OWWidget):
         self.mainArea.layout().addWidget(self.view)
         self.selected_rows = []
         self.__font_inc = QAction(
-            "Increase Font", self, shortcut=QKeySequence("ctrl+>"))
+            "增大字体", self, shortcut=QKeySequence("ctrl+>"))
         self.__font_dec = QAction(
-            "Decrease Font", self, shortcut=QKeySequence("ctrl+<"))
+            "减小字体", self, shortcut=QKeySequence("ctrl+<"))
         self.__font_inc.triggered.connect(lambda: self.__adjust_font_size(1))
         self.__font_dec.triggered.connect(lambda: self.__adjust_font_size(-1))
         if hasattr(QAction, "setShortcutVisibleInContextMenu"):

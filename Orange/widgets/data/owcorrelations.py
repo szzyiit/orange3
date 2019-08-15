@@ -44,7 +44,7 @@ class CorrelationType(IntEnum):
         """
         Texts for correlation types. Can be used in gui controls (eg. combobox).
         """
-        return ["Pearson correlation", "Spearman correlation"]
+        return ["皮尔逊相关性(Pearson correlation)", "斯皮尔曼相关性(Spearman correlation)"]
 
 
 class Cluster(SimpleNamespace):
@@ -234,18 +234,18 @@ class CorrelationRank(VizRankDialogAttrPair):
 
 
 class OWCorrelations(OWWidget):
-    name = "Correlations"
-    description = "Compute all pairwise attribute correlations."
+    name = "相关性(Correlations)"
+    description = "计算所有成对属性的关联性。"
     icon = "icons/Correlations.svg"
     priority = 1106
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        data = Output("Data", Table)
-        features = Output("Features", AttributeList)
-        correlations = Output("Correlations", Table)
+        data = Output("数据(Data)", Table)
+        features = Output("特征(Features)", AttributeList)
+        correlations = Output("相关性(Correlations)", Table)
 
     want_control_area = False
 
@@ -278,7 +278,7 @@ class OWCorrelations(OWWidget):
 
         self.feature_model = DomainModel(
             order=DomainModel.ATTRIBUTES, separators=False,
-            placeholder="(All combinations)", valid_types=ContinuousVariable)
+            placeholder="所有组合", valid_types=ContinuousVariable)
         gui.comboBox(
             box, self, "feature", callback=self._feature_combo_changed,
             model=self.feature_model

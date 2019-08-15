@@ -30,7 +30,7 @@ from Orange.widgets.widget import AttributeList, Msg, Input, Output
 
 
 class ScatterPlotVizRank(VizRankDialogAttrPair):
-    captionTitle = "Score Plots"
+    captionTitle = "评分图(Score Plots)"
     minK = 10
     attr_color = None
 
@@ -225,18 +225,17 @@ class OWScatterPlot(OWDataProjectionWidget):
     """Scatterplot visualization with explorative analysis and intelligent
     data visualization enhancements."""
 
-    name = 'Scatter Plot'
-    description = "Interactive scatter plot visualization with " \
-                  "intelligent data visualization enhancements."
+    name = '散点图(Scatter Plot)'
+    description = "具有智能数据可视化增强功能的交互式散点图可视化工具。"
     icon = "icons/ScatterPlot.svg"
     priority = 140
     keywords = []
 
     class Inputs(OWDataProjectionWidget.Inputs):
-        features = Input("Features", AttributeList)
+        features = Input("特征(Features)", AttributeList)
 
     class Outputs(OWDataProjectionWidget.Outputs):
-        features = Output("Features", AttributeList, dynamic=False)
+        features = Output("特征(Features)", AttributeList, dynamic=False)
 
     settings_version = 4
     auto_sample = Setting(True)
@@ -285,7 +284,7 @@ class OWScatterPlot(OWDataProjectionWidget):
         gui.checkBox(
             gui.indentedBox(self._plot_box), self,
             value="graph.orthonormal_regression",
-            label="Treat variables as independent",
+            label="将变量视为独立变量",
             callback=self.graph.update_regression_line,
             tooltip=
             "If checked, fit line to group (minimize distance from points);\n"
@@ -301,18 +300,18 @@ class OWScatterPlot(OWDataProjectionWidget):
         dmod = DomainModel
         self.xy_model = DomainModel(dmod.MIXED, valid_types=ContinuousVariable)
         self.cb_attr_x = gui.comboBox(
-            self.attr_box, self, "attr_x", label="Axis x:",
+            self.attr_box, self, "attr_x", label="x 轴:",
             callback=self.set_attr_from_combo,
             model=self.xy_model, **common_options,
             searchable=True)
         self.cb_attr_y = gui.comboBox(
-            self.attr_box, self, "attr_y", label="Axis y:",
+            self.attr_box, self, "attr_y", label="y 轴:",
             callback=self.set_attr_from_combo,
             model=self.xy_model, **common_options,
             searchable=True)
         vizrank_box = gui.hBox(self.attr_box)
         self.vizrank, self.vizrank_button = ScatterPlotVizRank.add_vizrank(
-            vizrank_box, self, "Find Informative Projections", self.set_attr)
+            vizrank_box, self, "查找信息投影(Find Informative Projections)", self.set_attr)
 
     def _add_controls_sampling(self):
         self.sampling = gui.auto_commit(

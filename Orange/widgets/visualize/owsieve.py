@@ -17,7 +17,7 @@ from Orange.widgets import gui, settings
 from Orange.widgets.settings import DomainContextHandler, ContextSetting
 from Orange.widgets.utils import to_html
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.utils.state_summary import format_summary_details
@@ -55,7 +55,7 @@ class ChiSqStats:
 
 
 class SieveRank(VizRankDialogAttrPair):
-    captionTitle = "Sieve Rank"
+    captionTitle = "筛网等级(Sieve Rank)"
 
     def initialize(self):
         super().initialize()
@@ -71,20 +71,19 @@ class SieveRank(VizRankDialogAttrPair):
 
 
 class OWSieveDiagram(OWWidget):
-    name = "Sieve Diagram"
-    description = "Visualize the observed and expected frequencies " \
-                  "for a combination of values."
+    name = "筛网图(Sieve Diagram)"
+    description = "将观察到的频率和预期的频率可视化为一组值。"
     icon = "icons/SieveDiagram.svg"
     priority = 200
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        features = Input("Features", AttributeList)
+        data = Input("数据(Data)", Table, default=True)
+        features = Input("特征(Features)", AttributeList)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     graph_name = "canvas"
 
@@ -122,7 +121,7 @@ class OWSieveDiagram(OWWidget):
         gui.widgetLabel(self.attr_box, "\u2715", sizePolicy=fixed_size)
         gui.comboBox(value="attr_y", **combo_args)
         self.vizrank, self.vizrank_button = SieveRank.add_vizrank(
-            self.attr_box, self, "Score Combinations", self.set_attr)
+            self.attr_box, self, "分数组合", self.set_attr)
         self.vizrank_button.setSizePolicy(*fixed_size)
 
         self.canvas = QGraphicsScene(self)

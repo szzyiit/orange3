@@ -251,7 +251,7 @@ class invalidated:
 
 class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
     name = "t-SNE"
-    description = "Two-dimensional data projection with t-SNE."
+    description = "二维T-SNE数据投影。"
     icon = "icons/TSNE.svg"
     priority = 920
     keywords = ["tsne"]
@@ -309,9 +309,9 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
             callback=self._invalidate_affinities,
         )
         self.controls.perplexity.setDisabled(self.multiscale)
-        form.addRow("Perplexity:", self.perplexity_spin)
+        form.addRow("困惑度(Perplexity):", self.perplexity_spin)
         form.addRow(gui.checkBox(
-            box, self, "multiscale", label="Preserve global structure",
+            box, self, "multiscale", label="保留全局结构(Preserve global structure)",
             callback=self._multiscale_changed,
         ))
 
@@ -320,17 +320,17 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
             sbe, self, "exaggeration", minValue=1, maxValue=4, step=1,
             callback=self._invalidate_tsne_embedding,
         )
-        form.addRow("Exaggeration:", sbe)
+        form.addRow("夸大(Exaggeration):", sbe)
 
         sbp = gui.hBox(self.controlArea, False, addToLayout=False)
         gui.hSlider(
             sbp, self, "pca_components", minValue=2, maxValue=_MAX_PCA_COMPONENTS,
             step=1, callback=self._invalidate_pca_projection,
         )
-        form.addRow("PCA components:", sbp)
+        form.addRow("PCA 成分:", sbp)
 
         self.normalize_cbx = gui.checkBox(
-            box, self, "normalize", "Normalize data",
+            box, self, "normalize", "归一化数据",
             callback=self._invalidate_pca_projection,
         )
         form.addRow(self.normalize_cbx)

@@ -10,17 +10,17 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWTranspose(OWWidget):
-    name = "Transpose"
-    description = "Transpose data table."
+    name = "转置(Transpose)"
+    description = "转置数据表。"
     icon = "icons/Transpose.svg"
     priority = 2000
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        data = Output("Data", Table, dynamic=False)
+        data = Output("数据(Data)", Table, dynamic=False)
 
     GENERIC, FROM_VAR = range(2)
 
@@ -50,17 +50,17 @@ class OWTranspose(OWWidget):
 
         # self.apply is changed later, pylint: disable=unnecessary-lambda
         box = gui.radioButtons(
-            self.controlArea, self, "feature_type", box="Feature names",
+            self.controlArea, self, "feature_type", box="特征名称",
             callback=lambda: self.apply())
 
-        button = gui.appendRadioButton(box, "Generic")
+        button = gui.appendRadioButton(box, "通用(Generic)")
         edit = gui.lineEdit(
             gui.indentedBox(box, gui.checkButtonOffsetHint(button)), self,
             "feature_name",
-            placeholderText="Type a prefix ...", toolTip="Custom feature name")
+            placeholderText="键入前缀 ...", toolTip="自定义特征名称")
         edit.editingFinished.connect(self._apply_editing)
 
-        self.meta_button = gui.appendRadioButton(box, "From variable:")
+        self.meta_button = gui.appendRadioButton(box, "从变量:")
         self.feature_model = DomainModel(
             valid_types=(ContinuousVariable, StringVariable),
             alphabetical=False)

@@ -41,8 +41,8 @@ class SortBy(IntEnum):
 
     @staticmethod
     def items():
-        return ["No sorting", "Name", "Absolute importance",
-                "Positive influence", "Negative influence"]
+        return ["不排序", "名称", "绝对重要性",
+                "积极影响", "负面影响"]
 
 
 class MovableToolTip(QLabel):
@@ -647,19 +647,18 @@ class NomogramItem(QGraphicsWidget):
 
 
 class OWNomogram(OWWidget):
-    name = "Nomogram"
-    description = " Nomograms for Visualization of Naive Bayesian" \
-                  " and Logistic Regression Classifiers."
+    name = "列线图(Nomogram)"
+    description = " 朴素贝叶斯和逻辑回归分类器可视化的列线图。"
     icon = "icons/Nomogram.svg"
     priority = 2000
     keywords = []
 
     class Inputs:
-        classifier = Input("Classifier", Model)
-        data = Input("Data", Table)
+        classifier = Input("分类器(Classifier)", Model)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        features = Output("Features", AttributeList)
+        features = Output("特征(Features)", AttributeList)
 
     MAX_N_ATTRS = 1000
     POINT_SCALE = 0
@@ -707,29 +706,29 @@ class OWNomogram(OWWidget):
         self.info.set_input_summary(self.info.NoInput)
 
         # GUI
-        box = gui.vBox(self.controlArea, "Target class")
+        box = gui.vBox(self.controlArea, "目标类别")
         self.class_combo = gui.comboBox(
             box, self, "target_class_index", callback=self._class_combo_changed,
             contentsLength=12, searchable=True)
         self.norm_check = gui.checkBox(
-            box, self, "normalize_probabilities", "Normalize probabilities",
+            box, self, "normalize_probabilities", "归一化概率",
             hidden=True, callback=self.update_scene,
             tooltip="For multiclass data 1 vs. all probabilities do not"
                     " sum to 1 and therefore could be normalized.")
 
         self.scale_radio = gui.radioButtons(
-            self.controlArea, self, "scale", ["Point scale", "Log odds ratios"],
-            box="Scale", callback=self.update_scene)
+            self.controlArea, self, "scale", ["点刻度", "对数赔率"],
+            box="比例(Scale)", callback=self.update_scene)
 
-        box = gui.vBox(self.controlArea, "Display features")
+        box = gui.vBox(self.controlArea, "显示特征")
         grid = QGridLayout()
         radio_group = gui.radioButtonsInBox(
             box, self, "display_index", [], orientation=grid,
             callback=self.update_scene)
         radio_all = gui.appendRadioButton(
-            radio_group, "All", addToLayout=False)
+            radio_group, "全部", addToLayout=False)
         radio_best = gui.appendRadioButton(
-            radio_group, "Best ranked:", addToLayout=False)
+            radio_group, "最佳排名:", addToLayout=False)
         spin_box = gui.hBox(None, margin=0)
         self.n_spin = gui.spin(
             spin_box, self, "n_attributes", 1, self.MAX_N_ATTRS, label=" ",
@@ -739,12 +738,12 @@ class OWNomogram(OWWidget):
         grid.addWidget(spin_box, 2, 2)
 
         self.sort_combo = gui.comboBox(
-            box, self, "sort_index", label="Rank by:", items=SortBy.items(),
+            box, self, "sort_index", label="排名依据:", items=SortBy.items(),
             orientation=Qt.Horizontal, callback=self.update_scene)
 
         self.cont_feature_dim_combo = gui.comboBox(
-            box, self, "cont_feature_dim_index", label="Numeric features: ",
-            items=["1D projection", "2D curve"], orientation=Qt.Horizontal,
+            box, self, "cont_feature_dim_index", label="数字特征: ",
+            items=["一维投影", "二维曲线"], orientation=Qt.Horizontal,
             callback=self.update_scene)
 
         gui.rubber(self.controlArea)

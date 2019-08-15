@@ -39,7 +39,7 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import OWWidget, Input, Output
 from Orange.widgets.utils import datacaching
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.itemmodels import TableModel
 from Orange.widgets.utils.state_summary import format_summary_details
 
@@ -171,8 +171,8 @@ class DataTableView(gui.HScrollStepMixin, TableView):
 
 
 class OWDataTable(OWWidget):
-    name = "Data Table"
-    description = "View the dataset in a spreadsheet."
+    name = "数据表(Data Table)"
+    description = "在电子表格中查看数据集。"
     icon = "icons/Table.svg"
     priority = 50
     keywords = []
@@ -180,11 +180,11 @@ class OWDataTable(OWWidget):
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
-        data = Input("Data", Table, multiple=True)
+        data = Input("数据(Data)", Table, multiple=True)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     show_distributions = Setting(False)
     dist_color_RGB = Setting((220, 220, 220, 255))
@@ -214,27 +214,27 @@ class OWDataTable(OWWidget):
         self._set_output_summary(None)
         gui.separator(self.controlArea)
 
-        box = gui.vBox(self.controlArea, "Variables")
+        box = gui.vBox(self.controlArea, "变量")
         self.c_show_attribute_labels = gui.checkBox(
             box, self, "show_attribute_labels",
-            "Show variable labels (if present)",
+            "显示变量标签（如果存在）",
             callback=self._on_show_variable_labels_changed)
 
         gui.checkBox(box, self, "show_distributions",
-                     'Visualize numeric values',
+                     '可视化数值',
                      callback=self._on_distribution_color_changed)
-        gui.checkBox(box, self, "color_by_class", 'Color by instance classes',
+        gui.checkBox(box, self, "color_by_class", '按实例分类上色',
                      callback=self._on_distribution_color_changed)
 
-        box = gui.vBox(self.controlArea, "Selection")
+        box = gui.vBox(self.controlArea, "选择")
 
-        gui.checkBox(box, self, "select_rows", "Select full rows",
+        gui.checkBox(box, self, "select_rows", "选择整行",
                      callback=self._on_select_rows_changed)
 
         gui.rubber(self.controlArea)
 
         reset = gui.button(
-            None, self, "Restore Original Order", callback=self.restore_order,
+            None, self, "恢复原始顺序", callback=self.restore_order,
             tooltip="Show rows in the original order", autoDefault=False)
         self.buttonsArea.layout().insertWidget(0, reset)
         gui.auto_send(self.buttonsArea, self, "auto_commit")

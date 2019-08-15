@@ -20,7 +20,8 @@ from Orange.widgets.settings import (
 )
 from Orange.widgets.utils import colorpalettes
 from Orange.widgets.utils.annotated_data import (
-    create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME, create_groups_table
+    create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME, 
+    create_groups_table, ANNOTATED_DATA_SIGNAL_Chinese_NAME
 )
 from Orange.widgets.utils.plot import OWPlotGUI
 from Orange.widgets.utils.sql import check_sql_input
@@ -364,12 +365,12 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
     of points.
     """
     class Inputs:
-        data = Input("Data", Table, default=True)
-        data_subset = Input("Data Subset", Table)
+        data = Input("数据(Data)", Table, default=True)
+        data_subset = Input("数据子集(Data Subset)", Table)
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     class Warning(OWProjectionWidgetBase.Warning):
         too_many_labels = Msg(
@@ -431,7 +432,12 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
         self.control_area_stretch = gui.widgetBox(area)
         self.control_area_stretch.layout().addStretch(100)
         self.gui.box_zoom_select(area)
+<<<<<<< HEAD
         gui.auto_send(area, self, "auto_commit")
+=======
+        gui.auto_commit(
+            area, self, "auto_commit", "发送选中", "自动发送")
+>>>>>>> chinese translation of all widgets
 
     @property
     def effective_variables(self):

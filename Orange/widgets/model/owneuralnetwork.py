@@ -62,9 +62,8 @@ class CancelTaskException(BaseException):
 
 
 class OWNNLearner(OWBaseLearner):
-    name = "Neural Network"
-    description = "A multi-layer perceptron (MLP) algorithm with " \
-                  "backpropagation."
+    name = "神经网络(Neural Network)"
+    description = "一种具有反向传播的多层感知器（MLP）算法。"
     icon = "icons/NN.svg"
     priority = 90
     keywords = ["mlp"]
@@ -73,6 +72,7 @@ class OWNNLearner(OWBaseLearner):
 
     activation = ["identity", "logistic", "tanh", "relu"]
     act_lbl = ["Identity", "Logistic", "tanh", "ReLu"]
+    chinese_act_lbl = ["相等", "Logistic", "tanh", "ReLu"]
     solver = ["lbfgs", "sgd", "adam"]
     solv_lbl = ["L-BFGS-B", "SGD", "Adam"]
 
@@ -102,23 +102,22 @@ class OWNNLearner(OWBaseLearner):
         form.setLabelAlignment(Qt.AlignLeft)
         gui.widgetBox(self.controlArea, True, orientation=form)
         form.addRow(
-            "Neurons in hidden layers:",
+            "隐藏层中的神经元:",
             gui.lineEdit(
                 None, self, "hidden_layers_input",
                 orientation=Qt.Horizontal, callback=self.settings_changed,
-                tooltip="A list of integers defining neurons. Length of list "
-                        "defines the number of layers. E.g. 4, 2, 2, 3.",
+                tooltip="定义神经元的整数列表。列表长度定义层数。例如4、2、2、3。",
                 placeholderText="e.g. 10,"))
         form.addRow(
-            "Activation:",
+            "激活:",
             gui.comboBox(
                 None, self, "activation_index", orientation=Qt.Horizontal,
-                label="Activation:", items=[i for i in self.act_lbl],
+                label="Activation:", items=[i for i in self.chinese_act_lbl],
                 callback=self.settings_changed))
 
         form.addRow(" ", gui.separator(None, 16))
         form.addRow(
-            "Solver:",
+            "求解器(Solver):",
             gui.comboBox(
                 None, self, "solver_index", orientation=Qt.Horizontal,
                 label="Solver:", items=[i for i in self.solv_lbl],
@@ -133,7 +132,7 @@ class OWNNLearner(OWBaseLearner):
         self.set_alpha()
 
         form.addRow(
-            "Maximal number of iterations:",
+            "最大迭代次数:",
             gui.spin(
                 None, self, "max_iterations", 10, 1000000, step=10,
                 label="Max iterations:", orientation=Qt.Horizontal,
@@ -142,14 +141,14 @@ class OWNNLearner(OWBaseLearner):
         form.addRow(gui.separator(None))
         form.addRow(
             gui.checkBox(
-                None, self, "replicable", label="Replicable training",
+                None, self, "replicable", label="可重复的训练",
                 callback=self.settings_changed),
         )
 
     def set_alpha(self):
         # called from init, pylint: disable=attribute-defined-outside-init
         self.strength_C = self.alphas[self.alpha_index]
-        self.reg_label.setText("Regularization, α={}:".format(self.strength_C))
+        self.reg_label.setText("正则化, α={}:".format(self.strength_C))
 
     @property
     def alpha(self):
@@ -163,7 +162,7 @@ class OWNNLearner(OWBaseLearner):
         self._executor = ThreadExecutor()
 
         # just a test cancel button
-        gui.button(self.apply_button, self, "Cancel", callback=self.cancel)
+        gui.button(self.apply_button, self, "取消", callback=self.cancel)
 
     def create_learner(self):
         return self.LEARNER(

@@ -19,18 +19,17 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWContinuize(widget.OWWidget):
-    name = "Continuize"
-    description = ("Transform categorical attributes into numeric and, " +
-                   "optionally, normalize numeric values.")
+    name = "数值化(Continuize)"
+    description = ("将分类属性转换为数值属性，还可以归一化这些值" )
     icon = "icons/Continuize.svg"
-    category = "Data"
+    category = "数据(Data)"
     keywords = []
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     want_main_area = False
     buttons_area_orientation = Qt.Vertical
@@ -46,28 +45,28 @@ class OWContinuize(widget.OWWidget):
     autosend = Setting(True)
 
     multinomial_treats = (
-        ("First value as base", Continuize.FirstAsBase),
-        ("Most frequent value as base", Continuize.FrequentAsBase),
-        ("One attribute per value", Continuize.Indicators),
-        ("Ignore multinomial attributes", Continuize.RemoveMultinomial),
-        ("Remove categorical attributes", Continuize.Remove),
-        ("Treat as ordinal", Continuize.AsOrdinal),
-        ("Divide by number of values", Continuize.AsNormalizedOrdinal))
+        ("以第一个值为基数", Continuize.FirstAsBase),
+        ("最常见值作为基数", Continuize.FrequentAsBase),
+        ("每个值一个属性", Continuize.Indicators),
+        ("忽略多项式属性", Continuize.RemoveMultinomial),
+        ("删除分类属性", Continuize.Remove),
+        ("按有序数据处理", Continuize.AsOrdinal),
+        ("除以取值数目", Continuize.AsNormalizedOrdinal))
 
     continuous_treats = (
-        ("Leave them as they are", True),
-        ("Standardize to μ=0, σ²=1", False),
-        ("Center to μ=0", False),
-        ("Scale to σ²=1", True),
-        ("Normalize to interval [-1, 1]", False),
-        ("Normalize to interval [0, 1]", False)
+        ("保持原样", True),
+        ("标准归一化为 μ=0, σ²=1", False),
+        ("中心设置到 μ=0", False),
+        ("缩放到 σ²=1", True),
+        ("归一化到 [-1, 1]", False),
+        ("归一化到 [0, 1]", False)
     )
 
     class_treats = (
-        ("Leave it as it is", Continuize.Leave),
-        ("Treat as ordinal", Continuize.AsOrdinal),
-        ("Divide by number of values", Continuize.AsNormalizedOrdinal),
-        ("One class per value", Continuize.Indicators),
+        ("保持原样", Continuize.Leave),
+        ("按有序数据处理", Continuize.AsOrdinal),
+        ("除以取值数目", Continuize.AsNormalizedOrdinal),
+        ("每个值一个分类", Continuize.Indicators),
     )
 
     def __init__(self):
@@ -77,21 +76,21 @@ class OWContinuize(widget.OWWidget):
         gui.widgetBox(self.controlArea, orientation=layout)
 
         box = gui.radioButtonsInBox(
-            None, self, "multinomial_treatment", box="Categorical Features",
+            None, self, "multinomial_treatment", box="分类特征",
             btnLabels=[x[0] for x in self.multinomial_treats],
             callback=self.settings_changed)
         gui.rubber(box)
         layout.addWidget(box, 0, 0, 2, 1)
 
         box = gui.radioButtonsInBox(
-            None, self, "continuous_treatment", box = "Numeric Features",
+            None, self, "continuous_treatment", box = "数值特征",
             btnLabels=[x[0] for x in self.continuous_treats],
             callback=self.settings_changed)
         box.layout().addStretch(10)
         layout.addWidget(box, 0, 1, 2, 1)
 
         box = gui.radioButtonsInBox(
-            None, self, "class_treatment", box="Categorical Outcome(s)",
+            None, self, "class_treatment", box="分类结果",
             btnLabels=[t[0] for t in self.class_treats],
             callback=self.settings_changed)
         box.layout().addStretch(10)

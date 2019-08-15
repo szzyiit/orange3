@@ -14,15 +14,15 @@ from Orange.widgets.widget import Msg, Output
 
 
 class OWLoadModel(widget.OWWidget, RecentPathsWComboMixin):
-    name = "Load Model"
-    description = "Load a model from an input file."
+    name = "加载模型(Load Model)"
+    description = "从输入文件加载模型。"
     priority = 3050
     replaces = ["Orange.widgets.classify.owloadclassifier.OWLoadClassifier"]
     icon = "icons/LoadModel.svg"
     keywords = ["file", "open", "model"]
 
     class Outputs:
-        model = Output("Model", Model)
+        model = Output("模型(Model)", Model)
 
     class Error(widget.OWWidget.Error):
         load_error = Msg("An error occured while reading '{}'")
@@ -37,7 +37,7 @@ class OWLoadModel(widget.OWWidget, RecentPathsWComboMixin):
         RecentPathsWComboMixin.__init__(self)
         self.loaded_file = ""
 
-        vbox = gui.vBox(self.controlArea, "File", addSpace=True)
+        vbox = gui.vBox(self.controlArea, "文件", addSpace=True)
         box = gui.hBox(vbox)
         self.file_combo.setMinimumWidth(300)
         box.layout().addWidget(self.file_combo)
@@ -49,7 +49,7 @@ class OWLoadModel(widget.OWWidget, RecentPathsWComboMixin):
             QSizePolicy.Maximum, QSizePolicy.Fixed)
 
         button = gui.button(
-            box, self, "Reload", callback=self.reload, default=True)
+            box, self, "重新加载", callback=self.reload, default=True)
         button.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 

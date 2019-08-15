@@ -13,17 +13,17 @@ from Orange.widgets import gui
 
 
 class OWRandomize(OWWidget):
-    name = "Randomize"
-    description = "Randomize features, class and/or metas in data table."
+    name = "随机化(Randomize)"
+    description = "随机化数据表中的特征、类别(和/或)元。"
     icon = "icons/Random.svg"
     priority = 2100
     keywords = []
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        data = Output("Data", Table)
+        data = Output("数据(Data)", Table)
 
     resizing_enabled = False
     want_main_area = False
@@ -40,32 +40,32 @@ class OWRandomize(OWWidget):
         self.data = None
 
         # GUI
-        box = gui.hBox(self.controlArea, "Shuffled columns")
+        box = gui.hBox(self.controlArea, "无序的列(Shuffled columns)")
         box.layout().setSpacing(20)
         self.class_check = gui.checkBox(
-            box, self, "shuffle_class", "Classes",
+            box, self, "shuffle_class", "类别(Classes)",
             callback=self._shuffle_check_changed)
         self.attrs_check = gui.checkBox(
-            box, self, "shuffle_attrs", "Features",
+            box, self, "shuffle_attrs", "特征(Features)",
             callback=self._shuffle_check_changed)
         self.metas_check = gui.checkBox(
-            box, self, "shuffle_metas", "Metas",
+            box, self, "shuffle_metas", "元(Metas)",
             callback=self._shuffle_check_changed)
 
-        box = gui.vBox(self.controlArea, "Shuffled rows")
+        box = gui.vBox(self.controlArea, "无序的行(Shuffled rows)")
         hbox = gui.hBox(box)
-        gui.widgetLabel(hbox, "None")
+        gui.widgetLabel(hbox, "无")
         self.scope_slider = gui.hSlider(
             hbox, self, "scope_prop", minValue=0, maxValue=100, width=140,
             createLabel=False, callback=self._scope_slider_changed)
-        gui.widgetLabel(hbox, "All")
+        gui.widgetLabel(hbox, "全部")
         self.scope_label = gui.widgetLabel(
             box, "", alignment=Qt.AlignCenter,
             sizePolicy=(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         self._set_scope_label()
         gui.separator(box, 10, 10)
         self.replicable_check = gui.checkBox(
-            box, self, "random_seed", "Replicable shuffling",
+            box, self, "random_seed", "可复制的无序(Replicable shuffling)",
             callback=self._shuffle_check_changed)
 
         self.info.set_input_summary(self.info.NoInput)

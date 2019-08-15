@@ -119,16 +119,16 @@ class FeatureEditor(QFrame):
         )
         layout.setContentsMargins(0, 0, 0, 0)
         self.nameedit = QLineEdit(
-            placeholderText="Name...",
+            placeholderText="名称...",
             sizePolicy=QSizePolicy(QSizePolicy.Minimum,
                                    QSizePolicy.Fixed)
         )
         self.expressionedit = QLineEdit(
-            placeholderText="Expression...",
+            placeholderText="表达式...",
             toolTip=self.ExpressionTooltip)
 
         self.attrs_model = itemmodels.VariableListModel(
-            ["Select Feature"], parent=self)
+            ["选择特征"], parent=self)
         self.attributescb = ComboBoxSearch(
             minimumContentsLength=16,
             sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
@@ -140,7 +140,7 @@ class FeatureEditor(QFrame):
         self.funcs_model = itemmodels.PyListModelTooltip()
         self.funcs_model.setParent(self)
 
-        self.funcs_model[:] = chain(["Select Function"], sorted_funcs)
+        self.funcs_model[:] = chain(["选择函数"], sorted_funcs)
         self.funcs_model.tooltips[:] = chain(
             [''],
             [self.FUNCTIONS[func].__doc__ for func in sorted_funcs])
@@ -185,7 +185,7 @@ class FeatureEditor(QFrame):
         self.expressionedit.setText(data.expression)
         self.setModified(False)
         self.featureChanged.emit()
-        self.attrs_model[:] = ["Select Feature"]
+        self.attrs_model[:] = ["选择特征"]
         if domain is not None and not domain.empty():
             self.attrs_model[:] += chain(domain.attributes,
                                          domain.class_vars,
@@ -362,17 +362,16 @@ class FeatureConstructorHandler(DomainContextHandler):
 
 
 class OWFeatureConstructor(OWWidget):
-    name = "Feature Constructor"
-    description = "Construct new features (data columns) from a set of " \
-                  "existing features in the input dataset."
+    name = "特征构造器(Feature Constructor)"
+    description = "用输入数据集中的现有特征构造新特征。"
     icon = "icons/FeatureConstructor.svg"
     keywords = ['function', 'lambda']
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     want_main_area = False
 
@@ -400,7 +399,7 @@ class OWFeatureConstructor(OWWidget):
         self.data = None
         self.editors = {}
 
-        box = gui.vBox(self.controlArea, "Variable Definitions")
+        box = gui.vBox(self.controlArea, "变量定义")
 
         toplayout = QHBoxLayout()
         toplayout.setContentsMargins(0, 0, 0, 0)
@@ -423,7 +422,7 @@ class OWFeatureConstructor(OWWidget):
         buttonlayout.setContentsMargins(0, 0, 0, 0)
 
         self.addbutton = QPushButton(
-            "New", toolTip="Create a new variable",
+            "新建", toolTip="Create a new variable",
             minimumWidth=120,
             shortcut=QKeySequence.New
         )
@@ -436,35 +435,35 @@ class OWFeatureConstructor(OWWidget):
             return unique_name(fmt, self.reserved_names())
 
         menu = QMenu(self.addbutton)
-        cont = menu.addAction("Numeric")
+        cont = menu.addAction("数值数据")
         cont.triggered.connect(
             lambda: self.addFeature(
                 ContinuousDescriptor(generate_newname("X{}"), "", 3))
         )
-        disc = menu.addAction("Categorical")
+        disc = menu.addAction("分类数据")
         disc.triggered.connect(
             lambda: self.addFeature(
                 DiscreteDescriptor(generate_newname("D{}"), "", (), False))
         )
-        string = menu.addAction("Text")
+        string = menu.addAction("文本")
         string.triggered.connect(
             lambda: self.addFeature(
                 StringDescriptor(generate_newname("S{}"), ""))
         )
-        datetime = menu.addAction("Date/Time")
+        datetime = menu.addAction("日期/时间")
         datetime.triggered.connect(
             lambda: self.addFeature(
                 DateTimeDescriptor(generate_newname("T{}"), ""))
         )
 
         menu.addSeparator()
-        self.duplicateaction = menu.addAction("Duplicate Selected Variable")
+        self.duplicateaction = menu.addAction("复制选中变量")
         self.duplicateaction.triggered.connect(self.duplicateFeature)
         self.duplicateaction.setEnabled(False)
         self.addbutton.setMenu(menu)
 
         self.removebutton = QPushButton(
-            "Remove", toolTip="Remove selected variable",
+            "删除", toolTip="删除选中变量",
             minimumWidth=120,
             shortcut=QKeySequence.Delete
         )
@@ -502,7 +501,7 @@ class OWFeatureConstructor(OWWidget):
 
         box = gui.hBox(self.controlArea)
         gui.rubber(box)
-        commit = gui.button(box, self, "Send", callback=self.apply,
+        commit = gui.button(box, self, "发送", callback=self.apply,
                             default=True)
         commit.setMinimumWidth(180)
 

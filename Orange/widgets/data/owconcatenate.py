@@ -29,21 +29,21 @@ from Orange.widgets.widget import Input, Output, Msg
 
 
 class OWConcatenate(widget.OWWidget):
-    name = "Concatenate"
-    description = "Concatenate (append) two or more datasets."
+    name = "连接(Concatenate)"
+    description = "连接（附加）两个或多个数据集。"
     priority = 1111
     icon = "icons/Concatenate.svg"
     keywords = ["append", "join", "extend"]
 
     class Inputs:
-        primary_data = Input("Primary Data", Orange.data.Table)
-        additional_data = Input("Additional Data",
+        primary_data = Input("主要数据(Primary Data)", Orange.data.Table)
+        additional_data = Input("附加数据(Additional Data)",
                                 Orange.data.Table,
                                 multiple=True,
                                 default=True)
 
     class Outputs:
-        data = Output("Data", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table)
 
     class Error(widget.OWWidget.Error):
         bow_concatenation = Msg("Inputs must be of the same type.")
@@ -77,10 +77,10 @@ class OWConcatenate(widget.OWWidget):
     want_main_area = False
     resizing_enabled = False
 
-    domain_opts = ("all variables that appear in input tables",
-                   "only variables that appear in all tables")
+    domain_opts = ("所有表中出现变量的并集",
+                   "所有表中变量的交集")
 
-    id_roles = ("Class attribute", "Attribute", "Meta attribute")
+    id_roles = ("类别属性(Class attribute)", "属性(Attribute)", "元属性(Meta attribute)")
 
     auto_commit = Setting(True)
 
@@ -90,14 +90,14 @@ class OWConcatenate(widget.OWWidget):
         self.primary_data = None
         self.more_data = OrderedDict()
 
-        self.mergebox = gui.vBox(self.controlArea, "Variable Merging")
+        self.mergebox = gui.vBox(self.controlArea, "变量合并")
         box = gui.radioButtons(
             self.mergebox, self, "merge_type",
             callback=self._merge_type_changed)
 
         gui.widgetLabel(
-            box, self.tr("When there is no primary table, " +
-                         "the output should contain:"))
+            box, self.tr("当没有主表时，" +
+                         "方法应该是："))
 
         for opts in self.domain_opts:
             gui.appendRadioButton(box, self.tr(opts))
@@ -106,24 +106,23 @@ class OWConcatenate(widget.OWWidget):
 
         label = gui.widgetLabel(
             box,
-            self.tr("The resulting table will have a class only if there " +
-                    "is no conflict between input classes."))
+            self.tr("只有在输入类别(class)之间没有冲突时，结果表才会有一个类别(class)。" 
+                    ))
         label.setWordWrap(True)
 
         gui.separator(box)
         gui.checkBox(
             box, self, "ignore_compute_value",
-            "Treat variables with the same name as the same variable,\n"
-            "even if they are computed using different formulae.",
+            "将相同名称的变量看做同一个变量",
             callback=self.apply, stateWhenDisabled=False)
         ###
         box = gui.vBox(
-            self.controlArea, self.tr("Source Identification"),
+            self.controlArea, self.tr("数据源识别"),
             addSpace=False)
 
         cb = gui.checkBox(
             box, self, "append_source_column",
-            self.tr("Append data source IDs"),
+            self.tr("附加数据源ID"),
             callback=self._source_changed)
 
         ibox = gui.indentedBox(box, sep=gui.checkButtonOffsetHint(cb))
@@ -136,12 +135,12 @@ class OWConcatenate(widget.OWWidget):
         )
 
         form.addRow(
-            self.tr("Feature name:"),
+            self.tr("特征名称:"),
             gui.lineEdit(ibox, self, "source_attr_name", valueType=str,
                          callback=self._source_changed))
 
         form.addRow(
-            self.tr("Place:"),
+            self.tr("位于:"),
             gui.comboBox(ibox, self, "source_column_role", items=self.id_roles,
                          callback=self._source_changed))
 

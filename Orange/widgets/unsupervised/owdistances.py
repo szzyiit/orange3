@@ -27,7 +27,18 @@ METRICS = [
     ("Mahalanobis", distance.Mahalanobis),
     ('Bhattacharyya', distance.Bhattacharyya)
 ]
-
+Chinese_METRICS = [
+    ("欧几里德", distance.Euclidean),
+    ("曼哈顿", distance.Manhattan),
+    ("马哈拉诺比斯(Mahalanobis)", distance.Mahalanobis),
+    ("余弦", distance.Cosine),
+    ("杰卡德(Jaccard)", distance.Jaccard),
+    ("斯皮尔曼(Spearman)", distance.SpearmanR),
+    ("绝对斯皮尔曼(Absolute Spearman)", distance.SpearmanRAbsolute),
+    ("皮尔逊(Pearson)", distance.PearsonR),
+    ("绝对皮尔逊(Absolute Pearson)", distance.PearsonRAbsolute),
+    ("汉明(Hamming)", distance.Hamming)
+]
 
 class InterruptException(Exception):
     pass
@@ -45,7 +56,7 @@ class DistanceRunner:
             if state.is_interruption_requested():
                 raise InterruptException
 
-        state.set_status("Calculating...")
+        state.set_status("正在计算...")
         kwargs = {"axis": 1 - axis, "impute": True, "callback": callback}
         if metric.supports_normalization and normalized_dist:
             kwargs["normalize"] = True
@@ -53,16 +64,16 @@ class DistanceRunner:
 
 
 class OWDistances(OWWidget, ConcurrentWidgetMixin):
-    name = "Distances"
-    description = "Compute a matrix of pairwise distances."
+    name = "距离(Distances)"
+    description = "计算成对距离矩阵."
     icon = "icons/Distance.svg"
     keywords = []
 
     class Inputs:
-        data = Input("Data", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table)
 
     class Outputs:
-        distances = Output("Distances", Orange.misc.DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", Orange.misc.DistMatrix, dynamic=False)
 
     settings_version = 3
 
@@ -103,17 +114,17 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
         self._set_output_summary(None)
 
         gui.radioButtons(
-            self.controlArea, self, "axis", ["Rows", "Columns"],
-            box="Distances between", callback=self._invalidate
+            self.controlArea, self, "axis", ["行", "列"],
+            box="之间的距离", callback=self._invalidate
         )
-        box = gui.widgetBox(self.controlArea, "Distance Metric")
+        box = gui.widgetBox(self.controlArea, "距离度量")
         self.metrics_combo = gui.comboBox(
             box, self, "metric_idx",
-            items=[m[0] for m in METRICS],
+            items=[m[0] for m in Chinese_METRICS],
             callback=self._metric_changed
         )
         self.normalization_check = gui.checkBox(
-            box, self, "normalized_dist", "Normalized",
+            box, self, "normalized_dist", "归一化",
             callback=self._invalidate,
             tooltip=("All dimensions are (implicitly) scaled to a common"
                      "scale to normalize the influence across the domain."),

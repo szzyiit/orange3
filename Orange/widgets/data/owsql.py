@@ -37,16 +37,16 @@ class BackendModel(PyListModel):
 
 
 class OWSql(OWBaseSql):
-    name = "SQL Table"
+    name = "SQL表(SQL Table)"
     id = "orange.widgets.data.sql"
-    description = "Load dataset from SQL."
+    description = "从SQL加载数据集。"
     icon = "icons/SQLTable.svg"
     priority = 30
     category = "Data"
     keywords = ["load"]
 
     class Outputs:
-        data = Output("Data", Table, doc="Attribute-valued dataset read from the input file.")
+        data = Output("数据(Data)", Table, doc="Attribute-valued dataset read from the input file.")
 
     settings_version = 2
 
@@ -134,11 +134,11 @@ class OWSql(OWBaseSql):
         box.layout().addWidget(self.custom_sql)
 
         gui.checkBox(box, self, "guess_values",
-                     "Auto-discover categorical variables",
+                     "自动发现分类变量",
                      callback=self.open_table)
 
         self.downloadcb = gui.checkBox(box, self, "download",
-                                       "Download data to local memory",
+                                       "将数据下载到本地内存",
                                        callback=self.open_table)
 
     def highlight_error(self, text=""):

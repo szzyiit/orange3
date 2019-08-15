@@ -21,8 +21,7 @@ from Orange.data.domain import filter_visible
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils import itemmodels, colorpalettes
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME)
-from Orange.widgets.utils.graphicstextlist import TextListWidget
+                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output
 from Orange.widgets.utils.dendrogram import DendrogramWidget
@@ -247,19 +246,19 @@ class DistanceMapItem(pg.ImageItem):
 
 
 class OWDistanceMap(widget.OWWidget):
-    name = "Distance Map"
-    description = "Visualize a distance matrix."
+    name = "距离图(Distance Map)"
+    description = "可视化距离矩阵"
     icon = "icons/DistanceMap.svg"
     priority = 1200
     keywords = []
 
     class Inputs:
-        distances = Input("Distances", Orange.misc.DistMatrix)
+        distances = Input("距离(Distances)", Orange.misc.DistMatrix)
 
     class Outputs:
-        selected_data = Output("Selected Data", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Orange.data.Table)
-        features = Output("Features", widget.AttributeList, dynamic=False)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
+        features = Output("特征(Features)", widget.AttributeList, dynamic=False)
 
     settingsHandler = settings.PerfectDomainContextHandler()
 
@@ -300,11 +299,11 @@ class OWDistanceMap(widget.OWWidget):
         self._set_output_summary(None)
 
         self.sorting_cb = gui.comboBox(
-            self.controlArea, self, "sorting", box="Element Sorting",
-            items=["None", "Clustering", "Clustering with ordered leaves"],
+            self.controlArea, self, "sorting", box="元素排序",
+            items=["无", "聚类(Clustering)", "有序叶聚类"],
             callback=self._invalidate_ordering)
 
-        box = gui.vBox(self.controlArea, "Colors")
+        box = gui.vBox(self.controlArea, "颜色")
         self.color_map_widget = cmw = ColorGradientSelection(
             thresholds=(self.color_low, self.color_high),
         )
@@ -324,12 +323,12 @@ class OWDistanceMap(widget.OWWidget):
         box.layout().addWidget(self.color_map_widget)
 
         self.annot_combo = gui.comboBox(
-            self.controlArea, self, "annotation_idx", box="Annotations",
+            self.controlArea, self, "annotation_idx", box="注释",
             contentsLength=12, searchable=True,
             callback=self._invalidate_annotations
         )
         self.annot_combo.setModel(itemmodels.VariableListModel())
-        self.annot_combo.model()[:] = ["None", "Enumeration"]
+        self.annot_combo.model()[:] = ["无", "枚举"]
         self.controlArea.layout().addStretch()
 
         gui.auto_send(self.controlArea, self, "autocommit")
@@ -455,19 +454,19 @@ class OWDistanceMap(widget.OWWidget):
         self.items = items
         model = self.annot_combo.model()
         if items is None:
-            model[:] = ["None", "Enumeration"]
+            model[:] = ["无", "枚举"]
         elif not axis:
-            model[:] = ["None", "Enumeration", "Attribute names"]
+            model[:] = ["无", "枚举", "Attribute names"]
         elif isinstance(items, Orange.data.Table):
             annot_vars = list(filter_visible(items.domain.variables)) + list(items.domain.metas)
-            model[:] = ["None", "Enumeration"] + annot_vars
+            model[:] = ["无", "枚举"] + annot_vars
             self.annotation_idx = 0
             self.openContext(items.domain)
         elif isinstance(items, list) and \
                 all(isinstance(item, Orange.data.Variable) for item in items):
-            model[:] = ["None", "Enumeration", "Name"]
+            model[:] = ["无", "枚举", "Name"]
         else:
-            model[:] = ["None", "Enumeration"]
+            model[:] = ["无", "枚举"]
         self.annotation_idx = min(self.annotation_idx, len(model) - 1)
 
     def clear(self):

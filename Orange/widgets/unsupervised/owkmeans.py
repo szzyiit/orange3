@@ -17,7 +17,7 @@ from Orange.preprocess.impute import ReplaceUnknowns
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.annotated_data import \
-    ANNOTATED_DATA_SIGNAL_NAME, add_columns
+    ANNOTATED_DATA_SIGNAL_Chinese_NAME, add_columns
 from Orange.widgets.utils.concurrent import ThreadExecutor, FutureSetWatcher
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
@@ -98,22 +98,21 @@ class NotEnoughData(ValueError):
 
 
 class OWKMeans(widget.OWWidget):
-    name = "k-Means"
-    description = "k-Means clustering algorithm with silhouette-based " \
-                  "quality estimation."
+    name = "均值(k-Means)"
+    description = "基于轮廓质量估计的 K 均值聚类算法"
     icon = "icons/KMeans.svg"
     priority = 2100
     keywords = ["kmeans", "clustering"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
         annotated_data = Output(
-            ANNOTATED_DATA_SIGNAL_NAME, Table, default=True,
+            ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True,
             replaces=["Annotated Data"]
         )
-        centroids = Output("Centroids", Table)
+        centroids = Output("质心(Centroids)", Table)
 
     class Error(widget.OWWidget.Error):
         failed = widget.Msg("Clustering failed\nError: {}")
@@ -131,8 +130,8 @@ class OWKMeans(widget.OWWidget):
             "Too few ({}) unique data instances for {} clusters"
         )
 
-    INIT_METHODS = (("Initialize with KMeans++", "k-means++"),
-                    ("Random initialization", "random"))
+    INIT_METHODS = (("使用 KMeans++ 初始化", "k-means++"),
+                    ("随机初始化", "random"))
 
     resizing_enabled = False
     buttons_area_orientation = Qt.Vertical
@@ -174,11 +173,11 @@ class OWKMeans(widget.OWWidget):
         layout = QGridLayout()
         bg = gui.radioButtonsInBox(
             self.controlArea, self, "optimize_k", orientation=layout,
-            box="Number of Clusters", callback=self.update_method,
+            box="聚类数量", callback=self.update_method,
         )
 
         layout.addWidget(
-            gui.appendRadioButton(bg, "Fixed:", addToLayout=False), 1, 1)
+            gui.appendRadioButton(bg, "固定:", addToLayout=False), 1, 1)
         sb = gui.hBox(None, margin=0)
         gui.spin(
             sb, self, "k", minv=2, maxv=30,
@@ -187,7 +186,7 @@ class OWKMeans(widget.OWWidget):
         layout.addWidget(sb, 1, 2)
 
         layout.addWidget(
-            gui.appendRadioButton(bg, "From", addToLayout=False), 2, 1)
+            gui.appendRadioButton(bg, "从", addToLayout=False), 2, 1)
         ftobox = gui.hBox(None)
         ftobox.layout().setContentsMargins(0, 0, 0, 0)
         layout.addWidget(ftobox, 2, 2)
@@ -195,32 +194,32 @@ class OWKMeans(widget.OWWidget):
             ftobox, self, "k_from", minv=2, maxv=29,
             controlWidth=60, alignment=Qt.AlignRight,
             callback=self.update_from)
-        gui.widgetLabel(ftobox, "to")
+        gui.widgetLabel(ftobox, "到")
         gui.spin(
             ftobox, self, "k_to", minv=3, maxv=30,
             controlWidth=60, alignment=Qt.AlignRight,
             callback=self.update_to)
         gui.rubber(ftobox)
 
-        box = gui.vBox(self.controlArea, "Preprocessing")
-        gui.checkBox(box, self, "normalize", "Normalize columns",
+        box = gui.vBox(self.controlArea, "预处理")
+        gui.checkBox(box, self, "normalize", "归一化列",
                      callback=self.invalidate)
 
-        box = gui.vBox(self.controlArea, "Initialization")
+        box = gui.vBox(self.controlArea, "初始化")
         gui.comboBox(
             box, self, "smart_init", items=[m[0] for m in self.INIT_METHODS],
             callback=self.invalidate)
 
         layout = QGridLayout()
         gui.widgetBox(box, orientation=layout)
-        layout.addWidget(gui.widgetLabel(None, "Re-runs: "), 0, 0, Qt.AlignLeft)
+        layout.addWidget(gui.widgetLabel(None, "重新运行: "), 0, 0, Qt.AlignLeft)
         sb = gui.hBox(None, margin=0)
         layout.addWidget(sb, 0, 1)
         gui.lineEdit(
             sb, self, "n_init", controlWidth=60,
             valueType=int, validator=QIntValidator(), callback=self.invalidate)
         layout.addWidget(
-            gui.widgetLabel(None, "Maximum iterations: "), 1, 0, Qt.AlignLeft)
+            gui.widgetLabel(None, "最大迭代次数: "), 1, 0, Qt.AlignLeft)
         sb = gui.hBox(None, margin=0)
         layout.addWidget(sb, 1, 1)
         gui.lineEdit(
@@ -231,7 +230,7 @@ class OWKMeans(widget.OWWidget):
                                            commit=self.commit)
         gui.rubber(self.controlArea)
 
-        box = gui.vBox(self.mainArea, box="Silhouette Scores")
+        box = gui.vBox(self.mainArea, box="轮廓分数(Silhouette Scores)")
         self.mainArea.setVisible(self.optimize_k)
         self.table_model = ClusterTableModel(self)
         table = self.table_view = QTableView(self.mainArea)

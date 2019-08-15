@@ -15,9 +15,8 @@ from Orange.widgets.widget import Output
 
 
 class OWLinearRegression(OWBaseLearner):
-    name = "Linear Regression"
-    description = "A linear regression algorithm with optional L1 (LASSO), " \
-                  "L2 (ridge) or L1L2 (elastic net) regularization."
+    name = "线性回归(Linear Regression)"
+    description = "一种线性回归算法，具有可选的L1（Lasso）L2（Ridge）或L1L2（Elastic Net）正则化。"
     icon = "icons/LinearRegression.svg"
     replaces = [
         "Orange.widgets.regression.owlinearregression.OWLinearRegression",
@@ -28,11 +27,11 @@ class OWLinearRegression(OWBaseLearner):
     LEARNER = LinearRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("Coefficients", Table, explicit=True)
+        coefficients = Output("系数", Table, explicit=True)
 
     #: Types
-    REGULARIZATION_TYPES = ["No regularization", "Ridge regression (L2)",
-                            "Lasso regression (L1)", "Elastic net regression"]
+    REGULARIZATION_TYPES = ["无正则化", "岭回归Ridge regression (L2)",
+                            "套索回归Lasso regression (L1)", "弹性网络回归(Elastic net regression)"]
     OLS, Ridge, Lasso, Elastic = 0, 1, 2, 3
 
     ridge = settings.Setting(False)
@@ -52,19 +51,19 @@ class OWLinearRegression(OWBaseLearner):
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.hBox(self.controlArea, "Parameters")
+        box = gui.hBox(self.controlArea, "参数")
         gui.checkBox(box, self, "fit_intercept",
-                     "Fit intercept (unchecking it fixes it to zero)",
+                     "拟合截距(不勾选则固定为0)",
                      callback=self._intercept_changed)
 
-        box = gui.hBox(self.controlArea, "Regularization")
+        box = gui.hBox(self.controlArea, "正则化(Regularization)")
         gui.radioButtons(box, self, "reg_type",
                          btnLabels=self.REGULARIZATION_TYPES,
                          callback=self._reg_type_changed)
 
         gui.separator(box, 20, 20)
         self.alpha_box = box2 = gui.vBox(box, margin=10)
-        gui.widgetLabel(box2, "Regularization strength:")
+        gui.widgetLabel(box2, "正则化强度:")
         gui.hSlider(
             box2, self, "alpha_index",
             minValue=0, maxValue=len(self.alphas) - 1,
@@ -76,7 +75,7 @@ class OWLinearRegression(OWBaseLearner):
 
         gui.separator(box2, 10, 10)
         box4 = gui.vBox(box2, margin=0)
-        gui.widgetLabel(box4, "Elastic net mixing:")
+        gui.widgetLabel(box4, "弹性网络混合(Elastic net mixing):")
         box5 = gui.hBox(box4)
         gui.widgetLabel(box5, "L1")
         self.l2_ratio_slider = gui.hSlider(

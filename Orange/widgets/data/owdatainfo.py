@@ -16,17 +16,16 @@ except ImportError:
 
 
 class OWDataInfo(widget.OWWidget):
-    name = "Data Info"
+    name = "数据信息(Data Info)"
     id = "orange.widgets.data.info"
-    description = """Display basic information about the dataset, such
-    as the number and type of variables in the columns and the number of rows."""
+    description = """显示数据集的基本信息，例如列中变量的数量和类型以及行数。"""
     icon = "icons/DataInfo.svg"
     priority = 80
     category = "Data"
     keywords = ["information", "inspect"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     want_main_area = False
     resizing_enabled = False
@@ -36,11 +35,12 @@ class OWDataInfo(widget.OWWidget):
 
         self._clear_fields()
 
-        for box in ("Data Set Name", "Data Set Size", "Features", "Targets",
-                    "Meta Attributes", "Location", "Data Attributes"):
-            name = box.lower().replace(" ", "_")
-            bo = gui.vBox(self.controlArea, box,
-                          addSpace=False and box != "Meta Attributes")
+        for box in (["Data Set Name","数据集名称"], ["Data Set Size","数据集大小"], ["Features","特征"], ["Targets","目标"],
+                    ["Meta Attributes","元属性"], ["Location","位置"], ["Data Attributes","数据属性"]):
+            name = box[0].lower().replace(" ", "_")
+            chinese_name = box[1]
+            bo = gui.vBox(self.controlArea, chinese_name,
+                          addSpace=False and box[0] != "Meta Attributes")
             gui.label(bo, self, "%%(%s)s" % name)
 
         self.info.set_input_summary(self.info.NoInput)
@@ -95,13 +95,13 @@ class OWDataInfo(widget.OWWidget):
 
         def pack_counts(s, include_non_primitive=False):
             if not s:
-                return "None"
+                return "无(None)"
             return pack_table(
                 (name, n_or_none(self._count(s, type_)))
                 for name, type_ in (
-                    ("Categorical", DiscreteVariable),
-                    ("Numeric", ContinuousVariable),
-                    ("Text", StringVariable))[:2 + include_non_primitive]
+                    ("分类数据", DiscreteVariable),
+                    ("数值数据", ContinuousVariable),
+                    ("文本", StringVariable))[:2 + include_non_primitive]
             )
 
         domain = data.domain
@@ -121,8 +121,8 @@ class OWDataInfo(widget.OWWidget):
 
         def update_size():
             self.data_set_size = pack_table((
-                ("Rows", len(data)),
-                ("Columns", len(domain)+len(domain.metas)))) + sparseness
+                ("行", len(data)),
+                ("列", len(domain)+len(domain.metas)))) + sparseness
 
         threading.Thread(target=update_size).start()
 
@@ -132,9 +132,9 @@ class OWDataInfo(widget.OWWidget):
         self.meta_attributes = pack_counts(domain.metas, True)
         if class_var:
             if class_var.is_continuous:
-                self.targets = "Numeric target variable"
+                self.targets = "数值目标变量"
             else:
-                self.targets = "Categorical outcome with {} values"\
+                self.targets = "具有 {} 个值的分类结果"\
                                .format(len(class_var.values))
         elif domain.class_vars:
             disc_class = self._count(domain.class_vars, DiscreteVariable)
@@ -174,7 +174,7 @@ class OWDataInfo(widget.OWWidget):
                             .format(data.table_name, connection_string)
             dd["Rows"] = data.approx_len()
         else:
-            self.location = "Data is stored in memory"
+            self.location = "数据存储在内存中"
             dd["Rows"] = len(data)
 
         def join_if(items):

@@ -17,9 +17,8 @@ MAXINT = 2 ** 31 - 1
 
 
 class OWSGD(OWBaseLearner):
-    name = 'Stochastic Gradient Descent'
-    description = 'Minimize an objective function using a stochastic ' \
-                  'approximation of gradient descent.'
+    name = '随机梯度下降法(Stochastic Gradient Descent)'
+    description = '利用梯度下降的随机逼近最小化目标函数'
     icon = "icons/SGD.svg"
     replaces = [
         "Orange.widgets.regression.owsgdregression.OWSGDRegression",
@@ -34,10 +33,15 @@ class OWSGD(OWBaseLearner):
     left_side_scrolling = True
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("Coefficients", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table, explicit=True)
 
     reg_losses = (
         ('Squared Loss', 'squared_loss'),
+        ('Huber', 'huber'),
+        ('ε insensitive', 'epsilon_insensitive'),
+        ('Squared ε insensitive', 'squared_epsilon_insensitive'))
+    Chinese_reg_losses = (
+        ('平方损失', 'squared_loss'),
         ('Huber', 'huber'),
         ('ε insensitive', 'epsilon_insensitive'),
         ('Squared ε insensitive', 'squared_epsilon_insensitive'))
@@ -48,6 +52,12 @@ class OWSGD(OWBaseLearner):
         ('Modified Huber', 'modified_huber'),
         ('Squared Hinge', 'squared_hinge'),
         ('Perceptron', 'perceptron')) + reg_losses
+    Chinese_cls_losses = (
+        ('Hinge', 'hinge'),
+        ('逻辑回归', 'log'),
+        ('Modified Huber', 'modified_huber'),
+        ('Squared Hinge', 'squared_hinge'),
+        ('感知器', 'perceptron')) + Chinese_reg_losses
 
     #: Regularization methods
     penalties = (
@@ -55,11 +65,20 @@ class OWSGD(OWBaseLearner):
         ('Lasso (L1)', 'l1'),
         ('Ridge (L2)', 'l2'),
         ('Elastic Net', 'elasticnet'))
+    Chinese_penalties = (
+        ('无', 'none'),
+        ('套索Lasso (L1)', 'l1'),
+        ('脊Ridge (L2)', 'l2'),
+        ('弹性网', 'elasticnet'))
 
     learning_rates = (
         ('Constant', 'constant'),
         ('Optimal', 'optimal'),
         ('Inverse scaling', 'invscaling'))
+    Chinese_learning_rates = (
+        ('常量(Constant)', 'constant'),
+        ('最优的(Optimal)', 'optimal'),
+        ('逆比例(Inverse scaling)', 'invscaling'))
 
     learner_name = Setting('SGD')
     #: Loss function index for classification problems
@@ -110,7 +129,7 @@ class OWSGD(OWBaseLearner):
     def _add_algorithm_to_layout(self, layout):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         grid = QGridLayout()
-        box = gui.widgetBox(None, 'Loss functions', orientation=grid)
+        box = gui.widgetBox(None, '损失函数', orientation=grid)
         layout.addWidget(box)
         # Classfication loss function
         self.cls_loss_function_combo = gui.comboBox(
@@ -150,7 +169,7 @@ class OWSGD(OWBaseLearner):
 
     def _add_regularization_to_layout(self, layout):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.widgetBox(None, 'Regularization')
+        box = gui.widgetBox(None, '正则化')
         layout.addWidget(box)
         hlayout = gui.hBox(box)
         self.penalty_combo = gui.comboBox(
@@ -166,7 +185,7 @@ class OWSGD(OWBaseLearner):
             box, sep=self._foc_frame_width(), orientation=Qt.Horizontal)
         self.alpha_spin = gui.spin(
             hbox, self, 'alpha', 0, 10., .1e-4, spinType=float, controlWidth=80,
-            label='Strength (α): ', alignment=Qt.AlignRight,
+            label='正则化强度 (α): ', alignment=Qt.AlignRight,
             callback=self.settings_changed)
         hbox.layout().addStretch()
 
@@ -175,32 +194,32 @@ class OWSGD(OWBaseLearner):
 
     def _add_learning_params_to_layout(self, layout):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.widgetBox(None, 'Optimization')
+        box = gui.widgetBox(None, '优化')
         layout.addWidget(box)
         self.learning_rate_combo = gui.comboBox(
-            box, self, 'learning_rate_index', label='Learning rate: ',
-            items=list(zip(*self.learning_rates))[0],
+            box, self, 'learning_rate_index', label='学习率: ',
+            items=list(zip(*self.Chinese_learning_rates))[0],
             orientation=Qt.Horizontal, callback=self._on_learning_rate_change)
         self.eta0_spin = gui.spin(
             box, self, 'eta0', 1e-4, 1., 1e-4, spinType=float,
-            label='Initial learning rate (η<sub>0</sub>): ',
+            label='初始学习率 (η<sub>0</sub>): ',
             alignment=Qt.AlignRight, controlWidth=80,
             callback=self.settings_changed)
         self.power_t_spin = gui.spin(
             box, self, 'power_t', 0, 1., 1e-4, spinType=float,
-            label='Inverse scaling exponent (t): ',
+            label='逆比例指数 (t): ',
             alignment=Qt.AlignRight, controlWidth=80,
             callback=self.settings_changed)
         gui.separator(box, height=12)
 
         self.max_iter_spin = gui.spin(
-            box, self, 'max_iter', 1, MAXINT - 1, label='Number of iterations: ',
+            box, self, 'max_iter', 1, MAXINT - 1, label='迭代次数: ',
             controlWidth=80, alignment=Qt.AlignRight,
             callback=self.settings_changed)
 
         self.tol_spin = gui.spin(
             box, self, 'tol', 0, 10., .1e-3, spinType=float, controlWidth=80,
-            label='Tolerance (stopping criterion): ', checked='tol_enabled',
+            label='公差（停止标准）: ', checked='tol_enabled',
             alignment=Qt.AlignRight, callback=self.settings_changed)
         gui.separator(box, height=12)
 
@@ -208,11 +227,11 @@ class OWSGD(OWBaseLearner):
         # spin box on OSX
         self.shuffle_cbx = gui.checkBox(
             gui.hBox(box), self, 'shuffle',
-            'Shuffle data after each iteration',
+            '每次迭代后随机化数据',
             callback=self._on_shuffle_change)
         self.random_seed_spin = gui.spin(
             box, self, 'random_state', 0, MAXINT,
-            label='Fixed seed for random shuffling: ', controlWidth=80,
+            label='固定随机化种子:', controlWidth=80,
             alignment=Qt.AlignRight, callback=self.settings_changed,
             checked='use_random_state', checkCallback=self.settings_changed)
 

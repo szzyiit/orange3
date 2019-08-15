@@ -23,7 +23,7 @@ from Orange.projection import PCA
 from Orange.widgets import widget, gui, report
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.annotated_data import add_columns, \
-    ANNOTATED_DATA_SIGNAL_NAME
+    ANNOTATED_DATA_SIGNAL_Chinese_NAME
 from Orange.widgets.utils.concurrent import FutureWatcher
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
@@ -42,12 +42,12 @@ _MAX_K_NEIGBOURS = 200
 _DEFAULT_K_NEIGHBORS = 30
 
 
-METRICS = [("Euclidean", "l2"), ("Manhattan", "l1"), ("Cosine", "cosine")]
+METRICS = [("欧几里德", "l2"), ("曼哈顿", "l1"), ("余弦", 'cosine')]
 
 
 class OWLouvainClustering(widget.OWWidget):
     name = "Louvain Clustering"
-    description = "Detects communities in a network of nearest neighbors."
+    description = "检测最近邻居网络或者邻居的社区"
     icon = "icons/LouvainClustering.svg"
     priority = 2110
 
@@ -57,12 +57,12 @@ class OWLouvainClustering(widget.OWWidget):
     resizing_enabled = False
 
     class Inputs:
-        data = Input("Data", Table, default=True)
+        data = Input("数据(Data)", Table, default=True)
 
     class Outputs:
         annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table, default=True)
         if Network is not None:
-            graph = Output("Network", Network)
+            graph = Output("网络(Network)", Network)
 
     apply_pca = Setting(True)
     pca_components = Setting(_DEFAULT_PCA_COMPONENTS)
@@ -73,7 +73,7 @@ class OWLouvainClustering(widget.OWWidget):
     auto_commit = Setting(False)
 
     class Information(widget.OWWidget.Information):
-        modified = Msg("Press commit to recompute clusters and send new data")
+        modified = Msg("点击应用以重新计算并发送新数据")
 
     class Error(widget.OWWidget.Error):
         empty_dataset = Msg("No features in data")
@@ -99,40 +99,40 @@ class OWLouvainClustering(widget.OWWidget):
         self.__commit_timer.timeout.connect(self.commit)
 
         # Set up UI
-        info_box = gui.vBox(self.controlArea, "Info")
-        self.info_label = gui.widgetLabel(info_box, "No data on input.")  # type: QLabel
+        info_box = gui.vBox(self.controlArea, "信息")
+        self.info_label = gui.widgetLabel(info_box, "没有输入数据。")  # type: QLabel
         self.info.set_input_summary(self.info.NoInput)
         self.info.set_output_summary(self.info.NoOutput)
 
-        preprocessing_box = gui.vBox(self.controlArea, "Preprocessing")
+        preprocessing_box = gui.vBox(self.controlArea, "预处理")
         self.normalize_cbx = gui.checkBox(
-            preprocessing_box, self, "normalize", label="Normalize data",
+            preprocessing_box, self, "normalize", label="归一化数据",
             callback=self._invalidate_preprocessed_data,
         )  # type: QCheckBox
         self.apply_pca_cbx = gui.checkBox(
-            preprocessing_box, self, "apply_pca", label="Apply PCA preprocessing",
+            preprocessing_box, self, "apply_pca", label="应用PCA预处理",
             callback=self._apply_pca_changed,
         )  # type: QCheckBox
         self.pca_components_slider = gui.hSlider(
-            preprocessing_box, self, "pca_components", label="PCA Components: ", minValue=2,
+            preprocessing_box, self, "pca_components", label="PCA成分: ", minValue=2,
             maxValue=_MAX_PCA_COMPONENTS,
             callback=self._invalidate_pca_projection, tracking=False
         )  # type: QSlider
 
-        graph_box = gui.vBox(self.controlArea, "Graph parameters")
+        graph_box = gui.vBox(self.controlArea, "图形参数")
         self.metric_combo = gui.comboBox(
-            graph_box, self, "metric_idx", label="Distance metric",
+            graph_box, self, "metric_idx", label="距离度量",
             items=[m[0] for m in METRICS], callback=self._invalidate_graph,
             orientation=Qt.Horizontal,
         )
         self.k_neighbors_spin = gui.spin(
             graph_box, self, "k_neighbors", minv=1, maxv=_MAX_K_NEIGBOURS,
-            label="k neighbors", controlWidth=80, alignment=Qt.AlignRight,
+            label="k 邻近", controlWidth=80, alignment=Qt.AlignRight,
             callback=self._invalidate_graph,
         )
         self.resolution_spin = gui.hSlider(
             graph_box, self, "resolution", minValue=0, maxValue=5., step=1e-1,
-            label="Resolution", intOnly=False, labelFormat="%.1f",
+            label="分辨率", intOnly=False, labelFormat="%.1f",
             callback=self._invalidate_partition, tracking=False,
         )  # type: QSlider
         self.resolution_spin.parent().setToolTip(
@@ -269,7 +269,7 @@ class OWLouvainClustering(widget.OWWidget):
                 run_on_graph, graph, resolution=self.resolution, state=state
             )
 
-        self.info_label.setText("Running...")
+        self.info_label.setText("正在运行...")
         self.__set_state_busy()
         self.__start_task(task, state)
 
@@ -368,7 +368,7 @@ class OWLouvainClustering(widget.OWWidget):
 
         # Display the number of found clusters in the UI
         num_clusters = len(np.unique(self.partition))
-        self.info_label.setText("%d clusters found." % num_clusters)
+        self.info_label.setText("找到 %d 个群集." % num_clusters)
 
         self._send_data()
 

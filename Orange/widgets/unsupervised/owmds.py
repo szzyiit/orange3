@@ -155,13 +155,12 @@ class OWMDSGraph(OWScatterPlotBase):
 
 class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
     name = "MDS"
-    description = "Two-dimensional data projection by multidimensional " \
-                  "scaling constructed from a distance matrix."
+    description = "由距离矩阵构造的多维尺度二维数据投影。"
     icon = "icons/MDS.svg"
     keywords = ["multidimensional scaling", "multi dimensional scaling"]
 
     class Inputs(OWDataProjectionWidget.Inputs):
-        distances = Input("Distances", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix)
 
     settings_version = 3
 
@@ -170,12 +169,12 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
 
     #: Refresh rate
     RefreshRate = [
-        ("Every iteration", 1),
-        ("Every 5 steps", 5),
-        ("Every 10 steps", 10),
-        ("Every 25 steps", 25),
-        ("Every 50 steps", 50),
-        ("None", -1)
+        ("每次迭代(Every iteration)", 1),
+        ("每5步(Every 5 steps)", 5),
+        ("每10步(Every 10 steps)", 10),
+        ("每25步(Every 25 steps)", 25),
+        ("每50步(Every 50 steps)", 50),
+        ("无(None)", -1)
     ]
 
     max_iter = settings.Setting(300)
@@ -220,22 +219,22 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         self._add_controls_optimization()
         super()._add_controls()
         self.gui.add_control(
-            self._effects_box, gui.hSlider, "Show similar pairs:",
+            self._effects_box, gui.hSlider, "显示相似的对(Show similar pairs):",
             master=self.graph, value="connected_pairs", minValue=0,
             maxValue=20, createLabel=False, callback=self._on_connected_changed
         )
 
     def _add_controls_optimization(self):
         box = gui.vBox(self.controlArea, box=True)
-        self.run_button = gui.button(box, self, "Start", self._toggle_run)
-        gui.comboBox(box, self, "refresh_rate", label="Refresh: ",
+        self.run_button = gui.button(box, self, "开始(Start)", self._toggle_run)
+        gui.comboBox(box, self, "refresh_rate", label="刷新(Refresh): ",
                      orientation=Qt.Horizontal,
                      items=[t for t, _ in OWMDS.RefreshRate],
                      callback=self.__refresh_rate_combo_changed)
         hbox = gui.hBox(box, margin=0)
-        gui.button(hbox, self, "PCA", callback=self.do_PCA)
-        gui.button(hbox, self, "Randomize", callback=self.do_random)
-        gui.button(hbox, self, "Jitter", callback=self.do_jitter)
+        gui.button(hbox, self, "主成分分析(PCA)", callback=self.do_PCA)
+        gui.button(hbox, self, "随机(Randomize)", callback=self.do_random)
+        gui.button(hbox, self, "抖动(Jitter)", callback=self.do_jitter)
 
     def __refresh_rate_combo_changed(self):
         if self.task is not None:
@@ -341,7 +340,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
     def _toggle_run(self):
         if self.task is not None:
             self.cancel()
-            self.run_button.setText("Resume")
+            self.run_button.setText("重新开始(Resume)")
             self.commit()
         else:
             self._run()
@@ -351,7 +350,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
                 or np.allclose(self.effective_matrix, 0):
             return
         self.graph.pause_drawing_pairs()
-        self.run_button.setText("Stop")
+        self.run_button.setText("停止(Stop)")
         _, step_size = OWMDS.RefreshRate[self.refresh_rate]
         if step_size == -1:
             step_size = self.max_iter
@@ -379,7 +378,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         assert len(result.embedding) == len(self.effective_matrix)
         self.embedding = result.embedding
         self.graph.resume_drawing_pairs()
-        self.run_button.setText("Start")
+        self.run_button.setText("开始(Start)")
         self.commit()
 
     def on_exception(self, ex: Exception):

@@ -76,7 +76,7 @@ class SimpleTreeLearner(Learner):
         Random seed.
     """
 
-    name = 'simple tree'
+    name = '简单树(simple tree)'
 
     def __init__(self, min_instances=2, max_depth=32, max_majority=0.95,
                  skip_prob=0.0, bootstrap=False, seed=42):

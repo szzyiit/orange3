@@ -13,7 +13,7 @@ from Orange.widgets.settings import Setting
 from Orange.data import Table, Domain, DiscreteVariable
 from Orange.data.util import get_unique_names
 from Orange.clustering import DBSCAN
-from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_SIGNAL_NAME
+from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_SIGNAL_Chinese_NAME
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg
@@ -56,24 +56,24 @@ def get_kth_distances(data, metric, k=5):
 
 class OWDBSCAN(widget.OWWidget):
     name = "DBSCAN"
-    description = "Density-based spatial clustering."
+    description = "基于密度的空间聚类."
     icon = "icons/DBSCAN.svg"
     priority = 2150
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
 
     class Error(widget.OWWidget.Error):
         not_enough_instances = Msg("Not enough unique data instances. "
                                    "At least two are required.")
 
     METRICS = [
-        ("Euclidean", "euclidean"),
-        ("Manhattan", "cityblock"),
-        ("Cosine", "cosine")
+        ("欧几里得", "euclidean"),
+        ("曼哈顿", "cityblock"),
+        ("余弦", "cosine")
     ]
 
     min_samples = Setting(4)
@@ -93,15 +93,15 @@ class OWDBSCAN(widget.OWWidget):
         self._set_input_summary(None)
         self._set_output_summary(None)
 
-        box = gui.widgetBox(self.controlArea, "Parameters")
+        box = gui.widgetBox(self.controlArea, "参数")
         gui.spin(box, self, "min_samples", 1, 100, 1,
                  callback=self._min_samples_changed,
-                 label="Core point neighbors")
+                 label="核心店邻近数(Core point neighbors)")
         gui.doubleSpin(box, self, "eps", EPS_BOTTOM_LIMIT, 1000, 0.01,
                        callback=self._eps_changed,
-                       label="Neighborhood distance")
+                       label="临近点距离")
 
-        box = gui.widgetBox(self.controlArea, self.tr("Distance Metric"))
+        box = gui.widgetBox(self.controlArea, self.tr("距离度量"))
         gui.comboBox(box, self, "metric_idx",
                      items=list(zip(*self.METRICS))[0],
                      callback=self._metirc_changed)
@@ -112,8 +112,8 @@ class OWDBSCAN(widget.OWWidget):
         self.controlArea.layout().addStretch()
 
         self.plot = SliderGraph(
-            x_axis_label="Data items sorted by score",
-            y_axis_label="Distance to the k-th nearest neighbour",
+            x_axis_label="根据评分排序的数据",
+            y_axis_label="到第 k 个最邻近点的距离",
             callback=self._on_cut_changed
         )
 

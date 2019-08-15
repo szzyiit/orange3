@@ -21,20 +21,20 @@ LINE_NAMES = ["component variance", "cumulative variance"]
 
 
 class OWPCA(widget.OWWidget):
-    name = "PCA"
-    description = "Principal component analysis with a scree-diagram."
+    name = "主成分分析(PCA)"
+    description = "主成分分析与 scree图。"
     icon = "icons/PCA.svg"
     priority = 3050
     keywords = ["principal component analysis", "linear transformation"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("数据(Data)", Table)
 
     class Outputs:
-        transformed_data = Output("Transformed Data", Table, replaces=["Transformed data"])
-        data = Output("Data", Table, default=True)
-        components = Output("Components", Table)
-        pca = Output("PCA", PCA, dynamic=False)
+        transformed_data = Output("转换的数据(Transformed Data)", Table, replaces=["Transformed data", "Transformed Data"])
+        data = Output("数据(Data)", Table, default=True)
+        components = Output("成分(Components)", Table)
+        pca = Output("主成分分析(PCA)", PCA, dynamic=False)
 
     ncomponents = settings.Setting(2)
     variance_covered = settings.Setting(100)
@@ -65,7 +65,7 @@ class OWPCA(widget.OWWidget):
         self._init_projector()
 
         # Components Selection
-        box = gui.vBox(self.controlArea, "Components Selection")
+        box = gui.vBox(self.controlArea, "成分选择")
         form = QFormLayout()
         box.layout().addLayout(form)
 
@@ -83,19 +83,19 @@ class OWPCA(widget.OWWidget):
         )
         self.variance_spin.setSuffix("%")
 
-        form.addRow("Components:", self.components_spin)
-        form.addRow("Explained variance:", self.variance_spin)
+        form.addRow("成分:", self.components_spin)
+        form.addRow("覆盖的贡献(Variance covered):", self.variance_spin)
 
         # Options
-        self.options_box = gui.vBox(self.controlArea, "Options")
+        self.options_box = gui.vBox(self.controlArea, "选项")
         self.normalize_box = gui.checkBox(
             self.options_box, self, "normalize",
-            "Normalize variables", callback=self._update_normalize
+            "归一化数据", callback=self._update_normalize
         )
 
         self.maxp_spin = gui.spin(
             self.options_box, self, "maxp", 1, MAX_COMPONENTS,
-            label="Show only first", callback=self._setup_plot,
+            label="只显示前...个", callback=self._setup_plot,
             keyboardTracking=False
         )
 
@@ -104,7 +104,7 @@ class OWPCA(widget.OWWidget):
         gui.auto_apply(self.controlArea, self, "auto_commit")
 
         self.plot = SliderGraph(
-            "Principal Components", "Proportion of variance",
+            "主成分", "贡献率(Proportion of variance)",
             self._on_cut_changed)
 
         self.mainArea.layout().addWidget(self.plot)

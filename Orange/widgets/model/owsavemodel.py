@@ -7,15 +7,15 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
 class OWSaveModel(OWSaveBase):
-    name = "Save Model"
-    description = "Save a trained model to an output file."
+    name = "保存模型(Save Model)"
+    description = "将经过训练的模型保存到输出文件。"
     icon = "icons/SaveModel.svg"
     replaces = ["Orange.widgets.classify.owsaveclassifier.OWSaveClassifier"]
     priority = 3000
     keywords = []
 
     class Inputs:
-        model = Input("Model", Model)
+        model = Input("模型(Model)", Model)
 
     filters = ["Pickled model (*.pkcls)"]
 

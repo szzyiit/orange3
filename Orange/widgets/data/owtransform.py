@@ -13,18 +13,18 @@ from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
 
 class OWTransform(OWWidget):
-    name = "Apply Domain"
-    description = "Applies template domain on data table."
+    name = "变换(Apply Domain)"
+    description = "在数据表上应用模板域"
     icon = "icons/Transform.svg"
     priority = 2110
     keywords = ["transform"]
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        template_data = Input("Template Data", Table)
+        data = Input("数据(Data)", Table, default=True)
+        template_data = Input("模板数据(Template Data)", Table)
 
     class Outputs:
-        transformed_data = Output("Transformed Data", Table)
+        transformed_data = Output("转换的数据(Transformed Data)", Table)
 
     class Error(OWWidget.Error):
         error = Msg("An error occurred while transforming data.\n{}")
@@ -38,7 +38,7 @@ class OWTransform(OWWidget):
         self.template_data = None  # type: Optional[Table]
         self.transformed_info = describe_data(None)  # type: OrderedDict
 
-        info_box = gui.widgetBox(self.controlArea, "Info")
+        info_box = gui.widgetBox(self.controlArea, "信息")
         self.input_label = gui.widgetLabel(info_box, "")
         self.template_label = gui.widgetLabel(info_box, "")
         self.output_label = gui.widgetLabel(info_box, "")
@@ -49,26 +49,26 @@ class OWTransform(OWWidget):
         self.info.set_output_summary(self.info.NoOutput)
 
     def set_input_label_text(self):
-        text = "No data on input."
+        text = "没有输入数据。"
         if self.data:
-            text = "Input data with {:,} instances and {:,} features.".format(
+            text = "输入包含 {:,} 个实例 {:,} 个特征的数据。".format(
                 len(self.data),
                 len(self.data.domain.attributes))
         self.input_label.setText(text)
 
     def set_template_label_text(self):
-        text = "No template data on input."
+        text = "没有输入模板数据。"
         if self.data and self.template_data:
-            text = "Template domain applied."
+            text = "模板域已应用。"
         elif self.template_data:
-            text = "Template data includes {:,} features.".format(
+            text = "模板数据包括 {:,} 个特征。".format(
                 len(self.template_data.domain.attributes))
         self.template_label.setText(text)
 
     def set_output_label_text(self, data):
         text = ""
         if data:
-            text = "Output data includes {:,} features.".format(
+            text = "输出数据包括 {:,} 个特征。".format(
                 len(data.domain.attributes))
         self.output_label.setText(text)
 

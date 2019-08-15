@@ -121,14 +121,14 @@ class InitType(IntEnum):
 
     @staticmethod
     def items():
-        return ["Circular", "Random"]
+        return ["圆形", "随机的"]
 
 
 class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     MAX_INSTANCES = 10000
 
     name = "FreeViz"
-    description = "Displays FreeViz projection"
+    description = "显示 FreeViz 投影"
     icon = "icons/Freeviz.svg"
     priority = 240
     keywords = ["viz"]
@@ -160,7 +160,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.__add_controls_start_box()
         super()._add_controls()
         self.gui.add_control(
-            self._effects_box, gui.hSlider, "Hide radius:", master=self.graph,
+            self._effects_box, gui.hSlider, "隐藏半径(Hide radius):", master=self.graph,
             value="hide_radius", minValue=0, maxValue=100, step=10,
             createLabel=False, callback=self.__radius_slider_changed
         )
@@ -168,10 +168,10 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     def __add_controls_start_box(self):
         box = gui.vBox(self.controlArea, box=True)
         gui.comboBox(
-            box, self, "initialization", label="Initialization:",
+            box, self, "initialization", label="初始化:",
             items=InitType.items(), orientation=Qt.Horizontal,
             labelWidth=90, callback=self.__init_combo_changed)
-        self.run_button = gui.button(box, self, "Start", self._toggle_run)
+        self.run_button = gui.button(box, self, "开始", self._toggle_run)
 
     @property
     def effective_variables(self):
@@ -193,7 +193,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         if self.task is not None:
             self.cancel()
             self.graph.set_sample_size(None)
-            self.run_button.setText("Resume")
+            self.run_button.setText("重新开始")
             self.commit()
         else:
             self._run()
@@ -202,7 +202,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         if self.data is None:
             return
         self.graph.set_sample_size(self.SAMPLE_SIZE)
-        self.run_button.setText("Stop")
+        self.run_button.setText("停止")
         self.start(run_freeviz, self.effective_data, self.projector)
 
     # ConcurrentWidgetMixin
@@ -220,13 +220,13 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.projector = result.projector
         self.projection = result.projection
         self.graph.set_sample_size(None)
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
         self.commit()
 
     def on_exception(self, ex: Exception):
         self.Error.proj_error(ex)
         self.graph.set_sample_size(None)
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
 
     # OWAnchorProjectionWidget
     def set_data(self, data):
@@ -277,7 +277,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     def enable_controls(self):
         super().enable_controls()
         self.run_button.setEnabled(self.data is not None)
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
 
     def get_coordinates_data(self):
         embedding = self.get_embedding()
