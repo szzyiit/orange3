@@ -104,7 +104,7 @@ class OWSql(OWBaseSql):
         self.selected_backend = backend.display_name if backend else None
 
     def _add_tables_controls(self):
-        vbox = gui.vBox(self.controlArea, "Tables", addSpace=True)
+        vbox = gui.vBox(self.controlArea, "数据表", addSpace=True)
         box = gui.vBox(vbox)
         self.tables = TableModel()
 

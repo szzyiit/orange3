@@ -98,7 +98,7 @@ class OWPredictions(OWWidget):
         self.reset_button = gui.button(
             self.controlArea, self, "恢复原始顺序",
             callback=self._reset_order,
-            tooltip="Show rows in the original order")
+            tooltip="以原始顺序显示行")
 
         table_opts = dict(horizontalScrollBarPolicy=Qt.ScrollBarAlwaysOn,
                           horizontalScrollMode=QTableView.ScrollPerPixel,

@@ -218,12 +218,12 @@ class OWBoxPlot(widget.OWWidget):
             tooltip="Order by 𝜒² or ANOVA over the subgroups",
             callback=self.apply_attr_sorting)
 
-        self.group_vars = VariableListModel(placeholder="None")
+        self.group_vars = VariableListModel(placeholder="无")
         sorted_model = SortProxyModel(sortRole=Qt.UserRole)
         sorted_model.setSourceModel(self.group_vars)
         sorted_model.sort(0)
 
-        box = gui.vBox(self.controlArea, "Subgroups")
+        box = gui.vBox(self.controlArea, "子组")
         view = self.group_list = ListViewSearch()
         view.setModel(sorted_model)
         view.selectionModel().selectionChanged.connect(self.grouping_changed)
