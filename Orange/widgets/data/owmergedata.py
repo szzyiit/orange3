@@ -290,7 +290,7 @@ class OWMergeData(widget.OWWidget):
     resizing_enabled = False
 
     class Warning(widget.OWWidget.Warning):
-        renamed_vars = Msg("为防止重名, 某些变量已重命名.\n{}")
+        renamed_vars = Msg("部分变量已更名以防止重名.\n{}")
 
     class Error(widget.OWWidget.Error):
         matching_numeric_with_nonnum = Msg(

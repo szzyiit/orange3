@@ -59,7 +59,7 @@ class OWLouvainClustering(widget.OWWidget):
         data = Input("数据(Data)", Table, default=True)
 
     class Outputs:
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True)
         if Network is not None:
             graph = Output("网络(Network)", Network)
 

@@ -19,6 +19,7 @@ def widget_discovery(discovery):
         "Orange.widgets.evaluate",
         "Orange.widgets.unsupervised",
         "Orange.widgets.reinforcement"
+        "Orange.widgets.deepLearning"
     ]
     for pkg in pkgs:
         discovery.process_category_package(pkg, distribution=dist)

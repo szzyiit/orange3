@@ -173,9 +173,9 @@ class GridWold(OWWidget):
         #                cwd=f'{dir_path}')
         self.process.readyReadStandardOutput.connect(self.stdoutReady)
         self.construct_command(self.mode)
-        self.process.start(self.final_command)
         self.process.started.connect(self.onstart)
         self.process.finished.connect(self.onfinish)
+        self.process.start(self.final_command)
 
     def construct_command(self, mode):
         options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \

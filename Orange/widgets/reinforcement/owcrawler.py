@@ -24,9 +24,9 @@ class Crawler(OWWidget):
 
         self.process = QProcess(self)
 
-        self.process.start(command)
         self.process.started.connect(self.onstart)
         self.process.finished.connect(self.onfinish)
+        self.process.start(command)
 
 
     def onstart(self):
