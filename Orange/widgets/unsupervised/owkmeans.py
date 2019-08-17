@@ -230,7 +230,7 @@ class OWKMeans(widget.OWWidget):
                                            commit=self.commit)
         gui.rubber(self.controlArea)
 
-        box = gui.vBox(self.mainArea, box="轮廓分数(Silhouette Scores)")
+        box = gui.vBox(self.mainArea, box="轮廓系数(Silhouette Scores)")
         self.mainArea.setVisible(self.optimize_k)
         self.table_model = ClusterTableModel(self)
         table = self.table_view = QTableView(self.mainArea)

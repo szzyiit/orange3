@@ -57,7 +57,7 @@ class ValidationError(InputValidationError):
 
 
 class OWSilhouettePlot(widget.OWWidget):
-    name = "Silhouette图"
+    name = "轮廓图(Silhouette Plot)"
     description = "视觉评估聚类质量和聚类成员的程度。"
 
     icon = "icons/SilhouettePlot.svg"
@@ -184,7 +184,7 @@ class OWSilhouettePlot(widget.OWWidget):
         gui.separator(self.buttonsArea)
         box = gui.vBox(self.buttonsArea, "输出")
         # Thunk the call to commit to call conditional commit
-        gui.checkBox(box, self, "add_scores", "添加silhouette分数",
+        gui.checkBox(box, self, "add_scores", "添加轮廓系数",
                      callback=lambda: self.commit())
 >>>>>>> chinese translation of all widgets
         gui.auto_send(box, self, "auto_commit", box=False)
