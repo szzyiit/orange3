@@ -1,20 +1,20 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="The basic data mining units in Orange are called widgets. There are widgets for reading the data, preprocessing, visualization, clustering, classification and others. Widgets communicate through channels. Data mining workflow is thus a collection of widgets and communication channels.&#10;&#10;In this workflow, there is a File widget that reads the data. File widget communicates this data to Data Table widget that shows the data spreadsheet. Notice how the output of the file widget is connected to the input of the Data Table widget. In Orange, the outputs of the widgets are on the right, and the inputs on the left of the widget." title="File and Data Table" version="2.0">
+<scheme description="Orange 中的基本数据挖掘单元称为小部件。 有用于读取数据，预处理，可视化，聚类，分类等小部件。 小部件通过链接通道进行通信。 因此，数据挖掘工作流是小部件和链接通道的集合。&#10;&#10;在此工作流中，有一个用于读取数据的文件小部件。 文件小部件将此数据传递给显示数据电子表格的数据表小部件。 请注意文件小部件的输出如何连接到“数据表”小部件的输入。 在 Orange 中，小部件的输出位于右侧，输入位于小部件的左侧。" title="文件和数据表" version="2.0">
 	<nodes>
-		<node id="0" name="File" position="(89.0, 157.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
-		<node id="1" name="Data Table" position="(290.0, 157.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table" version="" />
+		<node id="0" name="文件(File)" position="(89.0, 157.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
+		<node id="1" name="数据表(Data Table)" position="(290.0, 157.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="14" id="0" rect="(17.0, 21.0, 160.0, 55.0)" type="text/plain">A File widget. Double click to open it and select the dataset file.</text>
-		<text font-family="Helvetica" font-size="14" id="1" rect="(50.0, 229.0, 118.0, 40.0)" type="text/plain">The output of the File widget.</text>
-		<text font-family="Helvetica" font-size="14" id="2" rect="(241.0, 227.0, 131.0, 41.0)" type="text/plain">The input of the Data Table widget.</text>
-		<text font-family="Helvetica" font-size="14" id="3" rect="(138.0, 297.0, 150.0, 82.0)" type="text/plain">The communication channel. It passes the dataset from the File widget to the Data Table.</text>
-		<text font-family="Helvetica" font-size="14" id="4" rect="(262.0, 21.0, 150.0, 68.0)" type="text/plain">A Data Table widget. Double click the icon to see the data in a spreadsheet.</text>
-		<text font-family="Helvetica" font-size="14" id="5" rect="(415.0, 68.0, 150.0, 83.0)" type="text/plain">The output of the Data Table to send out any data (rows) that are selected to the widget.</text>
-		<text font-family="Helvetica" font-size="14" id="6" rect="(489.0, 177.0, 216.0, 181.0)" type="text/plain">This output is not used, hence dashed line. You can add another Data Table by clicking on its icon from the toolbox on the left, connect the ouput of Data Table to the input of new Data Table (1) and check if the selected data from Data Table is indeed sent to the downstream widget. This demo works best if both widgets are open, that is, their windows displayed.</text>
+		<text font-family="Helvetica" font-size="14" id="0" rect="(17.0, 21.0, 160.0, 55.0)" type="text/plain">文件小部件。 双击打开它，然后选择数据集文件。</text>
+		<text font-family="Helvetica" font-size="14" id="1" rect="(50.0, 229.0, 118.0, 40.0)" type="text/plain">“文件”小部件的输出。</text>
+		<text font-family="Helvetica" font-size="14" id="2" rect="(241.0, 227.0, 131.0, 41.0)" type="text/plain">数据表小部件的输入。</text>
+		<text font-family="Helvetica" font-size="14" id="3" rect="(138.0, 297.0, 150.0, 82.0)" type="text/plain">信息链接。它将数据集从“文件”小部件传递到“数据表”。</text>
+		<text font-family="Helvetica" font-size="14" id="4" rect="(262.0, 21.0, 150.0, 68.0)" type="text/plain">数据表小部件。 双击该图标可在电子表格中查看数据。</text>
+		<text font-family="Helvetica" font-size="14" id="5" rect="(415.0, 68.0, 150.0, 83.0)" type="text/plain">数据表的输出，用于发送选定到窗口小部件的任何数据（行）。</text>
+		<text font-family="Helvetica" font-size="14" id="6" rect="(489.0, 177.0, 216.0, 181.0)" type="text/plain">此输出未使用，因此为虚线。 您可以通过单击左侧工具箱中的图标来添加另一个数据表，将数据表的输出连接到新数据表（1）的输入，并检查数据表中的选定数据是否确实发送到下游窗口小部件。 如果两个小部件都打开，即显示其窗口，则此演示效果最佳。</text>
 		<arrow end="(88.00000000000004, 122.00000000000001)" fill="#C1272D" id="7" start="(89.00000000000004, 76.00000000000001)" />
 		<arrow end="(285.0, 129.0)" fill="#C1272D" id="8" start="(279.0, 86.00000000000001)" />
 		<arrow end="(117.0, 180.0)" fill="#C1272D" id="9" start="(140.0, 229.0)" />
