@@ -1,30 +1,30 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="This workflow combines the inference and visualization of classification trees with a scatterplot. When both the tree browser and the scatterplot are open, selection of any node of the tree sends the related data instances to scatterplot. In the workflow, the selected data is treated as a subset of the entire dataset and is highlighted in the scatterplot. With simple combination of widgets we have constructed an interactive classification tree browser." title="Classification Tree" version="2.0">
+<scheme description="该工作流程将分类树的推理和可视化与散点图结合起来。 当树浏览器和散点图都打开时，选择树的任何节点都会将相关数据实例发送到散点图。 在工作流程中，所选数据被视为整个数据集的子集，并在散点图中突出显示。 通过简单组合小部件，我们构建了一个交互式分类树浏览器。" title="分类树" version="2.0">
 	<nodes>
-		<node id="0" name="File" position="(98.0, 140.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
-		<node id="1" name="Tree Viewer" position="(329.0, 275.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owtreeviewer.OWTreeGraph" title="Classification Tree Viewer" version="" />
-		<node id="2" name="Scatter Plot" position="(465.0, 210.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot" version="" />
-		<node id="3" name="Box Plot" position="(487.0, 322.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owboxplot.OWBoxPlot" title="Box Plot" version="" />
-		<node id="4" name="Classification Tree" position="(200.0, 219.0)" project_name="Orange3" qualified_name="Orange.widgets.classify.owclassificationtree.OWTreeLearner" title="Classification Tree" version="" />
+		<node id="0" name="文件(File)" position="(98.0, 140.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
+		<node id="1" name="查看树(Tree Viewer)" position="(329.0, 275.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owtreeviewer.OWTreeGraph" title="分类树查看器" version="" />
+		<node id="2" name="散点图(Scatter Plot)" position="(465.0, 210.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="散点图" version="" />
+		<node id="3" name="箱线图(Box Plot)" position="(487.0, 322.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owboxplot.OWBoxPlot" title="箱线图" version="" />
+		<node id="4" name="树(Tree)" position="(200.0, 219.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owtree.OWTreeLearner" title="分类树" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="4" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="2" sink_channel="Tree" sink_node_id="1" source_channel="Model" source_node_id="4" />
-		<link enabled="true" id="3" sink_channel="Data Subset" sink_node_id="2" source_channel="Selected Data" source_node_id="1" />
-		<link enabled="true" id="4" sink_channel="Data" sink_node_id="3" source_channel="Selected Data" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="4" source_channel="数据(Data)" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="树(Tree)" sink_node_id="1" source_channel="模型(Model)" source_node_id="4" />
+		<link enabled="true" id="2" sink_channel="数据(Data)" sink_node_id="3" source_channel="选定的数据(Selected Data)" source_node_id="1" />
+		<link enabled="true" id="3" sink_channel="数据(Data)" sink_node_id="2" source_channel="选定的数据(Selected Data)" source_node_id="1" />
+		<link enabled="true" id="4" sink_channel="数据子集(Data Subset)" sink_node_id="2" source_channel="数据(Data)" source_node_id="0" />
 	</links>
 	<annotations>
 		<arrow end="(113.0, 111.0)" fill="#C1272D" id="0" start="(152.0, 76.0)" />
-		<text font-family="Helvetica" font-size="14" id="1" rect="(158.0, 49.0, 174.0, 55.0)">Load data on Iris ("iris.tab") from preloaded documentation datasets.</text>
+		<text font-family="Helvetica" font-size="14" id="1" rect="(158.0, 49.0, 174.0, 55.0)" type="text/plain">从预加载的文档数据集加载Iris（“iris.tab”）上的数据。</text>
 		<arrow end="(350.0, 230.0)" fill="#39B54A" id="2" start="(414.0, 138.0)" />
 		<arrow end="(452.0, 173.0)" fill="#39B54A" id="3" start="(421.0, 133.0)" />
-		<text font-family="Helvetica" font-size="14" id="4" rect="(396.0, 50.0, 150.0, 82.0)">Any change in selection of the tree node changes the rendering in the scatter plot.</text>
+		<text font-family="Helvetica" font-size="14" id="4" rect="(396.0, 50.0, 150.0, 82.0)" type="text/plain">选择树节点的任何更改都会更改散点图中的渲染。</text>
 		<arrow end="(288.0, 332.0)" fill="#C1272D" id="5" start="(237.0, 357.0)" />
-		<text font-family="Helvetica" font-size="14" id="6" rect="(104.0, 341.0, 150.0, 54.0)">Double-click on this widget and select any node in the tree.</text>
+		<text font-family="Helvetica" font-size="14" id="6" rect="(104.0, 341.0, 150.0, 54.0)" type="text/plain">双击此窗口小部件，然后选择树中的任何节点。</text>
 		<arrow end="(415.99999999999994, 324.0)" fill="#39B54A" id="7" start="(412.99999999999994, 386.0)" />
-		<text font-family="Helvetica" font-size="14" id="8" rect="(374.0, 388.0, 150.0, 82.0)">The data selected in the tree viewer propagates to all the downstream widgets in the workflow.</text>
-		<text font-family="Helvetica" font-size="14" id="9" rect="(33.0, 424.0, 280.0, 53.0)">This workflow works best if you have Tree Viewer, Scatter Plot and Box Plot all open at the same time.</text>
+		<text font-family="Helvetica" font-size="14" id="8" rect="(374.0, 388.0, 150.0, 82.0)" type="text/plain">树查看器中选择的数据将传播到工作流中的所有下游小部件。</text>
+		<text font-family="Helvetica" font-size="14" id="9" rect="(33.0, 424.0, 280.0, 53.0)" type="text/plain">将树查看器，散点图和箱线图全部打开，该工作流效果最佳。</text>
 	</annotations>
 	<thumbnail />
 	<node_properties>

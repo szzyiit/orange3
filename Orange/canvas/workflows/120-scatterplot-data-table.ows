@@ -1,22 +1,22 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="Most of visualizations in Orange are interactive. Like Scatter Plot. Double click its icon to open the plot and by click-and-drag select few data instances (points in the plot). Selected data will automatically propagate to Data Table. Double click its widget to check which data was selected. Change selection and observe the change in the Data Table. This works best if both widgets are open." title="Interactive Visualizations" version="2.0">
+<scheme description="Orange 中的大多数可视化都是交互式的，比如散点图。 双击其图标打散点图小部件，然后单击并拖动选择几个数据实例（图中的点）。 选定的数据将自动传送到数据表。 双击其小部件以检查选择了哪些数据。 更改选择并观察数据表中的更改。 如果两个小部件都处于打开状态，则效果最佳。" title="交互式可视化" version="2.0">
 	<nodes>
-		<node id="0" name="File" position="(102.0, 206.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
-		<node id="1" name="Scatter Plot" position="(267.0, 205.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot" version="" />
-		<node id="2" name="Data Table" position="(412.0, 205.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table" version="" />
+		<node id="0" name="文件(File)" position="(102.0, 206.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
+		<node id="1" name="散点图(Scatter Plot)" position="(267.0, 205.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="散点图" version="" />
+		<node id="2" name="数据表(Data Table)" position="(412.0, 205.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="2" source_channel="Selected Data" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="2" source_channel="选定的数据(Selected Data)" source_node_id="1" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="12" id="0" rect="(26.0, 7.0, 150.0, 112.59375)" type="text/plain">This File widget is set to read the Iris dataset. Double click on the icon to change the input data file and observe how this workflow works for some other datasets such as housing or auto-mpg.</text>
-		<text font-family="Helvetica" font-size="12" id="1" rect="(224.0, 24.0, 150.0, 83.0)" type="text/plain">Double click on the Scatter Plot icon to visualize the data. Then select the data subset by selecting the points from the scatter plot.</text>
-		<text font-family="Helvetica" font-size="12" id="2" rect="(412.0, 55.0, 150.0, 48.0)" type="text/plain">Data Table widget shows the data subset selected in the Scatter Plot.</text>
+		<text font-family="Helvetica" font-size="12" id="0" rect="(26.0, 7.0, 150.0, 112.59375)" type="text/plain">此“文件”小部件设置为读取 Iris 数据集。 双击图标以更改输入数据文件，并观察此工作流如何应用于其他一些数据集，例如 housing 或 auto-mpg。</text>
+		<text font-family="Helvetica" font-size="12" id="1" rect="(224.0, 24.0, 150.0, 83.0)" type="text/plain">双击“散点图”图标观察数据。 然后通过从散点图中选择点来选择数据子集。</text>
+		<text font-family="Helvetica" font-size="12" id="2" rect="(412.0, 55.0, 150.0, 48.0)" type="text/plain">“数据表”小部件显示在散点图中选择的数据子集。</text>
 		<arrow end="(99.00000000000003, 175.0)" fill="#C1272D" id="3" start="(98.00000000000003, 118.0)" />
 		<arrow end="(270.0, 170.00000000000003)" fill="#C1272D" id="4" start="(271.0, 114.00000000000003)" />
 		<arrow end="(417.0, 173.0)" fill="#C1272D" id="5" start="(465.0, 112.00000000000001)" />
-		<text font-family="Helvetica" font-size="12" id="6" rect="(146.0, 300.0, 301.0, 72.0)" type="text/plain">Try to connect some other widget to the output of the Scatter Plot. Say, a Box Plot widget (toolbox, Visualize pane). Box Plot will display distributions of the data subset selected in the Scatter Plot.</text>
+		<text font-family="Helvetica" font-size="12" id="6" rect="(146.0, 300.0, 301.0, 72.0)" type="text/plain">尝试一些其他的小部件连接到散点图的输出。 比如，一个箱线图小部件（工具箱，可视化窗格）。 箱线图将显示在散点图小部件选择的数据子集的分布。</text>
 		<arrow end="(302.0, 221.0)" fill="#39B54A" id="7" start="(335.0, 294.0)" />
 	</annotations>
 	<thumbnail />
