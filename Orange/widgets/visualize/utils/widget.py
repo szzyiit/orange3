@@ -432,12 +432,7 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
         self.control_area_stretch = gui.widgetBox(area)
         self.control_area_stretch.layout().addStretch(100)
         self.gui.box_zoom_select(area)
-<<<<<<< HEAD
         gui.auto_send(area, self, "auto_commit")
-=======
-        gui.auto_commit(
-            area, self, "auto_commit", "发送选中", "自动发送")
->>>>>>> chinese translation of all widgets
 
     @property
     def effective_variables(self):
