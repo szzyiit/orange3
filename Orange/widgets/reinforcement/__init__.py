@@ -1,4 +1,4 @@
-NAME = '强化学习'
+NAME = '强化学习(Reinforcement)'
 
 DESCRIPTION = '强化学习模块.'
 

@@ -161,7 +161,7 @@ class OWTestAndScore(OWWidget):
     #: Numbers of folds
     NFolds = [2, 3, 5, 10, 20]
     #: Number of repetitions
-    NRepeats = [2, 3, 5, 10, 20, 50, 100]
+    NRepeats = [1, 2, 3, 5, 10, 20, 50, 100]
     #: Sample sizes
     SampleSizes = [5, 10, 20, 25, 30, 33, 40, 50, 60, 66, 70, 75, 80, 90, 95]
 
