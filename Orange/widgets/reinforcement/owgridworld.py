@@ -190,6 +190,19 @@ class GridWold(OWWidget):
         self.final_command = self.command + self.command_options
         print(self.final_command)
 
+    def construct_command(self, mode):
+        options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \
+                  f'-i {self.iterations} -g {self.grids[self.grid_type]} ' \
+                  f'-a {self.agents[self.agent_type]} -n {self.noise_ratio} ' \
+                  f'-k {self.episodes}'
+        if mode == self.manual_mode:
+            self.command_options = '-m ' + options
+        else:
+            self.command_options = options
+
+        self.final_command = self.command + self.command_options
+        print(self.final_command)
+
     def onstart(self):
         self.commit_button.setEnabled(False)
 
