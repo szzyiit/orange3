@@ -98,7 +98,7 @@ class NotEnoughData(ValueError):
 
 
 class OWKMeans(widget.OWWidget):
-    name = "均值(k-Means)"
+    name = "k均值(k-Means)"
     description = "基于轮廓质量估计的 K 均值聚类算法"
     icon = "icons/KMeans.svg"
     priority = 2100
@@ -123,7 +123,7 @@ class OWKMeans(widget.OWWidget):
 
     class Warning(widget.OWWidget.Warning):
         no_silhouettes = widget.Msg(
-            "Silhouette scores are not computed for >{} samples".format(
+            "轮廓系数最多只计算 {} 个样本".format(
                 SILHOUETTE_MAX_SAMPLES)
         )
         not_enough_data = widget.Msg(

@@ -176,6 +176,7 @@ class GridWold(OWWidget):
         self.process.started.connect(self.onstart)
         self.process.finished.connect(self.onfinish)
         self.process.start(self.final_command)
+<<<<<<< HEAD
 
     def construct_command(self, mode):
         options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \
@@ -189,6 +190,8 @@ class GridWold(OWWidget):
 
         self.final_command = self.command + self.command_options
         print(self.final_command)
+=======
+>>>>>>> deep learning model by PyTorch
 
     def construct_command(self, mode):
         options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \

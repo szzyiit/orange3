@@ -656,10 +656,10 @@ class DiscreteTreeNode(TreeNode):
 
         return '<p>' \
             + text \
-            + '{}/{} samples ({:2.3f}%)'.format(
+            + '{}/{} 个样本 ({:2.3f}%)'.format(
                 int(samples), total, ratio * 100) \
             + '<hr>' \
-            + ('Split by ' + splitting_attr.name
+            + ('根据' + splitting_attr.name + '分叉'
                if not self.tree.is_leaf(self.label) else '') \
             + ('<br><br>' if rules_str and not self.tree.is_leaf(self.label) else '') \
             + rules_str \
