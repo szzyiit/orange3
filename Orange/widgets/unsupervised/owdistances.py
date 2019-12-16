@@ -37,7 +37,8 @@ Chinese_METRICS = [
     ("绝对斯皮尔曼(Absolute Spearman)", distance.SpearmanRAbsolute),
     ("皮尔逊(Pearson)", distance.PearsonR),
     ("绝对皮尔逊(Absolute Pearson)", distance.PearsonRAbsolute),
-    ("汉明(Hamming)", distance.Hamming)
+    ("汉明(Hamming)", distance.Hamming),
+    ('Bhattacharyya', distance.Bhattacharyya)
 ]
 
 class InterruptException(Exception):
