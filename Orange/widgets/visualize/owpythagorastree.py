@@ -333,7 +333,7 @@ class OWPythagorasTree(OWWidget):
                  if isinstance(x, QLabel)][0]
 
         if self.data.domain.has_discrete_class:
-            label_text = 'Target class'
+            label_text = '目标类别'
             values = [c.title() for c in self.data.domain.class_vars[0].values]
             values.insert(0, 'None')
         else:
