@@ -1,9 +1,8 @@
-import numpy
-from functools import reduce, partial
+from functools import partial
 from Orange.widgets.widget import OWWidget
 from Orange.widgets import gui
 from Orange.widgets.utils.signals import Input, Output
-from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
+from Orange.data import Table, Domain, ContinuousVariable
 
 
 import concurrent.futures

@@ -197,10 +197,10 @@ class Config(config.Config):
         "Documentation": "https://orange.biolab.si/widget-catalog/",
         #: YouTube tutorials
         "Screencasts":
-            "https://www.youtube.com/watch"
-            "?v=HXjnDIgGDuI&list=PLmNPvQr9Tf-ZSDLwOzxpvY-HrE0yv-8Fy&index=1",
+            "https://space.bilibili.com/13055460/channel/detail?cid=97474",
         #: Used for 'Submit Feedback' action in the help menu
-        "Feedback": "https://orange.biolab.si/survey/long.html",
+        "Feedback": "https://wj.qq.com/s2/5193545/072f/",
+        "guanzhu": "http://zhaoyang.org.cn/",
     }
 
 
