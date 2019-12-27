@@ -2,7 +2,6 @@ from Orange.widgets.widget import OWWidget
 from Orange.widgets import gui
 from pathlib import Path
 from PyQt5.QtCore import QProcess
-from PyQt5.QtWidgets import QScrollArea, QLabel
 
 
 class Crawler(OWWidget):
