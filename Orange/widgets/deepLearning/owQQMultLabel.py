@@ -4,7 +4,7 @@ from Orange.widgets.utils.owtencentAiApi import TencentAPI, ImageMixin
 class MultiImageLabel(ImageMixin, TencentAPI):
     name = "多标签识别 (Multi Label Recognition)"
     description = "识别一个图像的标签信息,对图像分类。"
-    # icon = "icons/gridworld.png"
+    icon = "icons/multi.png"
 
     URL = 'https://api.ai.qq.com/fcgi-bin/image/image_tag'
 
