@@ -53,3 +53,5 @@ Orange/widgets/binaries
 
 # environment
 orange-env
+
+Orange/widgets/binaries/*

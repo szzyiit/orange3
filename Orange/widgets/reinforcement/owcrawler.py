@@ -19,7 +19,7 @@ class Crawler(OWWidget):
     def commit(self):
         dir_path = Path(__file__).resolve()
         parent_path = dir_path.parent.parent
-        command = f'{str(parent_path)}/binaries/crawler'
+        command = f'{str(parent_path)}/binaries/crawler.exe'
 
         self.process = QProcess(self)
 
