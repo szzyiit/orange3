@@ -26,3 +26,4 @@ openpyxl
 httpx>=0.14.0,<0.17
 torch==1.3.1
 torchvision==0.4.2
+torchsummary
