@@ -240,12 +240,12 @@ class OWCorrelations(OWWidget):
     priority = 1106
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
-        features = Output("特征(Features)", AttributeList)
-        correlations = Output("相关性(Correlations)", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
+        features = Output("特征(Features)", AttributeList, replaces=['Features'])
+        correlations = Output("相关性(Correlations)", Table, replaces=['Correlations'])
 
     want_control_area = False
 

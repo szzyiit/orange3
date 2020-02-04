@@ -654,11 +654,11 @@ class OWNomogram(OWWidget):
     keywords = []
 
     class Inputs:
-        classifier = Input("分类器(Classifier)", Model)
-        data = Input("数据(Data)", Table)
+        classifier = Input("分类器(Classifier)", Model, replaces=['Classifier'])
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        features = Output("特征(Features)", AttributeList)
+        features = Output("特征(Features)", AttributeList, replaces=['Features'])
 
     MAX_N_ATTRS = 1000
     POINT_SCALE = 0

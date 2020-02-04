@@ -165,10 +165,10 @@ class OWPythagoreanForest(OWWidget):
     priority = 1001
 
     class Inputs:
-        random_forest = Input("随机森林(Random forest)", RandomForestModel)
+        random_forest = Input("随机森林(Random forest)", RandomForestModel, replaces=['Data'])
 
     class Outputs:
-        tree = Output("树(Tree)", TreeModel)
+        tree = Output("树(Tree)", TreeModel, replaces=['Tree'])
 
     # Enable the save as feature
     graph_name = 'scene'

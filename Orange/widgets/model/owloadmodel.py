@@ -22,7 +22,7 @@ class OWLoadModel(widget.OWWidget, RecentPathsWComboMixin):
     keywords = ["file", "open", "model"]
 
     class Outputs:
-        model = Output("模型(Model)", Model)
+        model = Output("模型(Model)", Model, replaces=['Model'])
 
     class Error(widget.OWWidget.Error):
         load_error = Msg("An error occured while reading '{}'")

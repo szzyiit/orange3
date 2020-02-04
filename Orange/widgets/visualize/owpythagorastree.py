@@ -48,11 +48,11 @@ class OWPythagorasTree(OWWidget):
     priority = 1000
 
     class Inputs:
-        tree = Input("树(Tree)", TreeModel)
+        tree = Input("树(Tree)", TreeModel, replaces=['Tree'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     # Enable the save as feature
     graph_name = 'scene'

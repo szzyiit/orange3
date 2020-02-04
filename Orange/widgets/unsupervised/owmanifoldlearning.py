@@ -193,10 +193,10 @@ class OWManifoldLearning(OWWidget):
     settings_version = 2
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        transformed_data = Output("转换的数据(Transformed data)", Table, dynamic=False)
+        transformed_data = Output("转换的数据(Transformed data)", Table, dynamic=False, replaces=['Transformed data'])
 
     MANIFOLD_METHODS = (TSNE, MDS, Isomap, LocallyLinearEmbedding,
                         SpectralEmbedding)

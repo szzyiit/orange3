@@ -33,7 +33,7 @@ class OWSGD(OWBaseLearner):
     left_side_scrolling = True
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
 
     reg_losses = (
         ('Squared Loss', 'squared_loss'),

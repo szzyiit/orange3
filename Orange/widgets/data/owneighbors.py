@@ -35,11 +35,11 @@ class OWNeighbors(OWWidget):
     replaces = ["orangecontrib.prototypes.widgets.owneighbours.OWNeighbours"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
-        reference = Input("参考(Reference)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
+        reference = Input("参考(Reference)", Table, replaces=['Reference'])
 
     class Outputs:
-        data = Output("邻近(Neighbors)", Table)
+        data = Output("邻近(Neighbors)", Table, replaces=['Neighbors'])
 
     class Info(OWWidget.Warning):
         removed_references = \

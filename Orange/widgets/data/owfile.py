@@ -85,7 +85,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
 
     class Outputs:
         data = Output("数据(Data)", Table,
-                      doc="Attribute-valued dataset read from the input file.")
+                      doc="Attribute-valued dataset read from the input file.", replaces=['Data'])
 
     want_main_area = False
 

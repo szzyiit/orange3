@@ -17,10 +17,10 @@ class OWTranspose(OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table, dynamic=False)
+        data = Output("数据(Data)", Table, dynamic=False, replaces=['Data'])
 
     GENERIC, FROM_VAR = range(2)
 

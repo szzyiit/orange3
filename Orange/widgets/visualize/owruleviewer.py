@@ -26,12 +26,12 @@ class OWRuleViewer(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table)
-        classifier = Input("分类器(Classifier)", _RuleClassifier)
+        data = Input("数据(Data)", Table, replaces=['Data'])
+        classifier = Input("分类器(Classifier)", _RuleClassifier, replaces=['Classifier'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     compact_view = settings.Setting(False)
 

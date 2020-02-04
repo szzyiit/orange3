@@ -143,10 +143,10 @@ class OWCreateClass(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
 

@@ -19,8 +19,8 @@ class OWStackedLearner(OWBaseLearner):
     learner_name = Setting("Stack")
 
     class Inputs(OWBaseLearner.Inputs):
-        learners = Input("学习器(Learners)", Learner, multiple=True)
-        aggregate = Input("组合方法(Aggregate)", Learner)
+        learners = Input("学习器(Learners)", Learner, multiple=True, replaces=['Learners'])
+        aggregate = Input("组合方法(Aggregate)", Learner, replaces=['Aggregate'])
 
     def __init__(self):
         self.learners = OrderedDict()

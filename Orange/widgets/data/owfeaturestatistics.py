@@ -704,11 +704,11 @@ class OWFeatureStatistics(widget.OWWidget):
     icon = 'icons/FeatureStatistics.svg'
 
     class Inputs:
-        data = Input('数据(Data)', Table, default=True)
+        data = Input('数据(Data)', Table, default=True, replaces=['Data'])
 
     class Outputs:
-        reduced_data = Output('选中的数据(Reduced Data)', Table, default=True)
-        statistics = Output('统计(Statistics)', Table)
+        reduced_data = Output('选中的数据(Reduced Data)', Table, default=True, replaces=['Reduced Data'])
+        statistics = Output('统计(Statistics)', Table, replaces=['Statistics'])
 
     want_control_area = False
     buttons_area_orientation = Qt.Vertical

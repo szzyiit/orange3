@@ -61,12 +61,12 @@ class ModelTrainTest(OWWidget):
     epochs = 5
 
     class Inputs:
-        train_data = Input('训练数据(Train Data)', DataLoader, default=True)
-        test_data = Input('测试数据(Test Data)', DataLoader)
-        model = Input('模型(Model)', nn.Module)
+        train_data = Input('训练数据(Train Data)', DataLoader, default=True, replaces=['Data'])
+        test_data = Input('测试数据(Test Data)', DataLoader, replaces=['Data'])
+        model = Input('模型(Model)', nn.Module, replaces=['Model'])
 
     class Outputs:
-        losses = Output('损失函数值(Loss)', Table, default=True)
+        losses = Output('损失函数值(Loss)', Table, default=True, replaces=['Loss'])
 
     def __init__(self):
         super().__init__()

@@ -94,10 +94,10 @@ class OWCalibrationPlot(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        evaluation_results = Input("评估结果(Evaluation Results)", Results)
+        evaluation_results = Input("评估结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
 
     class Outputs:
-        calibrated_model = Output("校准的模型(Calibrated Model)", Model)
+        calibrated_model = Output("校准的模型(Calibrated Model)", Model, replaces=['Calibrated Model'])
 
     class Error(widget.OWWidget.Error):
         non_discrete_target = Msg("Calibration plot requires a categorical "

@@ -51,12 +51,12 @@ class OWPredictions(OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
-        predictors = Input("预测器(Predictors)", Model, multiple=True)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
+        predictors = Input("预测器(Predictors)", Model, multiple=True, replaces=['Predictors'])
 
     class Outputs:
-        predictions = Output("预测(Predictions)", Orange.data.Table)
-        evaluation_results = Output("评价结果(Evaluation Results)", Results)
+        predictions = Output("预测(Predictions)", Orange.data.Table, , replaces=['Predictions'])
+        evaluation_results = Output("评价结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
 
     class Warning(OWWidget.Warning):
         empty_data = Msg("Empty dataset")

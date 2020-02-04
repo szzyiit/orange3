@@ -180,11 +180,11 @@ class OWDataTable(OWWidget):
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
-        data = Input("数据(Data)", Table, multiple=True)
+        data = Input("数据(Data)", Table, multiple=True, replaces=['Data'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     show_distributions = Setting(False)
     dist_color_RGB = Setting((220, 220, 220, 255))

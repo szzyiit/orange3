@@ -125,11 +125,11 @@ class OWBoxPlot(widget.OWWidget):
     keywords = ["whisker"]
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table)
+        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table, replaces=['Data'])
 
     class Warning(widget.OWWidget.Warning):
         no_vars = widget.Msg(

@@ -24,7 +24,7 @@ class OWAdaBoost(OWBaseLearner):
     LEARNER = SklAdaBoostLearner
 
     class Inputs(OWBaseLearner.Inputs):
-        learner = Input("学习器(Learner)", Learner)
+        learner = Input("学习器(Learner)", Learner, replaces=['Learner'])
 
     #: Algorithms for classification problems
     algorithms = ["SAMME", "SAMME.R"]

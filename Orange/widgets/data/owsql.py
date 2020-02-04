@@ -46,7 +46,7 @@ class OWSql(OWBaseSql):
     keywords = ["load"]
 
     class Outputs:
-        data = Output("数据(Data)", Table, doc="Attribute-valued dataset read from the input file.")
+        data = Output("数据(Data)", Table, doc="Attribute-valued dataset read from the input file.", replaces=['Data'])
 
     settings_version = 2
 

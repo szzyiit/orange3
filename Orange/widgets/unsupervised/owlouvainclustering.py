@@ -57,12 +57,12 @@ class OWLouvainClustering(widget.OWWidget):
     resizing_enabled = False
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
 
     class Outputs:
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True, replaces=['Data'])
         if Network is not None:
-            graph = Output("网络(Network)", Network)
+            graph = Output("网络(Network)", Network, replaces=['Network'])
 
     apply_pca = Setting(True)
     pca_components = Setting(_DEFAULT_PCA_COMPONENTS)

@@ -38,9 +38,9 @@ class ImageLoader(OWWidget):
     dir_name = Setting(None)
 
     class Outputs:
-        train_data = Output('训练数据(Train Data)', DataLoader, default=True)
-        test_data = Output('测试数据(Test Data)', DataLoader, default=True)
-        image = Output('图片(image)', Path)
+        train_data = Output('训练数据(Train Data)', DataLoader, default=True, replaces=['Data'])
+        test_data = Output('测试数据(Test Data)', DataLoader, default=True, replaces=['Data'])
+        image = Output('图片(Image)', Path, replaces=['Image', 'Path'])
 
     def __init__(self):
         super().__init__()

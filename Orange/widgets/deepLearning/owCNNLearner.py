@@ -37,7 +37,7 @@ class CNNLearner(OWWidget):
 
 
     class Outputs:
-        model = Output('CNN 模型 (CNN model)', nn.Module, default=True)
+        model = Output('CNN 模型 (CNN model)', nn.Module, default=True, replaces=['CNN model'])
 
     def __init__(self):
         super().__init__()

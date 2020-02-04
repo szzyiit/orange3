@@ -735,7 +735,7 @@ class OWPaintData(OWWidget):
          _icon("select-transparent_42px.png")),
         ("抖动(Jitter)", " 抖动实例", JitterTool, _icon("jitter.svg")),
         ("磁铁(Magnet)", " 吸引多个实例", MagnetTool, _icon("magnet.svg")),
-        ("清除(Clear)", " 清楚绘图", ClearTool, _icon("../../../icons/Dlg_clear.png"))
+        ("清除(Clear)", " 清除绘图", ClearTool, _icon("../../../icons/Dlg_clear.png"))
     ]
 
     name = "绘制数据(Paint Data)"
@@ -745,10 +745,10 @@ class OWPaintData(OWWidget):
     keywords = ["create", "draw"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
 
     autocommit = Setting(True)
     table_name = Setting("Painted data")

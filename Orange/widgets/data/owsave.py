@@ -24,7 +24,7 @@ class OWSave(OWSaveBase):
     settings_version = 2
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Error(OWSaveBase.Error):
         unsupported_sparse = widget.Msg("Use Pickle format for sparse data.")

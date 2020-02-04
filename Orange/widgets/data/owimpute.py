@@ -139,11 +139,11 @@ class OWImpute(OWWidget):
     keywords = ["substitute", "missing"]
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
-        learner = Input("学习器(Learner)", Learner)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
+        learner = Input("学习器(Learner)", Learner, replaces=['Learner'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Error(OWWidget.Error):
         imputation_failed = Msg("Imputation failed for '{}'")

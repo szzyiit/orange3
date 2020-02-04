@@ -253,13 +253,13 @@ class OWMergeData(widget.OWWidget):
     keywords = ["join"]
 
     class Inputs:
-        data = Input(" 数据(Data)", Orange.data.Table, default=True, replaces=["Data A"])
-        extra_data = Input("附加数据(Extra Data)", Orange.data.Table, replaces=["Data B"])
+        data = Input(" 数据(Data)", Orange.data.Table, default=True, replaces=["Data A", 'Data'])
+        extra_data = Input("附加数据(Extra Data)", Orange.data.Table, replaces=["Data B", 'Extra Data'])
 
     class Outputs:
         data = Output("数据(Data)",
                       Orange.data.Table,
-                      replaces=["Merged Data A+B", "Merged Data B+A", "Merged Data"])
+                      replaces=["Merged Data A+B", "Merged Data B+A", "Merged Data", 'Data'])
 
     LeftJoin, InnerJoin, OuterJoin = range(3)
     OptionNames = ("从附加数据添加列(Left Join)",

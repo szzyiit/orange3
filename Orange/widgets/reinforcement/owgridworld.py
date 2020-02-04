@@ -26,7 +26,7 @@ class GridWold(OWWidget):
 
     dir_path = Path(__file__).resolve()
     parent_path = dir_path.parent.parent
-    command = f'{str(parent_path)}/binaries/gridworld.exe '
+    command = f'{str(parent_path)}/binaries/gridworld '
     command_options = f'-m -n {noise_ratio} -g {grid_type}'
 
     want_main_area = True

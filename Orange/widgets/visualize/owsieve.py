@@ -78,12 +78,12 @@ class OWSieveDiagram(OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True)
-        features = Input("特征(Features)", AttributeList)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
+        features = Input("特征(Features)", AttributeList, replaces=['Features'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     graph_name = "canvas"
 

@@ -232,10 +232,10 @@ class OWScatterPlot(OWDataProjectionWidget):
     keywords = []
 
     class Inputs(OWDataProjectionWidget.Inputs):
-        features = Input("特征(Features)", AttributeList)
+        features = Input("特征(Features)", AttributeList, replaces=['Features'])
 
     class Outputs(OWDataProjectionWidget.Outputs):
-        features = Output("特征(Features)", AttributeList, dynamic=False)
+        features = Output("特征(Features)", AttributeList, dynamic=False, replaces=['Features'])
 
     settings_version = 4
     auto_sample = Setting(True)
