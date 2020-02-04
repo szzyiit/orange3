@@ -27,11 +27,11 @@ class OWDataSampler(OWWidget):
     _MAX_SAMPLE_SIZE = 2 ** 31 - 1
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data_sample = Output("数据样本(Data Sample)", Table, default=True)
-        remaining_data = Output("剩余数据(Remaining Data)", Table)
+        data_sample = Output("数据样本(Data Sample)", Table, default=True, replaces=['Data Sample'])
+        remaining_data = Output("剩余数据(Remaining Data)", Table, replaces=['Remaining Data'])
 
     want_main_area = False
     resizing_enabled = False

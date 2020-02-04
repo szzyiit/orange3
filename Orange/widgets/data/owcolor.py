@@ -539,10 +539,10 @@ class OWColor(widget.OWWidget):
     icon = "icons/Colors.svg"
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     settingsHandler = settings.PerfectDomainContextHandler(
         match_values=settings.PerfectDomainContextHandler.MATCH_VALUES_ALL)

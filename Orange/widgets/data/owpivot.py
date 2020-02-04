@@ -745,12 +745,12 @@ class OWPivot(OWWidget):
     keywords = ["pivot", "group", "aggregate"]
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
 
     class Outputs:
-        pivot_table = Output("数据透视表(Pivot Table)", Table, default=True)
-        filtered_data = Output("筛选的数据(Filtered Data)", Table)
-        grouped_data = Output("分组数据(Grouped Data)", Table)
+        pivot_table = Output("数据透视表(Pivot Table)", Table, default=True, replaces=['Pivot Table'])
+        filtered_data = Output("筛选的数据(Filtered Data)", Table, replaces=['Filtered Data'])
+        grouped_data = Output("分组数据(Grouped Data)", Table, replaces=['Grouped Data'])
 
     class Warning(OWWidget.Warning):
         # TODO - inconsistent for different variable types

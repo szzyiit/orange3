@@ -14,10 +14,10 @@ class OWDistanceTransformation(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        distances = Input("距离(Distances)", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
 
     class Outputs:
-        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False, replaces=['Distances'])
 
     want_main_area = False
     resizing_enabled = False

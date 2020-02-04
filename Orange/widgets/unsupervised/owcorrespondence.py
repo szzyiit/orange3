@@ -36,10 +36,10 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        coordinates = Output("坐标(Coordinates)", Table)
+        coordinates = Output("坐标(Coordinates)", Table, replaces=['Coordinates'])
 
     Invalidate = QEvent.registerEventType()
 

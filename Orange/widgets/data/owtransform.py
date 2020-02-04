@@ -16,11 +16,11 @@ class OWTransform(OWWidget):
     keywords = ["transform"]
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True)
-        template_data = Input("模板数据(Template Data)", Table)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
+        template_data = Input("模板数据(Template Data)", Table, replaces=['Template Data'])
 
     class Outputs:
-        transformed_data = Output("转换的数据(Transformed Data)", Table)
+        transformed_data = Output("转换的数据(Transformed Data)", Table, replaces=['Transformed Data'])
 
     class Error(OWWidget.Error):
         error = Msg("An error occurred while transforming data.\n{}")

@@ -1072,11 +1072,11 @@ class OWPreprocess(widget.OWWidget, openclass=True):
     settings_version = 2
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Outputs:
-        preprocessor = Output("预处理器(Preprocessor)", preprocess.preprocess.Preprocess, dynamic=False)
-        preprocessed_data = Output("预处理数据(Preprocessed Data)", Orange.data.Table)
+        preprocessor = Output("预处理器(Preprocessor)", preprocess.preprocess.Preprocess, dynamic=False, replaces=['Preprocessor'])
+        preprocessed_data = Output("预处理数据(Preprocessed Data)", Orange.data.Table, replaces=['Preprocessed Data'])
 
     storedsettings = Setting({})
     autocommit = Setting(True)

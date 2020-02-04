@@ -24,7 +24,7 @@ class OWDataInfo(widget.OWWidget):
     keywords = ["information", "inspect"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
     buttons_area_orientation = None

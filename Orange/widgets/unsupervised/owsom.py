@@ -178,11 +178,11 @@ class OWSOM(OWWidget):
     keywords = ["SOM"]
 
     class Inputs:
-        data = Input("Data", Table)
+        data = Input("Data", Table, replaces=['Data'])
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("Selected Data", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table, replaces=['Data'])
 
     settingsHandler = DomainContextHandler()
     auto_dimension = Setting(True)

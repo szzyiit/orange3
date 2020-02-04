@@ -31,7 +31,7 @@ class OWSGD(OWBaseLearner):
     LEARNER = SGDLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
 
     reg_losses = (
         ('Squared Loss', 'squared_loss'),

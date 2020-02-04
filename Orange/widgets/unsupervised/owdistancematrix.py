@@ -169,11 +169,11 @@ class OWDistanceMatrix(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        distances = Input("距离(Distances)", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
 
     class Outputs:
-        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
-        table = Output("选定的数据(Selected Data)", Table, replaces=["Table"])
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False, replaces=['Distances'])
+        table = Output("选定的数据(Selected Data)", Table, replaces=["Table", 'Selected Data'])
 
     settingsHandler = DistanceMatrixContextHandler()
     auto_commit = Setting(True)

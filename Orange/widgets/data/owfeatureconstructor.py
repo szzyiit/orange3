@@ -368,10 +368,10 @@ class OWFeatureConstructor(OWWidget):
     keywords = ['function', 'lambda']
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     want_main_area = False
 

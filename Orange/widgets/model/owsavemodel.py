@@ -15,7 +15,7 @@ class OWSaveModel(OWSaveBase):
     keywords = []
 
     class Inputs:
-        model = Input("模型(Model)", Model)
+        model = Input("模型(Model)", Model, replaces=['Model'])
 
     filters = ["Pickled model (*.pkcls)"]
 

@@ -25,7 +25,7 @@ class OWLogisticRegression(OWBaseLearner):
     LEARNER = LogisticRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
 
     penalty_type = settings.Setting(1)
     C_index = settings.Setting(61)

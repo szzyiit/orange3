@@ -34,14 +34,15 @@ class OWConcatenate(widget.OWWidget):
     keywords = ["append", "join", "extend"]
 
     class Inputs:
-        primary_data = Input("主要数据(Primary Data)", Orange.data.Table)
+        primary_data = Input("主要数据(Primary Data)", Orange.data.Table, replaces=['Primary Data'])
         additional_data = Input("附加数据(Additional Data)",
                                 Orange.data.Table,
                                 multiple=True,
-                                default=True)
+                                default=True,
+                                replaces=['Additional Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Error(widget.OWWidget.Error):
         bow_concatenation = Msg("Inputs must be of the same type.")

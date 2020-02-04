@@ -106,14 +106,14 @@ class OWKMeans(widget.OWWidget):
     keywords = ["kmeans", "clustering"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
         annotated_data = Output(
             ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True,
-            replaces=["Annotated Data"]
+            replaces=["Annotated Data", 'Data']
         )
-        centroids = Output("质心(Centroids)", Table)
+        centroids = Output("质心(Centroids)", Table, replaces=['Centroids'])
 
     class Error(widget.OWWidget.Error):
         failed = widget.Msg("Clustering failed\nError: {}")

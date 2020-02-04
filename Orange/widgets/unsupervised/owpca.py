@@ -28,13 +28,13 @@ class OWPCA(widget.OWWidget):
     keywords = ["principal component analysis", "linear transformation"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
         transformed_data = Output("转换的数据(Transformed Data)", Table, replaces=["Transformed data", "Transformed Data"])
-        data = Output("数据(Data)", Table, default=True)
-        components = Output("成分(Components)", Table)
-        pca = Output("主成分分析(PCA)", PCA, dynamic=False)
+        data = Output("数据(Data)", Table, default=True, replaces=['Data'])
+        components = Output("成分(Components)", Table, replaces=['Components'])
+        pca = Output("主成分分析(PCA)", PCA, dynamic=False, replaces=['PCA'])
 
     ncomponents = settings.Setting(2)
     variance_covered = settings.Setting(100)

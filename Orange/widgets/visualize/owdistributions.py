@@ -253,12 +253,12 @@ class OWDistributions(OWWidget):
     keywords = ["histogram"]
 
     class Inputs:
-        data = Input("数据(Data)", Table, doc="Set the input dataset")
+        data = Input("数据(Data)", Table, doc="Set the input dataset", replaces=['Data'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
-        histogram_data = Output("直方图数据(Histogram Data)", Table)
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
+        histogram_data = Output("直方图数据(Histogram Data)", Table, replaces=['Histogram Data'])
 
     class Error(OWWidget.Error):
         no_defined_values_var = \

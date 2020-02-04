@@ -136,14 +136,14 @@ class OWTestAndScore(OWWidget):
     replaces = ["Orange.widgets.evaluate.owtestlearners.OWTestLearners"]
 
     class Inputs:
-        train_data = Input("数据(Data)", Table, default=True)
-        test_data = Input("测试数据(Test Data)", Table)
-        learner = Input("学习器(Learner)", Learner, multiple=True)
-        preprocessor = Input("预处理器(Preprocessor)", Preprocess)
+        train_data = Input("数据(Data)", Table, default=True, replaces=['Data'])
+        test_data = Input("测试数据(Test Data)", Table, replaces=['Test Data'])
+        learner = Input("学习器(Learner)", Learner, multiple=True, replaces=['Learner'])
+        preprocessor = Input("预处理器(Preprocessor)", Preprocess, replaces=['Preprocessor'])
 
     class Outputs:
-        predictions = Output("预测(Predictions)", Table)
-        evaluations_results = Output("评价结果(Evaluation Results)", Results)
+        predictions = Output("预测(Predictions)", Table, replaces=['Predictions'])
+        evaluations_results = Output("评价结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
 
     settings_version = 3
     buttons_area_orientation = None

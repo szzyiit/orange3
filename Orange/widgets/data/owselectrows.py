@@ -164,12 +164,12 @@ class OWSelectRows(widget.OWWidget):
     keywords = ["filter"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        matching_data = Output("匹配的数据(Matching Data)", Table, default=True)
-        unmatched_data = Output("不匹配的数据(Unmatched Data)", Table)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        matching_data = Output("匹配的数据(Matching Data)", Table, default=True, replaces=['Matching Data'])
+        unmatched_data = Output("不匹配的数据(Unmatched Data)", Table, replaces=['Unmatched Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table), replaces=['Data']
 
     want_main_area = False
 

@@ -71,10 +71,10 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table)
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Outputs:
-        distances = Output("距离(Distances)", Orange.misc.DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", Orange.misc.DistMatrix, dynamic=False, replaces=['Distances'])
 
     settings_version = 3
 

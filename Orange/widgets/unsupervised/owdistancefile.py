@@ -23,7 +23,7 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
     keywords = ["load", "read", "open"]
 
     class Outputs:
-        distances = Output("距离(Distances)", DistMatrix, dynamic=False)
+        distances = Output("距离(Distances)", DistMatrix, dynamic=False, replaces=['Distances'])
 
     want_main_area = False
     resizing_enabled = False

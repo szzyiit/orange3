@@ -153,12 +153,12 @@ class OWSelectAttributes(widget.OWWidget):
     keywords = ["filter", "attributes", "target", "variable"]
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True)
-        features = Input("特征(Features)", AttributeList)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
+        features = Input("特征(Features)", AttributeList, replaces=['Features'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
-        features = Output("特征(Features)", AttributeList, dynamic=False)
+        data = Output("数据(Data)", Table, replaces=['Data'])
+        features = Output("特征(Features)", AttributeList, dynamic=False, replaces=['Features'])
 
     want_main_area = False
     want_control_area = True

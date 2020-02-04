@@ -176,7 +176,7 @@ class OWDataSets(OWWidget):
                                   "cached datasets are shown")
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table)
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     #: Selected dataset id
     selected_id = settings.Setting(None)   # type: Optional[str]

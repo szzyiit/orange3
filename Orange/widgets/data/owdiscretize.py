@@ -259,10 +259,10 @@ class OWDiscretize(widget.OWWidget):
     keywords = ["bin", "categorical", "nominal", "ordinal"]
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table, doc="Input data table")
+        data = Input("数据(Data)", Orange.data.Table, doc="Input data table", replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table, doc="Table with discretized features")
+        data = Output("数据(Data)", Orange.data.Table, doc="Table with discretized features", replaces=['Data'])
 
     settingsHandler = settings.DomainContextHandler()
     settings_version = 2

@@ -178,7 +178,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
     keywords = ["inlier"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
         inliers = Output("正常值(Inliers)", Table, replaces=["Inliers"])

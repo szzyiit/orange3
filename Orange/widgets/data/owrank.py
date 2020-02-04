@@ -255,13 +255,13 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
-        data = Input("数据(Data)", Table)
-        scorer = Input("评分器(Scorer)", score.Scorer, multiple=True)
+        data = Input("数据(Data)", Table, replaces=['Data'])
+        scorer = Input("评分器(Scorer)", score.Scorer, multiple=True, replaces=['Scorer'])
 
     class Outputs:
-        reduced_data = Output("选中的数据(Reduced Data)", Table, default=True)
-        scores = Output("分数(Scores)", Table)
-        features = Output("特征(Features)", AttributeList, dynamic=False)
+        reduced_data = Output("选中的数据(Reduced Data)", Table, default=True, replaces=['Reduced Data'])
+        scores = Output("分数(Scores)", Table, replaces=['Scores'])
+        features = Output("特征(Features)", AttributeList, dynamic=False, replaces=['Features'])
 
     SelectNone, SelectAll, SelectManual, SelectNBest = range(4)
 

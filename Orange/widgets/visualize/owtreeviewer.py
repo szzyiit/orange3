@@ -164,11 +164,11 @@ class OWTreeGraph(OWTreeViewer2D):
     class Inputs:
         # Had different input names before merging from
         # Classification/Regression tree variants
-        tree = Input("树(Tree)", TreeModel, replaces=["Classification Tree", "Regression Tree"])
+        tree = Input("树(Tree)", TreeModel, replaces=["Classification Tree", "Regression Tree", 'Tree'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True, id="selected-data")
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, id="annotated-data")
+        selected_data = Output("选定的数据(Selected Data)", Table, default=True, id="selected-data", replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, id="annotated-data", replaces=['Data'])
 
     settingsHandler = ClassValuesContextHandler()
     target_class_index = ContextSetting(0)

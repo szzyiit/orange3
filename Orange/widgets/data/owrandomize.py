@@ -19,10 +19,10 @@ class OWRandomize(OWWidget):
     keywords = []
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
 
     resizing_enabled = False
     want_main_area = False

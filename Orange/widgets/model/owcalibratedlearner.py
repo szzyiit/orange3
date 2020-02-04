@@ -41,7 +41,7 @@ class OWCalibratedLearner(OWBaseLearner):
     threshold = Setting(OptimizeCA)
 
     class Inputs(OWBaseLearner.Inputs):
-        base_learner = Input("基学习器(Base Learner)", Learner)
+        base_learner = Input("基学习器(Base Learner)", Learner, replaces=['Base Learner'])
 
     def __init__(self):
         super().__init__()

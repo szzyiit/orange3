@@ -80,13 +80,13 @@ class OWBaseLearner(OWWidget, metaclass=OWBaseLearnerMeta, openclass=True):
         outdated_learner = Msg("Press Apply to submit changes.")
 
     class Inputs:
-        data = Input("数据(Data)", Table)
-        preprocessor = Input("预处理器(Preprocessor)", Preprocess)
+        data = Input("数据(Data)", Table, replaces=["Data"])
+        preprocessor = Input("预处理器(Preprocessor)", Preprocess, replaces=["Preprocessor"])
 
     class Outputs:
-        learner = Output("学习器(Learner)", Learner, dynamic=False)
+        learner = Output("学习器(Learner)", Learner, dynamic=False, replaces=["Learner"])
         model = Output("模型(Model)", Model, dynamic=False,
-                       replaces=["Classifier", "Predictor"])
+                       replaces=["Classifier", "Predictor", 'Model'])
 
     OUTPUT_MODEL_NAME = Outputs.model.name  # Attr for backcompat w/ self.send() code
 

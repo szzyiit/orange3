@@ -60,10 +60,10 @@ class OWDBSCAN(widget.OWWidget):
     priority = 2150
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table)
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     class Error(widget.OWWidget.Error):
         not_enough_instances = Msg("Not enough unique data instances. "

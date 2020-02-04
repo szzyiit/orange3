@@ -17,10 +17,10 @@ class OWPurgeDomain(widget.OWWidget):
     keywords = ["remove", "delete", "unused"]
 
     class Inputs:
-        data = Input("数据(Data)", Table)
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
 
     removeValues = Setting(1)
     removeAttributes = Setting(1)
