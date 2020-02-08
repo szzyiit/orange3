@@ -18,7 +18,7 @@ def widget_discovery(discovery):
         "Orange.widgets.model",
         "Orange.widgets.evaluate",
         "Orange.widgets.unsupervised",
-        "Orange.widgets.reinforcement"
+        "Orange.widgets.reinforcement",
         "Orange.widgets.deepLearning"
     ]
     for pkg in pkgs:

@@ -4,7 +4,7 @@ from Orange.widgets.utils.save.owsavebase import OWSaveBase
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
-class OWSaveDistances(widget.OWWidget):
+class OWSaveDistances(OWSaveBase):
     name = "保存距离矩阵(Save Distance Matrix)"
     description = "将距离矩阵保存到输出文件。"
     icon = "icons/SaveDistances.svg"

@@ -169,7 +169,7 @@ class OWSelectRows(widget.OWWidget):
     class Outputs:
         matching_data = Output("匹配的数据(Matching Data)", Table, default=True, replaces=['Matching Data'])
         unmatched_data = Output("不匹配的数据(Unmatched Data)", Table, replaces=['Unmatched Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table), replaces=['Data']
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     want_main_area = False
 

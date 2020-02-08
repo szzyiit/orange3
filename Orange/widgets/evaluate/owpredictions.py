@@ -55,7 +55,7 @@ class OWPredictions(OWWidget):
         predictors = Input("预测器(Predictors)", Model, multiple=True, replaces=['Predictors'])
 
     class Outputs:
-        predictions = Output("预测(Predictions)", Orange.data.Table, , replaces=['Predictions'])
+        predictions = Output("预测(Predictions)", Orange.data.Table, replaces=['Predictions'])
         evaluation_results = Output("评价结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
 
     class Warning(OWWidget.Warning):
