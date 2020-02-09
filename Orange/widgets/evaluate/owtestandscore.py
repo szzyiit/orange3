@@ -288,14 +288,14 @@ class OWTestAndScore(OWWidget):
             callback=self._on_target_class_changed
         )
 
-        self.modcompbox = box = gui.vBox(self.controlArea, "Model Comparison")
+        self.modcompbox = box = gui.vBox(self.controlArea, "模型比较")
         gui.comboBox(
             box, self, "comparison_criterion",
             callback=self.update_comparison_table)
 
         hbox = gui.hBox(box)
         gui.checkBox(hbox, self, "use_rope",
-                     "Negligible difference: ",
+                     "可忽略区别: ",
                      callback=self._on_use_rope_changed)
         gui.lineEdit(hbox, self, "rope", validator=QDoubleValidator(),
                      controlWidth=70, callback=self.update_comparison_table,
@@ -311,7 +311,7 @@ class OWTestAndScore(OWWidget):
         box = gui.vBox(self.mainArea, "评价结果")
         box.layout().addWidget(self.score_table.view)
 
-        self.compbox = box = gui.vBox(self.mainArea, box="Model comparison")
+        self.compbox = box = gui.vBox(self.mainArea, box='模型比较')
         table = self.comparison_table = QTableWidget(
             wordWrap=False, editTriggers=QTableWidget.NoEditTriggers,
             selectionMode=QTableWidget.NoSelection)
@@ -332,10 +332,9 @@ class OWTestAndScore(OWWidget):
         header.setDefaultSectionSize(15 * avg_width)
         box.layout().addWidget(table)
         box.layout().addWidget(QLabel(
-            "<small>Table shows probabilities that the score for the model in "
-            "the row is higher than that of the model in the column. "
-            "Small numbers show the probability that the difference is "
-            "negligible.</small>", wordWrap=True))
+            "<small>此表显示数值为一概率. 此概率表示\"行模型\"的评价指标大于"
+            "\"列模型\"的评价指标. "
+            "值小说明概率很小, 区别可以忽略不计.</small>", wordWrap=True))
 
     @staticmethod
     def sizeHint():
@@ -518,9 +517,9 @@ class OWTestAndScore(OWWidget):
         criterion = self.comparison_criterion
         if criterion < len(self.scorers):
             scorer = self.scorers[criterion]()
-            self.compbox.setTitle(f"Model Comparison by {scorer.name}")
+            self.compbox.setTitle(f"根据 {scorer.name} 比较模型")
         else:
-            self.compbox.setTitle(f"Model Comparison")
+            self.compbox.setTitle(f"模型比较")
 
     @Inputs.preprocessor
     def set_preprocessor(self, preproc):

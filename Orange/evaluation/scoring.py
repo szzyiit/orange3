@@ -124,7 +124,7 @@ class RegressionScore(Score, abstract=True):
 # pylint: disable=invalid-name
 class CA(ClassificationScore):
     __wraps__ = skl_metrics.accuracy_score
-    long_name = "Classification accuracy"
+    long_name = "分类准确率(CA)"
 
 
 class PrecisionRecallFSupport(ClassificationScore):
@@ -198,7 +198,7 @@ class AUC(ClassificationScore):
     __wraps__ = skl_metrics.roc_auc_score
     separate_folds = True
     is_binary = True
-    long_name = "Area under ROC curve"
+    long_name = "ROC曲线下面积(AUC)"
 
     @staticmethod
     def calculate_weights(results):
@@ -337,11 +337,11 @@ class Specificity(ClassificationScore):
 
 class MSE(RegressionScore):
     __wraps__ = skl_metrics.mean_squared_error
-    long_name = "Mean square error"
+    long_name = "均方差(MSE)"
 
 
 class RMSE(RegressionScore):
-    long_name = "Root mean square error"
+    long_name = "均方根误差(RMSE)"
 
     def compute_score(self, results):
         return np.sqrt(MSE(results))
@@ -349,17 +349,17 @@ class RMSE(RegressionScore):
 
 class MAE(RegressionScore):
     __wraps__ = skl_metrics.mean_absolute_error
-    long_name = "Mean absolute error"
+    long_name = "平均绝对误差(MAE)"
 
 
 # pylint: disable=invalid-name
 class R2(RegressionScore):
     __wraps__ = skl_metrics.r2_score
-    long_name = "Coefficient of determination"
+    long_name = "决定系数 R2"
 
 
 class CVRMSE(RegressionScore):
-    long_name = "Coefficient of variation of the RMSE"
+    long_name = "RMSE 变异系数"
 
     def compute_score(self, results):
         mean = np.nanmean(results.actual)
