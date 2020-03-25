@@ -27,7 +27,9 @@ import Orange
 from Orange.misc import environ
 
 # generated from biolab/orange3-addons repository
-OFFICIAL_ADDON_LIST = "https://orange.biolab.si/addons/list"
+# OFFICIAL_ADDON_LIST = "https://orange.biolab.si/addons/list"
+OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/szzyiit/orange3-addons/master/list"
+# OFFICIAL_ADDON_LIST = "http://127.0.0.1:5500/list.json"
 
 WIDGETS_ENTRY = "orange.widgets"
 
@@ -178,9 +180,14 @@ class Config(config.Config):
         """
         # `iter_entry_points` yields them in unspecified order, so we insert
         # our first
-        default_ep = pkg_resources.EntryPoint(
-            "Orange3", "Orange.canvas.workflows",
-            dist=pkg_resources.get_distribution("Orange3"))
+        try:
+            default_ep = pkg_resources.EntryPoint(
+                "Orange3", "Orange.canvas.workflows",
+                dist=pkg_resources.get_distribution("Orange3-zh"))
+        except pkg_resources.DistributionNotFound:
+            default_ep = pkg_resources.EntryPoint(
+                "Orange3", "Orange.canvas.workflows",
+                dist=pkg_resources.get_distribution("Orange3"))
 
         return itertools.chain(
             (default_ep,),

@@ -3,6 +3,7 @@ build
 dist
 Orange3.egg-info
 Orange3_zh.egg-info
+pip-wheel-metadata
 Orange/version.py
 doc/build
 *.so
@@ -55,3 +56,4 @@ Orange/widgets/binaries
 orange-env
 
 Orange/widgets/binaries/*
+Orange/datasets/recommendation

@@ -9,7 +9,7 @@ import string
 from pathlib import Path
 from PyQt5.QtGui import QGuiApplication
 
-from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem
+from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem, QLineEdit
 from PyQt5.QtGui import QStandardItemModel
 
 from Orange.widgets.widget import OWWidget, Msg
@@ -84,20 +84,22 @@ class TencentAPI(OWWidget):
 
     def _setup_control_area(self):
         settings_box = gui.widgetBox(self.controlArea, "参数设置:")
-        gui.lineEdit(
+        appid = gui.lineEdit(
             settings_box,
             self,
             "APPID",
             "输入 APPID",
             valueType=str,
         )
-        gui.lineEdit(
+        appid.setEchoMode(QLineEdit.Password)
+        appkey = gui.lineEdit(
             settings_box,
             self,
             "APPKEY",
             "输入 APPKEY",
             valueType=str,
         )
+        appkey.setEchoMode(QLineEdit.Password)
 
     def additional_control(self):
         pass

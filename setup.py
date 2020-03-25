@@ -189,7 +189,7 @@ PACKAGE_DATA = {
     "Orange.canvas.workflows": ["*.ows"],
     "Orange.widgets": ["icons/*.png",
                        "icons/*.svg",
-                       "binaries/*.exe"],
+                       "binaries/*"],
     "Orange.widgets.report": ["icons/*.svg", "*.html"],
     "Orange.widgets.tests": ["datasets/*.tab",
                              "workflows/*.ows"],

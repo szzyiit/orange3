@@ -1,5 +1,5 @@
 pip>=9.0
-numpy>=1.16.0
+numpy==1.17.4
 scipy>=0.16.1
 scikit-learn>=0.22.0,!=0.23.0  # 0.23.0 have error with slow k-means, it will be fixed in 0.23.1
 bottleneck>=1.0.0
