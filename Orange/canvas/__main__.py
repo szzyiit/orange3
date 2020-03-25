@@ -122,11 +122,8 @@ def check_for_updates():
                     latest == skipped:
                 return
 
-            notif = Notification(title='Orange Update Available',
-                                 text='Current version: <b>{}</b><br>'
-                                      'Latest version: <b>{}</b>'.format(current, latest),
-                                 accept_button_label="Download",
-                                 reject_button_label="Skip this Version",
+            notif = Notification(title='橙现智能有更新版本',
+                                 text='菜单栏点击: 选项 -> 升级与插件, 选中 orange3-zh 升级',
                                  icon=QIcon(resource_filename("canvas/icons/update.png")))
 
             def handle_click(role):
@@ -146,18 +143,19 @@ def check_for_updates():
 
 
 def open_link(url: QUrl):
-    if url.scheme() == "orange":
-        # define custom actions within Orange here
-        if url.host() == "enable-statistics":
-            settings = QSettings()
-
-            settings.setValue("reporting/send-statistics", True)
-            UsageStatistics.set_enabled(True)
-
-            if not settings.contains('reporting/machine-id'):
-                settings.setValue('reporting/machine-id', str(uuid.uuid4()))
-    else:
-        QDesktopServices.openUrl(url)
+    # if url.scheme() == "orange":
+    #     # define custom actions within Orange here
+    #     if url.host() == "enable-statistics":
+    #         settings = QSettings()
+    #
+    #         settings.setValue("reporting/send-statistics", True)
+    #         UsageStatistics.set_enabled(True)
+    #
+    #         if not settings.contains('reporting/machine-id'):
+    #             settings.setValue('reporting/machine-id', str(uuid.uuid4()))
+    # else:
+    #     QDesktopServices.openUrl(url)
+    pass
 
 
 class YAMLNotification:
@@ -223,20 +221,21 @@ def pull_notifications():
         resultReady = pyqtSignal(str)
 
         def run(self):
-            try:
-                request = Request('https://orange.biolab.si/notification-feed',
-                                  headers={
-                                      'Accept': 'text/plain',
-                                      'Connection': 'close',
-                                      'User-Agent': ua_string(),
-                                      'Cache-Control': 'no-cache',
-                                      'Pragma': 'no-cache'})
-                contents = urlopen(request, timeout=10).read().decode()
-            # Nothing that this fails with should make Orange crash
-            except Exception:  # pylint: disable=broad-except
-                log.exception('Failed to pull notification feed')
-            else:
-                self.resultReady.emit(contents)
+            # try:
+            #     request = Request('https://orange.biolab.si/notification-feed',
+            #                       headers={
+            #                           'Accept': 'text/plain',
+            #                           'Connection': 'close',
+            #                           'User-Agent': ua_string(),
+            #                           'Cache-Control': 'no-cache',
+            #                           'Pragma': 'no-cache'})
+            #     contents = urlopen(request, timeout=10).read().decode()
+            # # Nothing that this fails with should make Orange crash
+            # except Exception:  # pylint: disable=broad-except
+            #     log.exception('Failed to pull notification feed')
+            # else:
+            #     self.resultReady.emit(contents)
+            pass
 
     thread = GetNotifFeed()
 
@@ -349,11 +348,12 @@ def send_usage_statistics():
 
     class SendUsageStatistics(QThread):
         def run(self):
-            try:
-                send_statistics(statistics_server_url)
-            except Exception:  # pylint: disable=broad-except
-                # exceptions in threads would crash Orange
-                log.warning("Failed to send usage statistics.")
+            # try:
+            #     send_statistics(statistics_server_url)
+            # except Exception:  # pylint: disable=broad-except
+            #     # exceptions in threads would crash Orange
+            #     log.warning("Failed to send usage statistics.")
+            pass
 
     thread = SendUsageStatistics()
     thread.start()

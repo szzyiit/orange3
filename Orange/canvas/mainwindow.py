@@ -111,7 +111,7 @@ class MainWindow(OWCanvasMainWindow):
     def open_canvas_settings(self):
         # type: () -> None
         """Reimplemented."""
-        dlg = OUserSettingsDialog(self, windowTitle=self.tr("Preferences"))
+        dlg = OUserSettingsDialog(self, windowTitle=self.tr("设置"))
         dlg.show()
         status = dlg.exec_()
         if status == 0:
