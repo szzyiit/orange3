@@ -2,6 +2,7 @@ from Orange.widgets.widget import OWWidget
 from Orange.widgets import gui
 from pathlib import Path
 from PyQt5.QtCore import QProcess
+import sys
 
 
 class Crawler(OWWidget):
@@ -19,7 +20,10 @@ class Crawler(OWWidget):
     def commit(self):
         dir_path = Path(__file__).resolve()
         parent_path = dir_path.parent.parent
-        command = f'{str(parent_path)}/binaries/crawler'
+        if sys.platform.startswith('win'):
+            command = f'{str(parent_path)}/binaries/crawler.exe'
+        else:
+            command = f'{str(parent_path)}/binaries/crawler'
 
         self.process = QProcess(self)
 

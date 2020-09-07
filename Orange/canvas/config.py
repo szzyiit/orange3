@@ -28,7 +28,7 @@ from Orange.misc import environ
 
 # generated from biolab/orange3-addons repository
 # OFFICIAL_ADDON_LIST = "https://orange.biolab.si/addons/list"
-OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/szzyiit/orange3-addons/master/list"
+OFFICIAL_ADDON_LIST = "https://gitee.com/szzyiit/orange3-addons/raw/master/list"
 # OFFICIAL_ADDON_LIST = "http://127.0.0.1:5500/list.json"
 
 WIDGETS_ENTRY = "orange.widgets"
@@ -170,7 +170,7 @@ class Config(config.Config):
         be updated. The package that defines the application's `main()` entry
         point must always be in this list.
         """
-        return ["Orange3 >=3.20,<4.0a"]
+        return ["Orange3-zh >=3.20,<4.0a"]
 
     @staticmethod
     def examples_entry_points():
