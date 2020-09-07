@@ -3,6 +3,7 @@ from Orange.widgets import gui
 from pathlib import Path
 from PyQt5.QtCore import QProcess
 from PyQt5.QtWidgets import QScrollArea, QLabel
+import sys
 
 
 class GridWold(OWWidget):
@@ -26,7 +27,10 @@ class GridWold(OWWidget):
 
     dir_path = Path(__file__).resolve()
     parent_path = dir_path.parent.parent
-    command = f'{str(parent_path)}/binaries/gridworld '
+    if sys.platform.startswith('win'):
+        command = f'{str(parent_path)}/binaries/gridworld.exe '
+    else:
+        command = f'{str(parent_path)}/binaries/gridworld '
     command_options = f'-m -n {noise_ratio} -g {grid_type}'
 
     want_main_area = True
@@ -176,19 +180,6 @@ class GridWold(OWWidget):
         self.process.started.connect(self.onstart)
         self.process.finished.connect(self.onfinish)
         self.process.start(self.final_command)
-
-    def construct_command(self, mode):
-        options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \
-                  f'-i {self.iterations} -g {self.grids[self.grid_type]} ' \
-                  f'-a {self.agents[self.agent_type]} -n {self.noise_ratio} ' \
-                  f'-k {self.episodes}'
-        if mode == self.manual_mode:
-            self.command_options = '-m ' + options
-        else:
-            self.command_options = options
-
-        self.final_command = self.command + self.command_options
-        print(self.final_command)
 
     def construct_command(self, mode):
         options = f'-v -d {self.discount} -r {self.living_reward} -e {self.epsilon} ' \

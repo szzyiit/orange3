@@ -72,7 +72,7 @@ APPDIR=${1:?"Target APPDIR argument is missing"}
 PYVER=${PYTHON_VERSION%.*}  # Major.Minor
 
 if [[ ${#PIP_REQ_ARGS[@]} -eq 0 ]]; then
-    PIP_REQ_ARGS+=( Orange3 'PyQt5~=5.12.0' 'PyQtWebEngine~=5.12.0' )
+    PIP_REQ_ARGS+=( Orange3-zh==3.24.2 'PyQt5~=5.13.0' 'PyQtWebEngine~=5.13.0' )
 fi
 
 mkdir -p "${APPDIR}"/Contents/MacOS
@@ -132,7 +132,7 @@ PYTHON="${APPDIR}"/Contents/MacOS/python
 
 "${PYTHON}" -m pip install --no-warn-script-location "${PIP_REQ_ARGS[@]}"
 
-VERSION=$("${PYTHON}" -m pip show orange3 | grep -E '^Version:' |
+VERSION=$("${PYTHON}" -m pip show Orange3-zh | grep -E '^Version:' |
           cut -d " " -f 2)
 
 m4 -D__VERSION__="${VERSION:?}" "${APPDIR}"/Contents/Info.plist.in \
@@ -146,6 +146,6 @@ rm "${APPDIR}"/Contents/Info.plist.in
     cleanup() { rm -r "${tempdir}"; }
     trap cleanup EXIT
     cd "${tempdir}"
-    "${PYTHON}" -m pip install --no-cache-dir --no-index orange3 PyQt5
+    "${PYTHON}" -m pip install --no-cache-dir Orange3-zh==3.24.2 PyQt5
     "${PYTHON}" -m Orange.canvas --help > /dev/null
 )
