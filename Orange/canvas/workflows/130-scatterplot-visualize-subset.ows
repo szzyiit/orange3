@@ -6,9 +6,9 @@
 		<node id="2" name="数据表(Data Table)" position="(236.0, 262.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="2" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="2" sink_channel="数据子集(Data Subset)" sink_node_id="1" source_channel="选定的数据(Selected Data)" source_node_id="2" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="2" sink_channel="Data Subset" sink_node_id="1" source_channel="Selected Data" source_node_id="2" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="12" id="0" rect="(56.0, 340.0, 150.0, 60.0)" type="text/plain">（1）打开数据表并选择数据实例或实例子集（使用shift键）。</text>

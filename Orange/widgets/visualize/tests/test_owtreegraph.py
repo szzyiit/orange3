@@ -18,7 +18,7 @@ class TestOWTreeGraph(WidgetTest, WidgetOutputsTestMixin):
         cls.model = tree(cls.data)
         cls.model.instances = cls.data
 
-        cls.signal_name = "Tree"
+        cls.signal_name = "树(Tree)"
         cls.signal_data = cls.model
 
         # Load a dataset that contains two variables with the same entropy

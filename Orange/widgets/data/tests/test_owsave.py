@@ -303,13 +303,13 @@ class TestOWSave(OWSaveTestBase):
                 widget.send_report()
                 items = dict(widget.report_items.call_args[0][0])
                 msg = f"for {writer}, annotations={widget.add_type_annotations}"
-                self.assertEqual(items["File name"], widget.filename, msg=msg)
+                self.assertEqual(items["文件名"], widget.filename, msg=msg)
                 if writer.OPTIONAL_TYPE_ANNOTATIONS:
                     self.assertEqual(
-                        items["Type annotations"],
+                        items["格式标注"],
                         ["No", "Yes"][widget.add_type_annotations], msg=msg)
                 else:
-                    self.assertFalse(items["Type annotations"], msg=msg)
+                    self.assertFalse(items["格式标注"], msg=msg)
 
     def test_migration_to_version_2(self):
         const_settings = {

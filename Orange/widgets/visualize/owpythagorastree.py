@@ -84,9 +84,9 @@ class OWPythagorasTree(OWWidget):
 
         # Different methods to calculate the size of squares
         self.SIZE_CALCULATION = [
-            ('正常', lambda x: x),
-            ('平方根', lambda x: sqrt(x)),
-            ('对数的', lambda x: log(x * self.size_log_scale + 1)),
+            ('Normal', lambda x: x, '正常'),
+            ('Square root', lambda x: sqrt(x), '平方根'),
+            ('Logarithmic', lambda x: log(x * self.size_log_scale + 1), '对数'),
         ]
 
         # CONTROL AREA
@@ -107,7 +107,7 @@ class OWPythagorasTree(OWWidget):
         self.size_calc_combo = gui.comboBox(
             box_display, self, 'size_calc_idx', label='大小',
             orientation=Qt.Horizontal,
-            items=list(zip(*self.SIZE_CALCULATION))[0], contentsLength=8,
+            items=list(zip(*self.SIZE_CALCULATION))[2], contentsLength=8,
             callback=self.update_size_calc)
         self.log_scale_box = gui.hSlider(
             box_display, self, 'size_log_scale',
@@ -268,7 +268,7 @@ class OWPythagorasTree(OWWidget):
     def _update_log_scale_slider(self):
         """On calc method combo box changed."""
         self.log_scale_box.parent().setEnabled(
-            self.SIZE_CALCULATION[self.size_calc_idx][0] == '对数的')
+            self.SIZE_CALCULATION[self.size_calc_idx][0] == 'Logarithmic')
 
     def _clear_info_box(self):
         self.infolabel.setText('没有树输入')

@@ -27,7 +27,7 @@ class TestOWConfusionMatrix(WidgetTest, WidgetOutputsTestMixin):
         cls.results_2_iris = cv(cls.iris, [bayes, tree])
         cls.results_2_titanic = cv(titanic, [bayes, tree])
 
-        cls.signal_name = "Evaluation Results"
+        cls.signal_name = "评价结果(Evaluation Results)"
         cls.signal_data = cls.results_1_iris
         cls.same_input_output_domain = False
 

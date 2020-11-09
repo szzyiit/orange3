@@ -86,7 +86,7 @@ class OWBaseLearner(OWWidget, metaclass=OWBaseLearnerMeta, openclass=True):
     class Outputs:
         learner = Output("学习器(Learner)", Learner, dynamic=False, replaces=["Learner"])
         model = Output("模型(Model)", Model, dynamic=False,
-                       replaces=["Classifier", "Predictor", 'Model'])
+                       replaces=['Model', "Classifier", "Predictor"])
 
     OUTPUT_MODEL_NAME = Outputs.model.name  # Attr for backcompat w/ self.send() code
 
@@ -269,6 +269,7 @@ class OWBaseLearner(OWWidget, metaclass=OWBaseLearnerMeta, openclass=True):
     def add_learner_name_widget(self):
         self.name_line_edit = gui.lineEdit(
             self.controlArea, self, 'learner_name', box='名称',
+            placeholderText=self.name,
             tooltip='The name will identify this model in other widgets',
             orientation=Qt.Horizontal, callback=self.learner_name_changed)
 

@@ -512,7 +512,7 @@ class TestContColorTableModel(GuiTest, BaseTestColorTableModel):
         model.set_mouse_row(0)
         self.assertIsNone(model.data(index, Qt.DisplayRole))
         model.set_mouse_row(1)
-        self.assertEqual(model.data(index, Qt.DisplayRole), "Copy to all")
+        self.assertEqual(model.data(index, Qt.DisplayRole), "复制到所有")
 
     def test_set_data(self):
         super().test_set_data()

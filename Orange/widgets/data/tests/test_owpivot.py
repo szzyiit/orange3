@@ -32,7 +32,7 @@ class TestOWPivot(WidgetTest):
         controls = self.widget.controls
         name = self.heart_disease.domain.class_var.name
         self.assertEqual(controls.row_feature.currentText(), name)
-        self.assertEqual(controls.col_feature.currentText(), "(Same as rows)")
+        self.assertEqual(controls.col_feature.currentText(), "(与行相同)")
         self.assertEqual(controls.val_feature.currentText(), "age")
 
         self.assertEqual(len(controls.row_feature.model()), 15)
@@ -61,8 +61,8 @@ class TestOWPivot(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.agg_checkboxes[Pivot.Sum.value].click()
         grouped = self.get_output(self.widget.Outputs.grouped_data)
-        names = ["iris", "(count)", "sepal length (sum)", "sepal width (sum)",
-                 "petal length (sum)", "petal width (sum)"]
+        names = ["iris", "(数目)", "sepal length (总和)", "sepal width (总和)",
+                 "petal length (总和)", "petal width (总和)"]
         self.assertListEqual(names, [a.name for a in grouped.domain.variables])
         self.send_signal(self.widget.Inputs.data, None)
         self.assertIsNone(self.get_output(self.widget.Outputs.grouped_data))
@@ -162,7 +162,7 @@ class TestOWPivot(WidgetTest):
         self.assertFalse(self.widget.Warning.cannot_aggregate.is_shown())
         # agg: Count, Majority, feature: None
         simulate.combobox_activate_item(self.widget.controls.val_feature,
-                                        "(None)")
+                                        "(无)")
         self.assertTrue(self.widget.Warning.cannot_aggregate.is_shown())
         # agg: Count, Majority, feature: None, row: Continuous
         simulate.combobox_activate_item(self.widget.controls.row_feature,
@@ -337,12 +337,12 @@ class TestPivot(unittest.TestCase):
         domain = self.table.domain
         pivot = Pivot(self.table, Pivot.Functions, domain[0], domain[1])
         group_tab = pivot.group_table
-        atts = (Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("d2 (count defined)"), Dv("d2 (majority)", ["c", "d", "e"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"),
-                Cv("c1 (mean)"), Cv("c1 (min)"), Cv("c1 (max)"),
-                Cv("c1 (mode)"), Cv("c1 (median)"), Cv("c1 (var)"))
+        atts = (Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("d2 (非缺失数目)"), Dv("d2 (最常见)", ["c", "d", "e"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"),
+                Cv("c1 (平均值)"), Cv("c1 (最小值)"), Cv("c1 (最大值)"),
+                Cv("c1 (众数)"), Cv("c1 (中位数)"), Cv("c1 (方差)"))
         X = np.array(
             [[0, 0, 2, 2, 0, 2, 0, 2, 5, 2.5, 1, 4, 1, 2.5, 2.25],
              [0, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 0],
@@ -376,14 +376,14 @@ class TestPivot(unittest.TestCase):
 
         pivot = Pivot(table, Pivot.Functions, table.domain[-1])
         group_tab = pivot.group_table
-        atts = (table.domain[-1], Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"), Cv("c1 (mean)"),
-                Cv("c1 (min)"), Cv("c1 (max)"), Cv("c1 (mode)"),
-                Cv("c1 (median)"), Cv("c1 (var)"), Cv("d2 (count defined)"),
-                Dv("d2 (majority)", ["a", "b"]), Cv("c2 (count defined)"),
-                Cv("c2 (sum)"), Cv("c2 (mean)"), Cv("c2 (min)"), Cv("c2 (max)"),
-                Cv("c2 (mode)"), Cv("c2 (median)"), Cv("c2 (var)"))
+        atts = (table.domain[-1], Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"), Cv("c1 (平均值)"),
+                Cv("c1 (最小值)"), Cv("c1 (最大值)"), Cv("c1 (众数)"),
+                Cv("c1 (中位数)"), Cv("c1 (方差)"), Cv("d2 (非缺失数目)"),
+                Dv("d2 (最常见)", ["a", "b"]), Cv("c2 (非缺失数目)"),
+                Cv("c2 (总和)"), Cv("c2 (平均值)"), Cv("c2 (最小值)"), Cv("c2 (最大值)"),
+                Cv("c2 (众数)"), Cv("c2 (中位数)"), Cv("c2 (方差)"))
         X = np.array([[0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
                        1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 0],
                       [1, 1, 1, 0, 1, 3, 3, 3, 3, 3, 3, 0, 1, 1, 0, 0, np.nan,
@@ -404,12 +404,12 @@ class TestPivot(unittest.TestCase):
         pivot.update_group_table(Pivot.Functions)
         count_func.assert_not_called()
         sum_func.assert_not_called()
-        atts = (Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("d2 (count defined)"), Dv("d2 (majority)", ["c", "d", "e"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"), Cv("c1 (mean)"),
-                Cv("c1 (min)"), Cv("c1 (max)"), Cv("c1 (mode)"),
-                Cv("c1 (median)"), Cv("c1 (var)"))
+        atts = (Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("d2 (非缺失数目)"), Dv("d2 (最常见)", ["c", "d", "e"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"), Cv("c1 (平均值)"),
+                Cv("c1 (最小值)"), Cv("c1 (最大值)"), Cv("c1 (众数)"),
+                Cv("c1 (中位数)"), Cv("c1 (方差)"))
         X = np.array(
             [[0, 0, 2, 2, 0, 2, 0, 2, 5, 2.5, 1, 4, 1, 2.5, 2.25],
              [0, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 0],
@@ -431,12 +431,12 @@ class TestPivot(unittest.TestCase):
         domain = self.table.domain
         pivot = Pivot(self.table, Pivot.Functions, domain[0])
         group_tab = pivot.group_table
-        atts = (Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("d2 (count defined)"), Dv("d2 (majority)", ["c", "d", "e"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"),
-                Cv("c1 (mean)"), Cv("c1 (min)"), Cv("c1 (max)"),
-                Cv("c1 (mode)"), Cv("c1 (median)"), Cv("c1 (var)"))
+        atts = (Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("d2 (非缺失数目)"), Dv("d2 (最常见)", ["c", "d", "e"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"),
+                Cv("c1 (平均值)"), Cv("c1 (最小值)"), Cv("c1 (最大值)"),
+                Cv("c1 (众数)"), Cv("c1 (中位数)"), Cv("c1 (方差)"))
         domain = Domain(domain[:1] + atts)
         X = np.array([[0, 4, 4, 0, 3, 0, 4, 10, 2.5, 1, 4, 1, 2.5, 1.25],
                       [1, 4, 4, 1, 4, 0, 3, 18, 6, 5, 7, 5, 6, 2 / 3]],
@@ -459,14 +459,14 @@ class TestPivot(unittest.TestCase):
 
         pivot = Pivot(table, Pivot.Functions, table.domain[-1])
         group_tab = pivot.group_table
-        atts = (table.domain[-1], Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"), Cv("c1 (mean)"),
-                Cv("c1 (min)"), Cv("c1 (max)"), Cv("c1 (mode)"),
-                Cv("c1 (median)"), Cv("c1 (var)"), Cv("d2 (count defined)"),
-                Dv("d2 (majority)", ["a", "b"]), Cv("c2 (count defined)"),
-                Cv("c2 (sum)"), Cv("c2 (mean)"), Cv("c2 (min)"), Cv("c2 (max)"),
-                Cv("c2 (mode)"), Cv("c2 (median)"), Cv("c2 (var)"))
+        atts = (table.domain[-1], Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"), Cv("c1 (平均值)"),
+                Cv("c1 (最小值)"), Cv("c1 (最大值)"), Cv("c1 (众数)"),
+                Cv("c1 (中位数)"), Cv("c1 (方差)"), Cv("d2 (非缺失数目)"),
+                Dv("d2 (最常见)", ["a", "b"]), Cv("c2 (非缺失数目)"),
+                Cv("c2 (总和)"), Cv("c2 (平均值)"), Cv("c2 (最小值)"), Cv("c2 (最大值)"),
+                Cv("c2 (众数)"), Cv("c2 (中位数)"), Cv("c2 (方差)"))
         X = np.array([[0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
                        1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 0],
                       [1, 1, 1, 0, 1, 3, 3, 3, 3, 3, 3, 0, 1, 1, 0, 0, np.nan,
@@ -475,12 +475,12 @@ class TestPivot(unittest.TestCase):
 
     def test_group_table_update(self):
         domain = self.table.domain
-        atts = (Cv("(count)"), Cv("d1 (count defined)"),
-                Dv("d1 (majority)", ["a", "b"]),
-                Cv("d2 (count defined)"), Dv("d2 (majority)", ["c", "d", "e"]),
-                Cv("c1 (count defined)"), Cv("c1 (sum)"), Cv("c1 (mean)"),
-                Cv("c1 (min)"), Cv("c1 (max)"), Cv("c1 (mode)"),
-                Cv("c1 (median)"), Cv("c1 (var)"))
+        atts = (Cv("(数目)"), Cv("d1 (非缺失数目)"),
+                Dv("d1 (最常见)", ["a", "b"]),
+                Cv("d2 (非缺失数目)"), Dv("d2 (最常见)", ["c", "d", "e"]),
+                Cv("c1 (非缺失数目)"), Cv("c1 (总和)"), Cv("c1 (平均值)"),
+                Cv("c1 (最小值)"), Cv("c1 (最大值)"), Cv("c1 (众数)"),
+                Cv("c1 (中位数)"), Cv("c1 (方差)"))
         X = np.array(
             [[0, 0, 2, 2, 0, 2, 0, 2, 5, 2.5, 1, 4, 1, 2.5, 2.25],
              [0, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 0],
@@ -503,18 +503,18 @@ class TestPivot(unittest.TestCase):
     def test_group_table_1(self):
         var = self.table1.domain.variables[1]
         domain = Domain(
-            [var, Cv("(count)"), Cv("c0 (count defined)"), Cv("c0 (sum)"),
-             Cv("c0 (mean)"), Cv("c0 (min)"), Cv("c0 (max)"), Cv("c0 (mode)"),
-             Cv("c0 (median)"), Cv("c0 (var)"), Cv("d1 (count defined)"),
-             Dv("d1 (majority)", ["a", "b"]), Cv("c1 (count defined)"),
-             Cv("c1 (sum)"), Cv("c1 (mean)"), Cv("c1 (min)"), Cv("c1 (max)"),
-             Cv("c1 (mode)"), Cv("c1 (median)"), Cv("c1 (var)"),
-             Cv("d2 (count defined)"), Dv("d2 (majority)", ["a", "b"]),
-             Cv("c2 (count defined)"), Cv("c2 (sum)"), Cv("c2 (mean)"),
-             Cv("c2 (min)"), Cv("c2 (max)"), Cv("c2 (mode)"),
-             Cv("c2 (median)"), Cv("c2 (var)"), Cv("cls (count defined)"),
-             Dv("cls (majority)", ["a", "b"]), Cv("m1 (count defined)"),
-             Cv("m2 (count defined)")])
+            [var, Cv("(数目)"), Cv("c0 (非缺失数目)"), Cv("c0 (总和)"),
+             Cv("c0 (平均值)"), Cv("c0 (最小值)"), Cv("c0 (最大值)"), Cv("c0 (众数)"),
+             Cv("c0 (中位数)"), Cv("c0 (方差)"), Cv("d1 (非缺失数目)"),
+             Dv("d1 (最常见)", ["a", "b"]), Cv("c1 (非缺失数目)"),
+             Cv("c1 (总和)"), Cv("c1 (平均值)"), Cv("c1 (最小值)"), Cv("c1 (最大值)"),
+             Cv("c1 (众数)"), Cv("c1 (中位数)"), Cv("c1 (方差)"),
+             Cv("d2 (非缺失数目)"), Dv("d2 (最常见)", ["a", "b"]),
+             Cv("c2 (非缺失数目)"), Cv("c2 (总和)"), Cv("c2 (平均值)"),
+             Cv("c2 (最小值)"), Cv("c2 (最大值)"), Cv("c2 (众数)"),
+             Cv("c2 (中位数)"), Cv("c2 (方差)"), Cv("cls (非缺失数目)"),
+             Dv("cls (最常见)", ["a", "b"]), Cv("m1 (非缺失数目)"),
+             Cv("m2 (非缺失数目)")])
         X = np.array([[0, 2, 0, 0, np.nan, np.nan, np.nan, np.nan,
                        np.nan, np.nan, 2, 0, 2, 4, 2, 1, 3, 1, 2, 1,
                        2, 0, 1, 2, 2, 2, 2, 2, 2, 0, 2, 0, 2, 1],
@@ -537,8 +537,8 @@ class TestPivot(unittest.TestCase):
         domain = self.table.domain
         pivot = Pivot(self.table, Pivot.Functions, domain[0], domain[1], domain[2])
         pivot_tab = pivot.pivot_table
-        atts = (Dv("Aggregate", ["Count", "Count defined", "Sum", "Mean",
-                                 "Min", "Max", "Mode", "Median", "Var"]),
+        atts = (Dv("Aggregate", ["数目", "非缺失数目", "总和", "平均值",
+                                 "最小值", "最大值", "众数", "中位数", "方差"]),
                 Cv("c"), Cv("d"), Cv("e"))
         X = np.array([[0, 0, 2, 1, 0],
                       [0, 1, 2, 1, 0],
@@ -566,7 +566,7 @@ class TestPivot(unittest.TestCase):
                       domain[0], domain[1], domain[2])
 
         atts = (Dv(domain[0].name, ["Total"]),
-                Dv("Aggregate", ["Count", "Sum"]), Cv("c"), Cv("d"), Cv("e"))
+                Dv("Aggregate", ["数目", "总和"]), Cv("c"), Cv("d"), Cv("e"))
         X = np.array([[0, 0, 4, 2, 1], [0, 1, 16, 2, 7]])
         table = Table(Domain(atts), X)
 
@@ -582,8 +582,8 @@ class TestPivot(unittest.TestCase):
         pivot = Pivot(self.table, Pivot.Functions, domain[0], None, domain[2])
         pivot_tab = pivot.pivot_table
         atts = (Dv("Aggregate",
-                   ["Count", "Count defined", "Sum", "Mean",
-                    "Min", "Max", "Mode", "Median", "Var"]),
+                   ["数目", "非缺失数目", "总和", "平均值",
+                    "最小值", "最大值", "众数", "中位数", "方差"]),
                 Cv("a"), Cv("b"))
         X = np.array([[0, 0, 4, 0],
                       [0, 1, 4, 0],
@@ -609,7 +609,7 @@ class TestPivot(unittest.TestCase):
         domain = self.table.domain
         pivot = Pivot(self.table, Pivot.Functions, domain[0], domain[1])
         pivot_tab = pivot.pivot_table
-        atts = (Dv("Aggregate", ["Count"]),
+        atts = (Dv("Aggregate", ["数目"]),
                 Cv("c"), Cv("d"), Cv("e"))
         X = np.array([[0, 0, 2, 1, 0], [1, 0, 2, 1, 1]])
         self.assert_table_equal(pivot_tab, Table(Domain(domain[:1] + atts), X))
@@ -619,7 +619,7 @@ class TestPivot(unittest.TestCase):
         pivot = Pivot(self.table, [Pivot.Count_defined, Pivot.Majority],
                       domain[2], domain[0], domain[1])
         pivot_tab = pivot.pivot_table
-        atts = (domain[2], Dv("Aggregate", ["Count defined", "Majority"]),
+        atts = (domain[2], Dv("Aggregate", ["非缺失数目", "最常见"]),
                 Dv("a", ["0.0", "1.0", "c", "d"]),
                 Dv("b", ["0.0", "1.0", "c", "e"]))
         X = np.array([[1, 0, 1, 0],
@@ -720,7 +720,7 @@ class TestPivot(unittest.TestCase):
         data = Table("iris")
         cls_var = data.domain.class_var
         pivot = Pivot(data[:100], Pivot.Functions, cls_var, None, cls_var)
-        atts = (cls_var, Dv("Aggregate", ["Count", "Count defined", "Majority"]),
+        atts = (cls_var, Dv("Aggregate", ["数目", "非缺失数目", "最常见"]),
                 Dv("Iris-setosa", ["0.0", "50.0", "Iris-setosa"]),
                 Dv("Iris-versicolor", ["0.0", "50.0", "Iris-versicolor"]))
         domain = Domain(atts)

@@ -36,25 +36,25 @@ Metrics = [MetricDefinition(*args) for args in (
     ("F1", (Curves.f1, ), (), ""),
     ("灵敏度和特异度",
      (Curves.sensitivity, Curves.specificity),
-     ("sens", "spec"), ""),
-    #  "<p><b>灵敏度:</b> (降) 是指实际为阳性的样本中，判断为阳性的比例 "
-    #  "(真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;P).</p>"
-    #  "<p><b>特异度:</b> (升) 实际为阴性的样本中，判断为阴性的比例" 
-    #  "(真阴性&nbsp;/&nbsp;阴性 TN&nbsp;/&nbsp;N).</p>"),
+     ("sens", "spec"),
+     "<p><b>灵敏度:</b> (降) 是指实际为阳性的样本中，判断为阳性的比例 "
+     "(真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;P).</p>"
+     "<p><b>特异度:</b> (升) 实际为阴性的样本中，判断为阴性的比例" 
+     "(真阴性&nbsp;/&nbsp;阴性 TN&nbsp;/&nbsp;N).</p>"),
     ("精度和召回",
      (Curves.precision, Curves.recall),
-     ("prec", "recall"), ""),
-    #  "<p><b>精度</b> (升) 检索到的实例中相关实例的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性) TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-    #  "<p><b>召回</b> (降) 检索到的相关实例的比例, 真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;阳性.</p>"),
+     ("prec", "recall"),
+     "<p><b>精度</b> (升) 检索到的实例中相关实例的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性) TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+     "<p><b>召回</b> (降) 检索到的相关实例的比例, 真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;阳性.</p>"),
     ("阳/阴性预测值",
      (Curves.ppv, Curves.npv),
-     ("PPV", "TPV"), ""),
-    #  "<p><b>阳性预测值</b> (升) 正确预测为真的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性), TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-    #  "<p><b>阴性预测值</b> 正确预测为假的比例, 真阴性&nbsp;/&nbsp;(真阴性&nbsp;+&nbsp;假阴性) TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
+     ("PPV", "TPV"),
+     "<p><b>阳性预测值</b> (升) 正确预测为真的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性), TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+     "<p><b>阴性预测值</b> 正确预测为假的比例, 真阴性&nbsp;/&nbsp;(真阴性&nbsp;+&nbsp;假阴性) TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
     ("真假阳性率",
      (Curves.tpr, Curves.fpr),
-     ("TPR", "FPR"), ""),
-    #  "<p><b>真假阳性率</b> 检测到的和错检的阳性实例比例</p>"),
+     ("TPR", "FPR"),
+     "<p><b>真假阳性率</b> 检测到的和错检的阳性实例比例</p>"),
 )]
 
 

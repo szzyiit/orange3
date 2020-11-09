@@ -29,30 +29,30 @@ class TestOWPythonScript(WidgetTest):
 
     def test_inputs(self):
         """Check widget's inputs"""
-        for input_, data in (("Data", self.iris),
-                             ("Learner", self.learner),
-                             ("Classifier", self.model),
-                             ("Object", "object")):
+        for input_, zh_input_, data in (("Data", "数据(Data)", self.iris),
+                             ("Learner", "学习器(Learner)", self.learner),
+                             ("Classifier", "分类器(Classifier)", self.model),
+                             ("Object", "对象(Object)", "object")):
             self.assertEqual(getattr(self.widget, input_.lower()), {})
-            self.send_signal(input_, data, 1)
+            self.send_signal(zh_input_, data, 1)
             self.assertEqual(getattr(self.widget, input_.lower()), {1: data})
-            self.send_signal(input_, None, 1)
+            self.send_signal(zh_input_, None, 1)
             self.assertEqual(getattr(self.widget, input_.lower()), {})
 
     def test_outputs(self):
         """Check widget's outputs"""
-        for signal, data in (
-                ("Data", self.iris),
-                ("Learner", self.learner),
-                ("Classifier", self.model)):
+        for signal, zh_signal, data in (
+                ("Data", "数据(Data)", self.iris),
+                ("Learner","学习器(Learner)", self.learner),
+                ("Classifier", "分类器(Classifier)", self.model)):
             lsignal = signal.lower()
             self.widget.text.setPlainText("out_{0} = in_{0}".format(lsignal))
-            self.send_signal(signal, data, 1)
-            self.assertIs(self.get_output(signal), data)
-            self.send_signal(signal, None, 1)
+            self.send_signal(zh_signal, data, 1)
+            self.assertIs(self.get_output(zh_signal), data)
+            self.send_signal(zh_signal, None, 1)
             self.widget.text.setPlainText("print(in_{})".format(lsignal))
             self.widget.execute_button.click()
-            self.assertIsNone(self.get_output(signal))
+            self.assertIsNone(self.get_output(zh_signal))
 
     def test_local_variable(self):
         """Check if variable remains in locals after removed from script"""
@@ -70,21 +70,21 @@ class TestOWPythonScript(WidgetTest):
         types and also output variable is set to None. (GH-2308)
         """
         self.assertEqual(len(self.widget.Error.active), 0)
-        for signal, data in (
-                ("Data", self.iris),
-                ("Learner", self.learner),
-                ("Classifier", self.model)):
+        for signal, zh_signal, data in (
+                ("Data", "数据(Data)", self.iris),
+                ("Learner","学习器(Learner)", self.learner),
+                ("Classifier", "分类器(Classifier)", self.model)):
             lsignal = signal.lower()
-            self.send_signal(signal, data, 1)
+            self.send_signal(zh_signal, data, 1)
             self.widget.text.setPlainText("out_{} = 42".format(lsignal))
             self.widget.execute_button.click()
-            self.assertEqual(self.get_output(signal), None)
+            self.assertEqual(self.get_output(zh_signal), None)
             self.assertTrue(hasattr(self.widget.Error, lsignal))
             self.assertTrue(getattr(self.widget.Error, lsignal).is_shown())
 
             self.widget.text.setPlainText("out_{0} = in_{0}".format(lsignal))
             self.widget.execute_button.click()
-            self.assertIs(self.get_output(signal), data)
+            self.assertIs(self.get_output(zh_signal), data)
             self.assertFalse(getattr(self.widget.Error, lsignal).is_shown())
 
     def test_owns_errors(self):
@@ -100,27 +100,27 @@ class TestOWPythonScript(WidgetTest):
         self.assertIsNone(console_locals["in_data"])
         self.assertEqual(console_locals["in_datas"], [])
 
-        self.send_signal("Data", self.iris, 1)
+        self.send_signal("数据(Data)", self.iris, 1)
         click()
         self.assertIs(console_locals["in_data"], self.iris)
         datas = console_locals["in_datas"]
         self.assertEqual(len(datas), 1)
         self.assertIs(datas[0], self.iris)
 
-        self.send_signal("Data", titanic, 2)
+        self.send_signal("数据(Data)", titanic, 2)
         click()
         self.assertIsNone(console_locals["in_data"])
         self.assertEqual({id(obj) for obj in console_locals["in_datas"]},
                          {id(self.iris), id(titanic)})
 
-        self.send_signal("Data", None, 2)
+        self.send_signal("数据(Data)", None, 2)
         click()
         self.assertIs(console_locals["in_data"], self.iris)
         datas = console_locals["in_datas"]
         self.assertEqual(len(datas), 1)
         self.assertIs(datas[0], self.iris)
 
-        self.send_signal("Data", None, 1)
+        self.send_signal("数据(Data)", None, 1)
         click()
         self.assertIsNone(console_locals["in_data"])
         self.assertEqual(console_locals["in_datas"], [])

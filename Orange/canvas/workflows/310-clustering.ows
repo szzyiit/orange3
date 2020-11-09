@@ -10,12 +10,12 @@
 		<node id="6" name="箱线图(Box Plot)" position="(526.0, 390.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owboxplot.OWBoxPlot" title="箱线图" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="2" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="2" sink_channel="距离(Distances)" sink_node_id="3" source_channel="距离(Distances)" source_node_id="1" />
-		<link enabled="true" id="3" sink_channel="距离(Distances)" sink_node_id="4" source_channel="距离(Distances)" source_node_id="1" />
-		<link enabled="true" id="4" sink_channel="数据(Data)" sink_node_id="6" source_channel="选定的数据(Selected Data)" source_node_id="4" />
-		<link enabled="true" id="5" sink_channel="数据(Data)" sink_node_id="5" source_channel="选定的数据(Selected Data)" source_node_id="4" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="2" sink_channel="Distances" sink_node_id="3" source_channel="Distances" source_node_id="1" />
+		<link enabled="true" id="3" sink_channel="Distances" sink_node_id="4" source_channel="Distances" source_node_id="1" />
+		<link enabled="true" id="4" sink_channel="Data" sink_node_id="6" source_channel="Selected Data" source_node_id="4" />
+		<link enabled="true" id="5" sink_channel="Data" sink_node_id="5" source_channel="Selected Data" source_node_id="4" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="14" id="0" rect="(18.0, 15.0, 150.0, 82.0)" type="text/plain">阅读数据。 尝试使用“brown-selected”数据（来自 Orange 附带的数据集）。</text>

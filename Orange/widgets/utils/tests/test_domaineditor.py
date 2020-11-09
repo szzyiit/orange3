@@ -89,7 +89,7 @@ class DomainEditorTest(GuiTest):
 
         # Duplicates, some skipped
 
-        model.setData(model.index(5, Column.place), "skip")
+        model.setData(model.index(5, Column.place), "忽略")
 
         domain, _, renamed = \
             editor.get_domain(self.domain, data, deduplicate=True)

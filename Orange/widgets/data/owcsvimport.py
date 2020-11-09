@@ -619,7 +619,8 @@ class OWCSVFileImport(widget.OWWidget):
         data = widget.Output(
             name="数据(Data)",
             type=Orange.data.Table,
-            doc="Loaded data set.")
+            doc="Loaded data set.",
+            replaces=['Data'])
         data_frame = widget.Output(
             name="数据帧格式(Data Frame)",
             type=pd.DataFrame,

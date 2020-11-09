@@ -33,7 +33,7 @@ from Orange.regression.base_regression import (
 )
 from Orange.widgets.tests.utils import simulate
 from Orange.widgets.utils.annotated_data import (
-    ANNOTATED_DATA_FEATURE_NAME, ANNOTATED_DATA_SIGNAL_NAME
+    ANNOTATED_DATA_FEATURE_NAME, ANNOTATED_DATA_SIGNAL_Chinese_NAME
 )
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.visualize.utils.plotutils import AnchorItem
@@ -254,17 +254,17 @@ class WidgetLearnerTestMixin:
     def test_input_data(self):
         """Check widget's data with data on the input"""
         self.assertEqual(self.widget.data, None)
-        self.send_signal("Data", self.data)
+        self.send_signal("数据(Data)", self.data)
         self.assertEqual(self.widget.data, self.data)
         self.wait_until_stop_blocking()
 
     def test_input_data_disconnect(self):
         """Check widget's data and model after disconnecting data from input"""
-        self.send_signal("Data", self.data)
+        self.send_signal("数据(Data)", self.data)
         self.assertEqual(self.widget.data, self.data)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
-        self.send_signal("Data", None)
+        self.send_signal("数据(Data)", None)
         self.wait_until_stop_blocking()
         self.assertEqual(self.widget.data, None)
         self.assertIsNone(self.get_output(self.widget.Outputs.model))
@@ -272,19 +272,19 @@ class WidgetLearnerTestMixin:
     def test_input_data_learner_adequacy(self):
         """Check if error message is shown with inadequate data on input"""
         for inadequate in self.inadequate_dataset:
-            self.send_signal("Data", inadequate)
+            self.send_signal("数据(Data)", inadequate)
             self.widget.apply_button.button.click()
             self.wait_until_stop_blocking()
             self.assertTrue(self.widget.Error.data_error.is_shown())
         for valid in self.valid_datasets:
-            self.send_signal("Data", valid)
+            self.send_signal("数据(Data)", valid)
             self.wait_until_stop_blocking()
             self.assertFalse(self.widget.Error.data_error.is_shown())
 
     def test_input_preprocessor(self):
         """Check learner's preprocessors with an extra pp on input"""
         randomize = Randomize()
-        self.send_signal("Preprocessor", randomize)
+        self.send_signal("预处理器(Preprocessor)", randomize)
         self.assertEqual(
             randomize, self.widget.preprocessors,
             'Preprocessor not added to widget preprocessors')
@@ -297,7 +297,7 @@ class WidgetLearnerTestMixin:
     def test_input_preprocessors(self):
         """Check multiple preprocessors on input"""
         pp_list = PreprocessorList([Randomize(), RemoveNaNColumns()])
-        self.send_signal("Preprocessor", pp_list)
+        self.send_signal("预处理器(Preprocessor)", pp_list)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         self.assertEqual(
@@ -307,12 +307,12 @@ class WidgetLearnerTestMixin:
     def test_input_preprocessor_disconnect(self):
         """Check learner's preprocessors after disconnecting pp from input"""
         randomize = Randomize()
-        self.send_signal("Preprocessor", randomize)
+        self.send_signal("预处理器(Preprocessor)", randomize)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         self.assertEqual(randomize, self.widget.preprocessors)
 
-        self.send_signal("Preprocessor", None)
+        self.send_signal("预处理器(Preprocessor)", None)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         self.assertIsNone(self.widget.preprocessors,
@@ -320,10 +320,10 @@ class WidgetLearnerTestMixin:
 
     def test_output_learner(self):
         """Check if learner is on output after apply"""
-        initial = self.get_output("Learner")
+        initial = self.get_output("学习器(Learner)")
         self.assertIsNotNone(initial, "Does not initialize the learner output")
         self.widget.apply_button.button.click()
-        newlearner = self.get_output("Learner")
+        newlearner = self.get_output("学习器(Learner)")
         self.assertIsNot(initial, newlearner,
                          "Does not send a new learner instance on `Apply`.")
         self.assertIsNotNone(newlearner)
@@ -334,7 +334,7 @@ class WidgetLearnerTestMixin:
         self.assertIsNone(self.get_output(self.widget.Outputs.model))
         self.widget.apply_button.button.click()
         self.assertIsNone(self.get_output(self.widget.Outputs.model))
-        self.send_signal('Data', self.data)
+        self.send_signal("数据(Data)", self.data)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         model = self.get_output(self.widget.Outputs.model)
@@ -352,20 +352,20 @@ class WidgetLearnerTestMixin:
         self.widget.name_line_edit.setText(new_name)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
-        self.assertEqual(self.get_output("Learner").name, new_name)
+        self.assertEqual(self.get_output("学习器(Learner)").name, new_name)
 
     def test_output_model_name(self):
         """Check if model's name properly changes"""
         new_name = "Model Name"
         self.widget.name_line_edit.setText(new_name)
-        self.send_signal("Data", self.data)
+        self.send_signal("数据(Data)", self.data)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         self.assertEqual(self.get_output(self.widget.Outputs.model).name, new_name)
 
     def test_output_model_picklable(self):
         """Check if model can be pickled"""
-        self.send_signal("Data", self.data)
+        self.send_signal("数据(Data)", self.data)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         model = self.get_output(self.widget.Outputs.model)
@@ -389,7 +389,7 @@ class WidgetLearnerTestMixin:
         """Check if learner's parameters are set to default (widget's) values
         """
         for dataset in self.valid_datasets:
-            self.send_signal("Data", dataset)
+            self.send_signal("数据(Data)", dataset)
             self.widget.apply_button.button.click()
             self.wait_until_stop_blocking()
             for parameter in self.parameters:
@@ -404,7 +404,7 @@ class WidgetLearnerTestMixin:
         # Test params on every valid dataset, since some attributes may apply
         # to only certain problem types
         for dataset in self.valid_datasets:
-            self.send_signal("Data", dataset)
+            self.send_signal("数据(Data)", dataset)
             self.wait_until_stop_blocking()
 
             for parameter in self.parameters:
@@ -425,7 +425,7 @@ class WidgetLearnerTestMixin:
                     self.assertEqual(
                         param, value,
                         "Mismatching setting for parameter '%s'" % parameter)
-                    param = self._get_param_value(self.get_output("Learner"), parameter)
+                    param = self._get_param_value(self.get_output("学习器(Learner)"), parameter)
                     self.assertEqual(
                         param, value,
                         "Mismatching setting for parameter '%s'" % parameter)
@@ -441,7 +441,7 @@ class WidgetLearnerTestMixin:
     def test_params_trigger_settings_changed(self):
         """Check that the learner gets updated whenever a param is changed."""
         for dataset in self.valid_datasets:
-            self.send_signal("Data", dataset)
+            self.send_signal("数据(Data)", dataset)
             self.wait_until_stop_blocking()
 
             for parameter in self.parameters:
@@ -513,7 +513,7 @@ class WidgetOutputsTestMixin:
         self.wait_until_finished(timeout=timeout)
 
         # check selected data output
-        output = self.get_output("Selected Data")
+        output = self.get_output("选定的数据(Selected Data)")
         if self.output_all_on_no_selection:
             self.assertEqual(output, self.signal_data)
         else:
@@ -521,14 +521,14 @@ class WidgetOutputsTestMixin:
 
         # check annotated data output
         feature_name = ANNOTATED_DATA_FEATURE_NAME
-        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
+        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
         self.assertEqual(0, np.sum([i[feature_name] for i in annotated]))
 
         # select data instances
         selected_indices = self._select_data()
 
         # check selected data output
-        selected = self.get_output("Selected Data")
+        selected = self.get_output("选定的数据(Selected Data)")
         n_sel, n_attr = len(selected), len(self.data.domain.attributes)
         self.assertGreater(n_sel, 0)
         self.assertEqual(selected.domain == self.data.domain,
@@ -539,7 +539,7 @@ class WidgetOutputsTestMixin:
             self.assertEqual(selected.attributes, self.data.attributes)
 
         # check annotated data output
-        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
+        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
         self.assertEqual(n_sel, np.sum([i[feature_name] for i in annotated]))
         if self.same_table_attributes:
             self.assertEqual(annotated.attributes, self.data.attributes)
@@ -549,8 +549,8 @@ class WidgetOutputsTestMixin:
 
         # check output when data is removed
         self.send_signal(self.signal_name, None)
-        self.assertIsNone(self.get_output("Selected Data"))
-        self.assertIsNone(self.get_output(ANNOTATED_DATA_SIGNAL_NAME))
+        self.assertIsNone(self.get_output("选定的数据(Selected Data)"))
+        self.assertIsNone(self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME))
 
     def _select_data(self):
         raise NotImplementedError("Subclasses should implement select_data")
@@ -834,7 +834,7 @@ class AnchorProjectionWidgetTestMixin(ProjectionWidgetTestMixin):
         table.X[0] = np.nan
         self.send_signal(self.widget.Inputs.data, table)
         self.assertFalse(np.all(self.widget.valid_data))
-        output = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
+        output = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
         embedding_mask = np.all(np.isnan(output.metas[:, :2]), axis=1)
         np.testing.assert_array_equal(~embedding_mask, self.widget.valid_data)
         # reload

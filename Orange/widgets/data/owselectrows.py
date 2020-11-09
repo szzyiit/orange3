@@ -34,7 +34,6 @@ from Orange.widgets.utils.annotated_data import (create_annotated_table,
 from Orange.widgets.utils.state_summary import format_summary_details
 
 
-
 class SelectRowsContextHandler(DomainContextHandler):
     """Context handler that filters conditions"""
 
@@ -192,13 +191,13 @@ class OWSelectRows(widget.OWWidget):
             (FilterContinuous.GreaterEqual, "至少(is at least)"),
             (FilterContinuous.Between, "介于(is between)"),
             (FilterContinuous.Outside, "超出(is outside)"),
-            (FilterContinuous.IsDefined, "已定义(is defined)"),
+            (FilterContinuous.IsDefined, "is defined"),
         ],
         DiscreteVariable: [
             (FilterDiscreteType.Equal, "是(is)"),
             (FilterDiscreteType.NotEqual, "不是(is not)"),
             (FilterDiscreteType.In, "是...中的一个(is one of)"),
-            (FilterDiscreteType.IsDefined, "已定义(is defined)")
+            (FilterDiscreteType.IsDefined, "is defined")
         ],
         StringVariable: [
             (FilterString.Equal, "等于(equals)"),
@@ -212,7 +211,7 @@ class OWSelectRows(widget.OWWidget):
             (FilterString.Contains, "包含(contains)"),
             (FilterString.StartsWith, "以...开始(begins with)"),
             (FilterString.EndsWith, "以...结尾(ends with)"),
-            (FilterString.IsDefined, "已定义(is defined)"),
+            (FilterString.IsDefined, "is defined"),
         ]
     }
 
@@ -263,7 +262,6 @@ class OWSelectRows(widget.OWWidget):
 
         box2 = gui.hBox(box)
         gui.rubber(box2)
-        # TODO: button style
         self.add_button = gui.button(
             box2, self, "添加条件", callback=self.add_row)
         self.add_all_button = gui.button(

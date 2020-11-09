@@ -26,7 +26,7 @@ class TestOWMDS(WidgetTest, ProjectionWidgetTestMixin,
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "Distances"
+        cls.signal_name = "距离(Distances)"
         cls.signal_data = Euclidean(cls.data)
         cls.same_input_output_domain = False
 
@@ -120,7 +120,7 @@ class TestOWMDS(WidgetTest, ProjectionWidgetTestMixin,
         """
         signal_data = Euclidean(self.data, axis=0)
         signal_data.row_items = None
-        self.send_signal("Distances", signal_data)
+        self.send_signal("距离(Distances)", signal_data)
 
     def test_distances_without_data_1(self):
         """
@@ -129,7 +129,7 @@ class TestOWMDS(WidgetTest, ProjectionWidgetTestMixin,
         """
         signal_data = Euclidean(self.data, axis=1)
         signal_data.row_items = None
-        self.send_signal("Distances", signal_data)
+        self.send_signal("距离(Distances)", signal_data)
 
     def test_small_data(self):
         data = self.data[:1]

@@ -27,7 +27,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         cls.titanic = Table("titanic")
         cls.heart = Table("heart_disease")
         cls.data = cls.iris
-        cls.signal_name = "Data"
+        cls.signal_name = "数据(Data)"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -84,7 +84,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         # This is a test and does it at its own risk:
         # pylint: disable=protected-access
         data.domain.attributes[1]._values = []
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         self.widget.controls.order_by_importance.setChecked(True)
         self._select_list_items(self.widget.attr_list)
         self._select_list_items(self.widget.group_list)
@@ -97,7 +97,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         # This is a test and does it at its own risk:
         # pylint: disable=protected-access
         data.domain.attributes[1]._values = []
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         self._select_list_items(self.widget.attr_list)
         self._select_list_items(self.widget.group_list)
 
@@ -128,7 +128,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
 
 
         data = self.titanic
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
 
         select_group(2)  # First attribute
 
@@ -146,7 +146,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
                          ['sex', 'status', 'age', 'survived'])
 
         data = self.heart
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         select_group(1)  # Class
         order_check.setChecked(True)
         self.assertEqual(self.model_order(model),
@@ -179,31 +179,31 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
                 attr_selection.ClearAndSelect)
 
         data = self.titanic
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
 
         select_attr(1)  # First attribute
 
         order_check.setChecked(False)
         self.assertEqual(
             self.model_order(model),
-            ["None"] +
+            ["无"] +
             [var.name
              for var in data.domain.class_vars + data.domain.attributes])
         order_check.setChecked(True)
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['None', 'sex', 'survived', 'age', 'status'])
+                         ['无', 'sex', 'survived', 'age', 'status'])
         select_attr(0)  # Class
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['None', 'sex', 'status', 'age', 'survived'])
+                         ['无', 'sex', 'status', 'age', 'survived'])
 
         data = self.heart
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         select_attr(0)  # Class
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['None',
+                         ['无',
                           'thal',
                           'chest pain',
                           'exerc ind ang',

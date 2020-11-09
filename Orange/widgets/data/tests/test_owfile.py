@@ -130,7 +130,7 @@ class TestOWFile(WidgetTest):
 
         self.open_dataset("iris")
         idx = self.widget.domain_editor.model().createIndex(4, 1)
-        self.widget.domain_editor.model().setData(idx, "text", Qt.EditRole)
+        self.widget.domain_editor.model().setData(idx, '文本数据', Qt.EditRole)
         self.widget.apply_button.click()
         data = self.get_output(self.widget.Outputs.data)
         self.assertIsInstance(data.domain["iris"], StringVariable)
@@ -183,7 +183,7 @@ class TestOWFile(WidgetTest):
         idx = self.widget.domain_editor.model().createIndex(4, 0)
         self.widget.domain_editor.model().setData(idx, "b", Qt.EditRole)
         idx = self.widget.domain_editor.model().createIndex(4, 1)
-        self.widget.domain_editor.model().setData(idx, "text", Qt.EditRole)
+        self.widget.domain_editor.model().setData(idx, "文本数据", Qt.EditRole)
         self.widget.apply_button.click()
         data = self.get_output(self.widget.Outputs.data)
         self.assertIn("b", data.domain)
@@ -194,7 +194,7 @@ class TestOWFile(WidgetTest):
         self.widget.domain_editor.model().setData(idx, "c", Qt.EditRole)
         idx = self.widget.domain_editor.model().createIndex(4, 1)
         self.widget.domain_editor.model().setData(
-            idx, "categorical", Qt.EditRole)
+            idx, '分类数据', Qt.EditRole)
         self.widget.apply_button.click()
         data = self.get_output(self.widget.Outputs.data)
         self.assertIn("c", data.domain)
@@ -205,7 +205,7 @@ class TestOWFile(WidgetTest):
         idx = self.widget.domain_editor.model().createIndex(0, 0)
         self.widget.domain_editor.model().setData(idx, "c", Qt.EditRole)
         idx = self.widget.domain_editor.model().createIndex(0, 1)
-        self.widget.domain_editor.model().setData(idx, "numeric", Qt.EditRole)
+        self.widget.domain_editor.model().setData(idx, '数值数据', Qt.EditRole)
         self.widget.apply_button.click()
         data = self.get_output(self.widget.Outputs.data)
         self.assertIn("c", data.domain)
@@ -241,7 +241,7 @@ class TestOWFile(WidgetTest):
         self.assertEqual(file_name, path.basename(self.widget.last_path()))
         self.assertTrue(self.widget.Error.file_not_found.is_shown())
         self.assertIsNone(self.get_output(self.widget.Outputs.data))
-        self.assertEqual(self.widget.infolabel.text(), "No data.")
+        self.assertEqual(self.widget.infolabel.text(), "无数据.")
 
         # Open a sample dataset
         self.open_dataset("iris")
@@ -431,7 +431,7 @@ a
         self.assertTrue(len(data.domain.variables), 5)
         for i in range(5):
             idx = self.widget.domain_editor.model().createIndex(i, 2)
-            self.widget.domain_editor.model().setData(idx, "skip", Qt.EditRole)
+            self.widget.domain_editor.model().setData(idx, "忽略", Qt.EditRole)
         self.widget.apply_button.click()
         data = self.get_output(self.widget.Outputs.data)
         self.assertIsNone(data)
@@ -469,11 +469,11 @@ a
             for i, a in enumerate(data1.domain.attributes):
                 self.assertEqual(str(a), model.data(model.createIndex(i, 0), Qt.DisplayRole))
             # make conversions
-            model.setData(model.createIndex(0, 1), "categorical", Qt.EditRole)
-            model.setData(model.createIndex(1, 1), "text", Qt.EditRole)
-            model.setData(model.createIndex(2, 1), "numeric", Qt.EditRole)
-            model.setData(model.createIndex(3, 1), "numeric", Qt.EditRole)
-            model.setData(model.createIndex(6, 1), "numeric", Qt.EditRole)
+            model.setData(model.createIndex(0, 1), "分类数据", Qt.EditRole)
+            model.setData(model.createIndex(1, 1), "文本数据", Qt.EditRole)
+            model.setData(model.createIndex(2, 1), "数值数据", Qt.EditRole)
+            model.setData(model.createIndex(3, 1), "数值数据", Qt.EditRole)
+            model.setData(model.createIndex(6, 1), "数值数据", Qt.EditRole)
             self.widget.apply_button.click()
             data2 = self.get_output(self.widget.Outputs.data)
             # round continuous values should be converted to integers (3.0 -> 3, "3")
@@ -491,7 +491,7 @@ a
             self.open_dataset(filename)
 
             model = self.widget.domain_editor.model()
-            model.setData(model.createIndex(0, 1), "text", Qt.EditRole)
+            model.setData(model.createIndex(0, 1), '文本数据', Qt.EditRole)
             self.widget.apply_button.click()
 
             data = self.get_output(self.widget.Outputs.data)
@@ -509,8 +509,8 @@ a
             self.open_dataset(filename)
 
             model = self.widget.domain_editor.model()
-            model.setData(model.createIndex(0, 1), "text", Qt.EditRole)
-            model.setData(model.createIndex(1, 1), "numeric", Qt.EditRole)
+            model.setData(model.createIndex(0, 1), '文本数据', Qt.EditRole)
+            model.setData(model.createIndex(1, 1), '数值数据', Qt.EditRole)
             self.widget.apply_button.click()
 
             data = self.get_output(self.widget.Outputs.data)

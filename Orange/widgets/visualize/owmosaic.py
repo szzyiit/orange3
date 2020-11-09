@@ -380,7 +380,7 @@ class OWMosaicDisplay(OWWidget):
         box2 = gui.vBox(self.controlArea, box="内部着色")
         self.color_model = DomainModel(
             order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(皮尔逊残值Pearson residuals)")
+            placeholder="(Pearson residuals)")
         self.cb_attr_color = gui.comboBox(
             box2, self, value="variable_color",
             orientation=Qt.Horizontal, contentsLength=12, labelWidth=50,

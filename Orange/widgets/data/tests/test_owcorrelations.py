@@ -229,7 +229,7 @@ class TestOWCorrelations(WidgetTest):
         self.process_events()
         pearson_corr = self.get_output(self.widget.Outputs.correlations)
 
-        simulate.combobox_activate_item(c_type, "Spearman correlation")
+        simulate.combobox_activate_item(c_type, "斯皮尔曼相关性(Spearman correlation)")
         self.wait_until_finished()
         self.process_events()
         sperman_corr = self.get_output(self.widget.Outputs.correlations)

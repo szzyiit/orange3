@@ -23,7 +23,7 @@ class TestOWDataTable(WidgetTest, WidgetOutputsTestMixin, dbt):
         WidgetOutputsTestMixin.init(cls,
                                     output_all_on_no_selection=True)
 
-        cls.signal_name = "Data"
+        cls.signal_name = "数据(Data)"
         cls.signal_data = cls.data  # pylint: disable=no-member
 
     def setUp(self):

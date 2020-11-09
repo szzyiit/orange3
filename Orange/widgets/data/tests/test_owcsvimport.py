@@ -112,7 +112,7 @@ class TestOWCSVFileImport(WidgetTest):
         item = w.current_item()
         self.assertTrue(samepath(item.path(), path))
         self.assertEqual(item.options(), self.data_regions_options)
-        out = self.get_output("Data", w)
+        out = self.get_output("数据(Data)", w)
         self._check_data_regions(out)
         self.assertEqual(out.name, "data-regions")
 
@@ -144,7 +144,7 @@ class TestOWCSVFileImport(WidgetTest):
             "local settings item must be recorded in _session_items_v2 when "
             "activated",
         )
-        self._check_data_regions(self.get_output("Data", w))
+        self._check_data_regions(self.get_output("数据(Data)", w))
 
     data_csv_types_options = owcsvimport.Options(
         encoding="ascii", dialect=csv.excel_tab(),
@@ -168,7 +168,7 @@ class TestOWCSVFileImport(WidgetTest):
         )
         widget.commit()
         self.wait_until_finished(widget)
-        output = self.get_output("Data", widget)
+        output = self.get_output("数据(Data)", widget)
         domain = output.domain
 
         self.assertIsInstance(domain["time"], TimeVariable)
@@ -221,7 +221,7 @@ class TestOWCSVFileImport(WidgetTest):
         )
         widget.commit()
         self.wait_until_finished(widget)
-        output = self.get_output("Data", widget)
+        output = self.get_output("数据(Data)", widget)
         domain = output.domain
 
         self.assertIsInstance(domain["time"], StringVariable)

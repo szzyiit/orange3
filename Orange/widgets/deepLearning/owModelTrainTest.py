@@ -185,7 +185,7 @@ class ModelTrainTest(OWWidget):
             set_progress(finished * 100)
             self.output_results.append([self.index, loss])
             self.index += 1
-            # self.Outputs.losses.send(Table.from_list(domain, loss_list))
+            # self.Outputs.losses.send(Table.from_list(self.domain, self.output_results))
 
         self.progressBarInit()
         # Submit the evaluation function to the executor and fill in the
@@ -207,7 +207,6 @@ class ModelTrainTest(OWWidget):
         assert self.thread() is QThread.currentThread()
         self.progressBarSet(value)
         self.Outputs.losses.send(Table.from_list(self.domain, self.output_results))
-        # self.Outputs.losses.send(Table.from_list(domain, loss_list))
 
     @pyqtSlot(concurrent.futures.Future)
     def _task_finished(self, f):
