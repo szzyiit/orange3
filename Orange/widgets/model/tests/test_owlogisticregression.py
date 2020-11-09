@@ -57,7 +57,7 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
     def test_output_coefficients(self):
         """Check if coefficients are on output after apply"""
         self.assertIsNone(self.get_output(self.widget.Outputs.coefficients))
-        self.send_signal("Data", self.data)
+        self.send_signal("数据(Data)", self.data)
         self.widget.apply_button.button.click()
         self.assertIsInstance(self.get_output(self.widget.Outputs.coefficients), Table)
 
@@ -73,7 +73,7 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
                             np.arange(120, 140, dtype=int)))]
         for case in cases:
             data = table[case, :]
-            self.send_signal("Data", data)
+            self.send_signal("数据(Data)", data)
             self.widget.apply_button.button.click()
 
     def test_coefficients_one_value(self):
@@ -93,7 +93,7 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
                 [0., 1.],
                 ["yes", "no"]))
         )
-        self.send_signal("Data", table)
+        self.send_signal("数据(Data)", table)
         self.widget.apply_button.button.click()
         coef = self.get_output(self.widget.Outputs.coefficients)
         self.assertEqual(coef.domain[0].name, "no")
@@ -106,11 +106,11 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
         """
         table = Table("iris")
         table.Y[:5] = np.NaN
-        self.send_signal("Data", table)
-        coef1 = self.get_output("Coefficients")
+        self.send_signal("数据(Data)", table)
+        coef1 = self.get_output("系数(Coefficients)")
         table = table[5:]
-        self.send_signal("Data", table)
-        coef2 = self.get_output("Coefficients")
+        self.send_signal("数据(Data)", table)
+        coef2 = self.get_output("系数(Coefficients)")
         self.assertTrue(np.array_equal(coef1, coef2))
 
     def test_class_weights(self):

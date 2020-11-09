@@ -105,7 +105,7 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
         cls.model = tree(cls.data)
         cls.model.instances = cls.data
 
-        cls.signal_name = "Tree"
+        cls.signal_name = "树(Tree)"
         cls.signal_data = cls.model
 
         # Set up for widget tests
@@ -195,15 +195,15 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
 
         self.send_signal(self.widget.Inputs.tree, self.titanic)
         # No size adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Normal')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, '正常')
         self.assertFalse(self.widget.log_scale_box.isEnabled(),
                          'Should be disabled when no size adjustment')
         # Square root adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Square root')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, '平方根')
         self.assertFalse(self.widget.log_scale_box.isEnabled(),
                          'Should be disabled when square root size adjustment')
         # Log adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Logarithmic')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, '对数')
         self.assertTrue(self.widget.log_scale_box.isEnabled(),
                         'Should be enabled when square root size adjustment')
 
@@ -300,7 +300,7 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
 
     def test_label_on_tree_connect_and_disconnect(self):
         w = self.widget
-        regex = r'Nodes:(.+)\s*Depth:(.+)'
+        regex = r'节点:(.+)\s*深度:(.+)'
         # Should contain no info by default
         self.assertNotRegex(
             self.widget.infolabel.text(), regex,

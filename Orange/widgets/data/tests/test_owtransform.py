@@ -27,11 +27,11 @@ class TestOWTransform(WidgetTest):
         self.send_signal(self.widget.Inputs.template_data, self.disc_data)
         output = self.get_output(self.widget.Outputs.transformed_data)
         self.assertTableEqual(output, self.disc_data[::15])
-        self.assertEqual("Input data with 10 instances and 4 features.",
+        self.assertEqual("输入包含 10 个实例 4 个特征的数据。",
                          self.widget.input_label.text())
-        self.assertEqual("Template domain applied.",
+        self.assertEqual("模板域已应用。",
                          self.widget.template_label.text())
-        self.assertEqual("Output data includes 4 features.",
+        self.assertEqual("输出数据包括 4 个特征。",
                          self.widget.output_label.text())
         data_list = [("Data", self.data[::15]), ("Template data", self.disc_data)]
         summary, details = "10, 150", format_multiple_summaries(data_list)
@@ -45,9 +45,9 @@ class TestOWTransform(WidgetTest):
         self.send_signal(self.widget.Inputs.template_data, None)
         output = self.get_output(self.widget.Outputs.transformed_data)
         self.assertIsNone(output)
-        self.assertEqual("Input data with 10 instances and 4 features.",
+        self.assertEqual("输入包含 10 个实例 4 个特征的数据。",
                          self.widget.input_label.text())
-        self.assertEqual("No template data on input.",
+        self.assertEqual("没有输入模板数据。",
                          self.widget.template_label.text())
         self.assertEqual("", self.widget.output_label.text())
         data_list = [("Data", self.data[::15]), ("Template data", None)]
@@ -61,19 +61,19 @@ class TestOWTransform(WidgetTest):
         self.send_signal(self.widget.Inputs.template_data, self.disc_data)
         output = self.get_output(self.widget.Outputs.transformed_data)
         self.assertTableEqual(output, self.disc_data[::15])
-        self.assertEqual("Input data with 10 instances and 4 features.",
+        self.assertEqual("输入包含 10 个实例 4 个特征的数据。",
                          self.widget.input_label.text())
-        self.assertEqual("Template domain applied.",
+        self.assertEqual("模板域已应用。",
                          self.widget.template_label.text())
-        self.assertEqual("Output data includes 4 features.",
+        self.assertEqual("输出数据包括 4 个特征。",
                          self.widget.output_label.text())
 
         # remove data
         self.send_signal(self.widget.Inputs.data, None)
         output = self.get_output(self.widget.Outputs.transformed_data)
         self.assertIsNone(output)
-        self.assertEqual("No data on input.", self.widget.input_label.text())
-        self.assertEqual("Template data includes 4 features.",
+        self.assertEqual("没有输入数据。", self.widget.input_label.text())
+        self.assertEqual("模板数据包括 4 个特征。",
                          self.widget.template_label.text())
         self.assertEqual("", self.widget.output_label.text())
         data_list = [("Data", None), ("Template data", self.disc_data)]
@@ -85,8 +85,8 @@ class TestOWTransform(WidgetTest):
 
         # remove template data
         self.send_signal(self.widget.Inputs.template_data, None)
-        self.assertEqual("No data on input.", self.widget.input_label.text())
-        self.assertEqual("No template data on input.",
+        self.assertEqual("没有输入数据。", self.widget.input_label.text())
+        self.assertEqual("没有输入模板数据。",
                          self.widget.template_label.text())
         self.assertEqual("", self.widget.output_label.text())
         self.assertEqual(info._StateInfo__input_summary.brief, "-")

@@ -21,7 +21,7 @@ class TestOWMosaicDisplay(WidgetTest, WidgetOutputsTestMixin):
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "Data"
+        cls.signal_name = "数据(Data)"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -477,7 +477,7 @@ class MosaicVizRankTests(WidgetTest):
             else:
                 self.assertEqual(color, str(discrete_data.domain.class_var))
 
-            output = self.get_output("Data")
+            output = self.get_output("数据(Data)")
             self.assertEqual(output.domain.class_var, table.domain.class_var)
 
             for ma in range(i == 0, 7):

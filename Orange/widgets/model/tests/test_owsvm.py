@@ -94,8 +94,8 @@ class TestOWSVMClassification(WidgetTest, WidgetLearnerTestMixin):
     def test_sparse_warning(self):
         """Check if the user is warned about sparse input"""
         data = Table("iris")
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         self.assertFalse(self.widget.Warning.sparse_data.is_shown())
         data.X = csr_matrix(data.X)
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
         self.assertTrue(self.widget.Warning.sparse_data.is_shown())

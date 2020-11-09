@@ -120,7 +120,7 @@ class VarTableModel(QAbstractTableModel):
 
     def headerData(self, i, orientation, role=Qt.DisplayRole):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and i < 4:
-            return ("名称", "类型", "作用", "取值")[i]
+            return ("名称", "类型", "角色", "取值")[i]
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft
         return super().headerData(i, orientation, role)
@@ -174,7 +174,7 @@ class VarTypeDelegate(ComboDelegate):
             index.row()][Column.not_valid]
         if no_numeric:
             # Do not allow selection of numeric and datetime
-            items = [i for i in self.items if i not in ("numeric", "datetime")]
+            items = [i for i in self.items if i not in ("数值数据", "时间数据")]
         else:
             items = self.items
 

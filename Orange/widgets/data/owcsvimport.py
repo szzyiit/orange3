@@ -609,7 +609,7 @@ class OWCSVFileImport(widget.OWWidget):
         widget.OutputSignal(
             name="数据(Data)",
             type=Orange.data.Table,
-            doc="Loaded data set.",
+            doc="加载数据集.",
             replaces=['Data']),
         widget.OutputSignal(
             name="数据帧格式(Data Frame)",

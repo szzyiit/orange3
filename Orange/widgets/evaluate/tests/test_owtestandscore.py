@@ -171,14 +171,14 @@ class TestOWTestAndScore(WidgetTest):
         )
         self.widget.n_folds = 0
         self.assertFalse(self.widget.Error.train_data_error.is_shown())
-        self.send_signal("Data", table)
-        self.send_signal("Learner", MajorityLearner(), 0, wait=1000)
+        self.send_signal("数据(Data)", table)
+        self.send_signal("学习器(Learner)", MajorityLearner(), 0, wait=1000)
         self.assertTrue(self.widget.Error.train_data_error.is_shown())
 
     def test_data_errors(self):
         """ Test all data_errors """
         def assertErrorShown(data, is_shown, message):
-            self.send_signal("Data", data)
+            self.send_signal("数据(Data)", data)
             self.assertEqual(is_shown, self.widget.Error.train_data_error.is_shown())
             self.assertEqual(message, str(self.widget.Error.train_data_error))
 
@@ -216,7 +216,7 @@ class TestOWTestAndScore(WidgetTest):
                 pass
 
             builtins = BUILTIN_SCORERS_ORDER
-            self.send_signal("Data", Table("iris"))
+            self.send_signal("数据(Data)", Table("iris"))
             scorer_names = [scorer.name for scorer in self.widget.scorers]
             self.assertEqual(
                 tuple(scorer_names[:len(builtins[DiscreteVariable])]),
@@ -225,7 +225,7 @@ class TestOWTestAndScore(WidgetTest):
             self.assertIn("NewClassificationScore", scorer_names)
             self.assertNotIn("NewRegressionScore", scorer_names)
 
-            self.send_signal("Data", Table("housing"))
+            self.send_signal("数据(Data)", Table("housing"))
             scorer_names = [scorer.name for scorer in self.widget.scorers]
             self.assertEqual(
                 tuple(scorer_names[:len(builtins[ContinuousVariable])]),
@@ -234,7 +234,7 @@ class TestOWTestAndScore(WidgetTest):
             self.assertNotIn("NewClassificationScore", scorer_names)
             self.assertIn("NewRegressionScore", scorer_names)
 
-            self.send_signal("Data", None)
+            self.send_signal("数据(Data)", None)
             self.assertEqual(self.widget.scorers, [])
         finally:
             del Score.registry["NewScore"]  # pylint: disable=no-member
@@ -527,7 +527,7 @@ class TestOWTestAndScore(WidgetTest):
     def test_comparison_bad_scores(self):
         w = self.widget
         self._set_three_majorities()
-        self._set_comparison_score("Classification accuracy")
+        self._set_comparison_score("分类准确率(CA)")
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
 
         score_calls = -1

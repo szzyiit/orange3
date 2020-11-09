@@ -38,9 +38,9 @@ class TestOWBaseLearner(WidgetTest):
             auto_apply = True
 
         self.widget = self.create_widget(OWFailingLearner)
-        self.send_signal("Data", self.iris)
+        self.send_signal("数据(Data)", self.iris)
         self.assertTrue(self.widget.Error.fitting_failed.is_shown())
-        self.send_signal("Data", None)
+        self.send_signal("数据(Data)", None)
         self.assertFalse(self.widget.Error.fitting_failed.is_shown())
 
     def test_subclasses_do_not_share_outputs(self):

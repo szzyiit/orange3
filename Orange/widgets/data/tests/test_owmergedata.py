@@ -782,15 +782,15 @@ class TestOWMergeData(WidgetTest):
         data = Table("iris")[::25]
         data_ed_dense = Table("titanic")[::300]
         data_ed_sparse = Table("titanic")[::300].to_sparse()
-        self.send_signal("Data", data)
+        self.send_signal("数据(Data)", data)
 
-        self.send_signal("Extra Data", data_ed_dense)
-        output_dense = self.get_output("Data")
+        self.send_signal("附加数据(Extra Data)", data_ed_dense)
+        output_dense = self.get_output("数据(Data)")
         self.assertFalse(sp.issparse(output_dense.X))
         self.assertFalse(output_dense.is_sparse())
 
-        self.send_signal("Extra Data", data_ed_sparse)
-        output_sparse = self.get_output("Data")
+        self.send_signal("附加数据(Extra Data)", data_ed_sparse)
+        output_sparse = self.get_output("数据(Data)")
         self.assertTrue(sp.issparse(output_sparse.X))
         self.assertTrue(output_sparse.is_sparse())
 

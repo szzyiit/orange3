@@ -79,12 +79,12 @@ class TestOWRank(WidgetTest):
             with self.subTest(fitter=fitter),\
                     warnings.catch_warnings():
                 warnings.filterwarnings("ignore", ".*", ConvergenceWarning)
-                self.send_signal("Scorer", fitter, 1)
+                self.send_signal("评分器(Scorer)", fitter, 1)
 
                 for data in (self.housing,
                              heart_disease):
                     with self.subTest(data=data.name):
-                        self.send_signal('Data', data)
+                        self.send_signal('数据(Data)', data)
                         self.wait_until_finished()
                         scores = [model.data(model.index(row, model.columnCount() - 1))
                                   for row in range(model.rowCount())]
@@ -95,7 +95,7 @@ class TestOWRank(WidgetTest):
                             model.columnCount() - 1, Qt.Horizontal).lower()
                         self.assertIn(name, last_column)
 
-                self.send_signal("Scorer", None, 1)
+                self.send_signal("评分器(Scorer)", None, 1)
                 self.assertEqual(self.widget.scorers, {})
 
     def test_input_scorer_disconnect(self):

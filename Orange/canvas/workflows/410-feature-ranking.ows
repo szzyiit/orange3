@@ -7,9 +7,9 @@
 		<node id="3" name="填充(Impute)" position="(163.0, 93.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owimpute.OWImpute" title="填充" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="3" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="3" />
-		<link enabled="true" id="2" sink_channel="数据(Data)" sink_node_id="2" source_channel="选中的数据(Reduced Data)" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="3" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="3" />
+		<link enabled="true" id="2" sink_channel="Data" sink_node_id="2" source_channel="Reduced Data" source_node_id="1" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="12" id="0" rect="(242.0, 17.0, 150.0, 60.0)" type="text/plain">填充缺失值以可视化所有数据</text>

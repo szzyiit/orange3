@@ -404,20 +404,20 @@ class OWPythonScript(OWWidget):
     keywords = ["file", "program", "function"]
 
     class Inputs:
-        data = Input("数据(Data)", Table, replaces=["in_data", 'Data'],
+        data = Input("数据(Data)", Table, replaces=['Data', "in_data"],
                      default=True, multiple=True)
-        learner = Input("学习器(Learner)", Learner, replaces=["in_learner", 'Learner'],
+        learner = Input("学习器(Learner)", Learner, replaces=['Learner', "in_learner"],
                         default=True, multiple=True)
-        classifier = Input("分类器(Classifier)", Model, replaces=["in_classifier", 'Classifier'],
+        classifier = Input("分类器(Classifier)", Model, replaces=['Classifier', "in_classifier"],
                            default=True, multiple=True)
-        object = Input("对象(Object)", object, replaces=["in_object", 'Object'],
+        object = Input("对象(Object)", object, replaces=['Object', "in_object"],
                        default=False, multiple=True)
 
     class Outputs:
-        data = Output("数据(Data)", Table, replaces=["out_data", 'Data'])
-        learner = Output("学习器(Learner)", Learner, replaces=["out_learner", 'Learner'])
-        classifier = Output("分类器(Classifier)", Model, replaces=["out_classifier", 'Classifier'])
-        object = Output("对象(Object)", object, replaces=["out_object", 'Object'])
+        data = Output("数据(Data)", Table, replaces=['Data', "out_data"])
+        learner = Output("学习器(Learner)", Learner, replaces=['Learner', "out_learner"])
+        classifier = Output("分类器(Classifier)", Model, replaces=['Classifier', "out_classifier"])
+        object = Output("对象(Object)", object, replaces=['Object', "out_object"])
 
     signal_names = ("data", "learner", "classifier", "object")
 

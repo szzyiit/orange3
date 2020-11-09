@@ -35,7 +35,7 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         cls.titanic = Table("titanic")
         cls.brown_selected = Table("brown-selected")
 
-        cls.signal_name = "Data"
+        cls.signal_name = "数据(Data)"
         cls.signal_data = cls.data
 
     def setUp(self):

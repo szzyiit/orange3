@@ -673,7 +673,7 @@ class OWLinePlot(OWWidget):
                      tooltip="Show standard deviation")
 
         self.group_vars = DomainModel(
-            placeholder="无", separators=False, valid_types=DiscreteVariable)
+            placeholder="None", separators=False, valid_types=DiscreteVariable)
         self.group_view = gui.listView(
             self.controlArea, self, "group_var", box="分组依据",
             model=self.group_vars, callback=self.__group_var_changed,

@@ -1,6 +1,7 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring,unsubscriptable-object
 import time
+import unittest
 from unittest.mock import Mock, patch
 import numpy as np
 
@@ -161,12 +162,12 @@ class TestOWSelectRows(WidgetTest):
 
         # Validating with C locale should accept decimal point
         self.widget.remove_all_button.click()
-        self.enterFilter(iris.domain[2], "is below", "5.2")
+        self.enterFilter(iris.domain[2], "低于(is below)", "5.2")
         self.assertEqual(self.widget.conditions[0][2], ("5.2",))
 
         # but not decimal comma
         self.widget.remove_all_button.click()
-        self.enterFilter(iris.domain[2], "is below", "5,2")
+        self.enterFilter(iris.domain[2], "低于(is below)", "5,2")
         self.assertEqual(self.widget.conditions[0][2], ("52",))
 
     @override_locale(QLocale.Slovenian)  # Locale with decimal comma
@@ -176,19 +177,19 @@ class TestOWSelectRows(WidgetTest):
 
         # sl_SI locale should accept decimal comma
         self.widget.remove_all_button.click()
-        self.enterFilter(iris.domain[2], "is below", "5,2")
+        self.enterFilter(iris.domain[2], "低于(is below)", "5,2")
         self.assertEqual(self.widget.conditions[0][2], ("5,2",))
 
         # but not decimal point
         self.widget.remove_all_button.click()
-        self.enterFilter(iris.domain[2], "is below", "5.2")
+        self.enterFilter(iris.domain[2], "低于(is below)", "5.2")
         self.assertEqual(self.widget.conditions[0][2], ("52",))
 
     @override_locale(QLocale.C)  # Locale with decimal point
     def test_all_numeric_filter_with_c_locale_from_context(self):
         iris = Table("iris")[:5]
         widget = self.widget_with_context(
-            iris.domain, [["All numeric variables", None, 0, (3.14, )]])
+            iris.domain, [["所有数值变量", None, 0, (3.14, )]])
         self.send_signal(widget.Inputs.data, iris)
         self.assertTrue(widget.conditions[0][2][0].startswith("3.14"))
 
@@ -196,7 +197,7 @@ class TestOWSelectRows(WidgetTest):
     def test_all_numeric_filter_with_sl_SI_locale(self):
         iris = Table("iris")[:5]
         widget = self.widget_with_context(
-            iris.domain, [["All numeric variables", None, 0, (3.14, )]])
+            iris.domain, [["所有数值变量", None, 0, (3.14, )]])
         self.send_signal(widget.Inputs.data, iris)
         self.assertTrue(widget.conditions[0][2][0].startswith("3,14"))
 
@@ -207,7 +208,7 @@ class TestOWSelectRows(WidgetTest):
 
         # sl_SI locale should accept decimal comma
         self.widget.remove_all_button.click()
-        self.enterFilter(iris.domain[2], "is below", "5,2")
+        self.enterFilter(iris.domain[2], "低于(is below)", "5,2")
         self.assertEqual(self.widget.conditions[0][2], ("5,2",))
 
         context = self.widget.current_context
@@ -220,7 +221,7 @@ class TestOWSelectRows(WidgetTest):
         iris = Table("iris")[:5]
         self.send_signal(self.widget.Inputs.data, iris)
         self.widget.remove_all_button.click()
-        self.enterFilter("All numeric variables", "equal", "3.14")
+        self.enterFilter("所有数值变量", "等于(equal)", "3.14")
         context = self.widget.current_context
         self.send_signal(self.widget.Inputs.data, None)
         self.assertEqual(context.values["conditions"][0][3], [3.14])
@@ -230,7 +231,7 @@ class TestOWSelectRows(WidgetTest):
         iris = Table("iris")[:5]
         self.send_signal(self.widget.Inputs.data, iris)
         self.widget.remove_all_button.click()
-        self.enterFilter("All numeric variables", "equal", "3,14")
+        self.enterFilter("所有数值变量", "等于(equal)", "3,14")
         context = self.widget.current_context
         self.send_signal(self.widget.Inputs.data, None)
         self.assertEqual(context.values["conditions"][0][3], [3.14])
@@ -364,8 +365,8 @@ class TestOWSelectRows(WidgetTest):
         sepal_length, sepal_width = iris.domain[:2]
 
         self.widget.remove_all_button.click()
-        self.enterFilter(sepal_width, "is below", "5.2")
-        self.enterFilter(sepal_length, "is at most", "4")
+        self.enterFilter(sepal_width, "低于(is below)", "5.2")
+        self.enterFilter(sepal_length, "最多(is at most)", "4")
         data = self.widget.settingsHandler.pack_data(self.widget)
 
         w2 = self.create_widget(OWSelectRows, data)
@@ -374,12 +375,12 @@ class TestOWSelectRows(WidgetTest):
         var_combo = w2.cond_list.cellWidget(0, 0)
         self.assertEqual(var_combo.currentText(), "sepal width")
         oper_combo = w2.cond_list.cellWidget(0, 1)
-        self.assertEqual(oper_combo.currentText(), "is below")
+        self.assertEqual(oper_combo.currentText(), "低于(is below)")
 
         var_combo = w2.cond_list.cellWidget(1, 0)
         self.assertEqual(var_combo.currentText(), "sepal length")
         oper_combo = w2.cond_list.cellWidget(1, 1)
-        self.assertEqual(oper_combo.currentText(), "is at most")
+        self.assertEqual(oper_combo.currentText(), "最多(is at most)")
 
     def test_is_defined_on_continuous_variable(self):
         # gh-2054 regression
@@ -389,9 +390,9 @@ class TestOWSelectRows(WidgetTest):
 
         self.enterFilter(data.domain["c2"], "is defined")
         self.assertFalse(self.widget.Error.parsing_error.is_shown())
-        self.assertEqual(len(self.get_output("Matching Data")), 3)
-        self.assertEqual(len(self.get_output("Unmatched Data")), 1)
-        self.assertEqual(len(self.get_output("Data")), len(data))
+        self.assertEqual(len(self.get_output("匹配的数据(Matching Data)")), 3)
+        self.assertEqual(len(self.get_output("不匹配的数据(Unmatched Data)")), 1)
+        self.assertEqual(len(self.get_output("数据(Data)")), len(data))
 
         # Test saving of settings
         self.widget.settingsHandler.pack_data(self.widget)
@@ -404,12 +405,12 @@ class TestOWSelectRows(WidgetTest):
         data = Table("iris")
         self.send_signal(self.widget.Inputs.data, data)
         input_sum.assert_called_with(len(data), format_summary_details(data))
-        output = self.get_output("Matching Data")
+        output = self.get_output("匹配的数据(Matching Data)")
         output_sum.assert_called_with(len(output),
                                       format_summary_details(output))
 
-        self.enterFilter(data.domain["iris"], "is", "Iris-setosa")
-        output = self.get_output("Matching Data")
+        self.enterFilter(data.domain["iris"], "是(is)", "Iris-setosa")
+        output = self.get_output("匹配的数据(Matching Data)")
         output_sum.assert_called_with(len(output),
                                       format_summary_details(output))
         input_sum.reset_mock()
@@ -429,21 +430,21 @@ class TestOWSelectRows(WidgetTest):
         len_data = len(data)
         self.send_signal(self.widget.Inputs.data, data)
 
-        self.enterFilter(data.domain[0], "is below", "-1")
-        self.assertIsNone(self.get_output("Matching Data"))
-        self.assertEqual(len(self.get_output("Unmatched Data")), len_data)
-        self.assertEqual(len(self.get_output("Data")), len_data)
+        self.enterFilter(data.domain[0], "低于(is below)", "-1")
+        self.assertIsNone(self.get_output("匹配的数据(Matching Data)"))
+        self.assertEqual(len(self.get_output("不匹配的数据(Unmatched Data)")), len_data)
+        self.assertEqual(len(self.get_output("数据(Data)")), len_data)
         self.widget.remove_all_button.click()
-        self.enterFilter(data.domain[0], "is below", "10")
-        self.assertIsNone(self.get_output("Unmatched Data"))
-        self.assertEqual(len(self.get_output("Matching Data")), len_data)
-        self.assertEqual(len(self.get_output("Data")), len_data)
+        self.enterFilter(data.domain[0], "低于(is below)", "10")
+        self.assertIsNone(self.get_output("不匹配的数据(Unmatched Data)"))
+        self.assertEqual(len(self.get_output("匹配的数据(Matching Data)")), len_data)
+        self.assertEqual(len(self.get_output("数据(Data)")), len_data)
 
     def test_annotated_data(self):
         iris = Table("iris")
         self.send_signal(self.widget.Inputs.data, iris)
 
-        self.enterFilter(iris.domain["iris"], "is", "Iris-setosa")
+        self.enterFilter(iris.domain["iris"], "是(is)", "Iris-setosa")
 
         annotated = self.get_output(self.widget.Outputs.annotated_data)
         self.assertEqual(len(annotated), 150)
@@ -457,7 +458,7 @@ class TestOWSelectRows(WidgetTest):
 
         self.send_signal(self.widget.Inputs.data, iris)
         self.widget.remove_all_button.click()
-        self.enterFilter(domain[0], "is below", "5.2")
+        self.enterFilter(domain[0], "低于(is below)", "5.2")
 
         var0vals = list({str(x) for x in iris.X[:, 0]})
         new_domain = Domain(
@@ -474,18 +475,18 @@ class TestOWSelectRows(WidgetTest):
         self.send_signal(self.widget.Inputs.data, data)
 
         self.widget.remove_all_button.click()
-        self.enterFilter(domain["age"], "is not", "42")
+        self.enterFilter(domain["age"], "不是(is not)", "42")
         simulate.combobox_activate_item(
             self.widget.cond_list.cellWidget(0, 0), "chest pain", delay=0)
         self.assertEqual(
-            self.widget.cond_list.cellWidget(0, 1).currentText(), "is not")
+            self.widget.cond_list.cellWidget(0, 1).currentText(), "不是(is not)")
 
         self.widget.remove_all_button.click()
-        self.enterFilter(domain["age"], "is below", "42")
+        self.enterFilter(domain["age"], "低于(is below)", "42")
         simulate.combobox_activate_item(
             self.widget.cond_list.cellWidget(0, 0), "chest pain", delay=0)
         self.assertEqual(
-            self.widget.cond_list.cellWidget(0, 1).currentText(), "is")
+            self.widget.cond_list.cellWidget(0, 1).currentText(), "是(is)")
 
     def test_calendar_dates(self):
         data = Table(test_filename("datasets/cyber-security-breaches.tab"))
@@ -498,30 +499,30 @@ class TestOWSelectRows(WidgetTest):
 
         # first displayed date is min date
         self.assertEqual(value_combo.date(), QDate(2014, 1, 23))
-        self.assertEqual(len(self.get_output("Matching Data")), 691)
+        self.assertEqual(len(self.get_output("匹配的数据(Matching Data)")), 691)
         self.widget.remove_all_button.click()
-        self.enterFilter("Date_Posted_or_Updated", "is below",
+        self.enterFilter("Date_Posted_or_Updated", "低于(is below)",
                          QDate(2014, 4, 17))
-        self.assertEqual(len(self.get_output("Matching Data")), 840)
-        self.enterFilter("Date_Posted_or_Updated", "is greater than",
+        self.assertEqual(len(self.get_output("匹配的数据(Matching Data)")), 840)
+        self.enterFilter("Date_Posted_or_Updated", "大于(is greater than)",
                          QDate(2014, 6, 30))
-        self.assertIsNone(self.get_output("Matching Data"))
+        self.assertIsNone(self.get_output("匹配的数据(Matching Data)"))
         self.widget.remove_all_button.click()
         # date is in range min-max date
-        self.enterFilter("Date_Posted_or_Updated", "equals", QDate(2013, 1, 1))
+        self.enterFilter("Date_Posted_or_Updated", "等于(equals)", QDate(2013, 1, 1))
         self.assertEqual(self.widget.conditions[0][2][0], QDate(2014, 1, 23))
-        self.enterFilter("Date_Posted_or_Updated", "equals", QDate(2015, 1, 1))
+        self.enterFilter("Date_Posted_or_Updated", "等于(equals)", QDate(2015, 1, 1))
         self.assertEqual(self.widget.conditions[1][2][0], QDate(2014, 6, 30))
         self.widget.remove_all_button.click()
         # no date crossings
-        self.enterFilter("Date_Posted_or_Updated", "is between",
+        self.enterFilter("Date_Posted_or_Updated", "介于(is between)",
                          QDate(2014, 4, 17), QDate(2014, 1, 23))
         self.assertEqual(self.widget.conditions[0][2],
                          (QDate(2014, 4, 17), QDate(2014, 4, 17)))
         self.widget.remove_all_button.click()
-        self.enterFilter("Date_Posted_or_Updated", "is between",
+        self.enterFilter("Date_Posted_or_Updated", "介于(is between)",
                          QDate(2014, 4, 17), QDate(2014, 4, 30))
-        self.assertEqual(len(self.get_output("Matching Data")), 58)
+        self.assertEqual(len(self.get_output("匹配的数据(Matching Data)")), 58)
 
     @patch.object(owselectrows.QMessageBox, "question",
                   return_value=owselectrows.QMessageBox.Ok)
@@ -553,9 +554,9 @@ class TestOWSelectRows(WidgetTest):
         zoo = Table("zoo")
         self.send_signal(self.widget.Inputs.data, zoo)
         self.widget.add_all_button.click()
-        self.enterFilter("All numeric variables", "equal", "42")
+        self.enterFilter("所有数值变量", "等于(equal)", "42")
         self.enterFilter(zoo.domain[0], "is defined")
-        self.enterFilter(zoo.domain[1], "is one of")
+        self.enterFilter(zoo.domain[1], "是...中的一个(is one of)")
         self.widget.send_report()  # don't crash
 
     # Uncomment this on 2022/2/2
@@ -695,3 +696,6 @@ Basically, revert this commit.
             widget.setDate(value)
         else:
             raise ValueError("Unsupported widget {}".format(widget))
+
+if __name__ == "__main__":
+    unittest.main()

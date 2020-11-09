@@ -96,7 +96,7 @@ class GridWold(OWWidget):
             settings_box,
             self,
             'living_reward',
-            minv=0,
+            minv=-2,
             maxv=1,
             step=0.1,
             label='生存回报:'

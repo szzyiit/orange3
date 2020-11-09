@@ -48,17 +48,17 @@ class TestOWNeighbors(WidgetTest):
         self.send_signal(widget.Inputs.reference, None)
         self.assertEqual(widget.reference, None)
         widget.apply_button.button.click()
-        self.assertIsNone(self.get_output("Neighbors"))
+        self.assertIsNone(self.get_output("邻近(Neighbors)"))
 
     def test_output_neighbors(self):
         """Check if neighbors are on the output after apply"""
         widget = self.widget
-        self.assertIsNone(self.get_output("Neighbors"))
+        self.assertIsNone(self.get_output("邻近(Neighbors)"))
         self.send_signals(((widget.Inputs.data, self.iris),
                            (widget.Inputs.reference, self.iris[:10])))
         widget.apply_button.button.click()
-        self.assertIsNotNone(self.get_output("Neighbors"))
-        self.assertIsInstance(self.get_output("Neighbors"), Table)
+        self.assertIsNotNone(self.get_output("邻近(Neighbors)"))
+        self.assertIsInstance(self.get_output("邻近(Neighbors)"), Table)
         self.assertTrue(all([i in self.iris.ids for i in
                              self.get_output(widget.Outputs.data).ids])
                         )
@@ -77,7 +77,7 @@ class TestOWNeighbors(WidgetTest):
                 widget.apply_button.button.click()
                 if METRICS[widget.distance_index][0] != "Jaccard" \
                         and widget.n_neighbors != 0:
-                    self.assertIsNotNone(self.get_output("Neighbors"))
+                    self.assertIsNotNone(self.get_output("邻近(Neighbors)"))
 
     def test_exclude_reference(self):
         """Check neighbors when reference is excluded"""
@@ -97,7 +97,7 @@ class TestOWNeighbors(WidgetTest):
         self.send_signal(widget.Inputs.data, self.iris)
         self.send_signal(widget.Inputs.reference, reference)
         widget.apply_button.button.click()
-        neighbors = self.get_output("Neighbors")
+        neighbors = self.get_output("邻近(Neighbors)")
         self.assertEqual(self.iris.domain.attributes,
                          neighbors.domain.attributes)
         self.assertEqual(self.iris.domain.class_vars,
@@ -113,7 +113,7 @@ class TestOWNeighbors(WidgetTest):
         self.send_signal(widget.Inputs.data, self.iris)
         self.send_signal(widget.Inputs.reference, reference)
         widget.apply_button.button.click()
-        self.assertIsNotNone(self.get_output("Neighbors"))
+        self.assertIsNotNone(self.get_output("邻近(Neighbors)"))
 
     def test_summary(self):
         """Check if status bar is updated when data is received"""

@@ -240,7 +240,7 @@ class OWTestAndScore(OWWidget):
 
         sbox = gui.vBox(self.controlArea, "抽样")
         rbox = gui.radioButtons(
-            sbox, self, "再次抽样", callback=self._param_changed)
+            sbox, self, "resampling", callback=self._param_changed)
 
         gui.appendRadioButton(rbox, "交叉验证(Cross validation)")
         ibox = gui.indentedBox(rbox)

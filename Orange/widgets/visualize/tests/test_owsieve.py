@@ -25,7 +25,7 @@ class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "Data"
+        cls.signal_name = "数据(Data)"
         cls.signal_data = cls.data
         cls.titanic = Table("titanic")
         cls.iris = Table("iris")
@@ -143,13 +143,13 @@ class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.assertEqual(len(self.widget.discrete_data.domain),
                          len(self.iris.domain))
-        output = self.get_output("Data")
+        output = self.get_output("数据(Data)")
         self.assertFalse(output.is_sparse())
 
         table = self.iris.to_sparse()
         self.send_signal(self.widget.Inputs.data, table)
         self.assertEqual(len(self.widget.discrete_data.domain), 2)
-        output = self.get_output("Data")
+        output = self.get_output("数据(Data)")
         self.assertTrue(output.is_sparse())
 
     @patch('Orange.widgets.visualize.owsieve.SieveRank.on_manual_change')

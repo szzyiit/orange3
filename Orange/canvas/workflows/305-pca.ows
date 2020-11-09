@@ -7,9 +7,9 @@
 		<node id="3" name="数据表(Data Table)" position="(369.0, 266.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="2" source_channel="转换的数据(Transformed data)" source_node_id="1" />
-		<link enabled="true" id="2" sink_channel="数据(Data)" sink_node_id="3" source_channel="转换的数据(Transformed data)" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="2" source_channel="Transformed Data" source_node_id="1" />
+		<link enabled="true" id="2" sink_channel="Data" sink_node_id="3" source_channel="Transformed Data" source_node_id="1" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="12" id="0" rect="(152.0, 63.0, 150.0, 60.0)" type="text/plain">打开以查看 scree 图并以交互方式选择组件数。</text>

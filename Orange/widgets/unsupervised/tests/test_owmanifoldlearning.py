@@ -148,7 +148,7 @@ class TestOWManifoldLearning(WidgetTest):
         table = Table("iris")
         with patch("Orange.projection.manifold.MDS.__call__", Mock()) as mock:
             mock.side_effect = MemoryError
-            self.send_signal("Data", table)
+            self.send_signal("数据(Data)", table)
             self.widget.manifold_methods_combo.activated.emit(1)
             self.widget.apply_button.button.click()
             self.assertTrue(self.widget.Error.out_of_memory.is_shown())

@@ -23,7 +23,7 @@ class TestOWHierarchicalClustering(WidgetTest, WidgetOutputsTestMixin):
         WidgetOutputsTestMixin.init(cls)
 
         cls.distances = Euclidean(cls.data)
-        cls.signal_name = "Distances"
+        cls.signal_name = "距离(Distances)"
         cls.signal_data = cls.distances
         cls.same_input_output_domain = False
 

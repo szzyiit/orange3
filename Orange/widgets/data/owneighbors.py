@@ -15,6 +15,18 @@ from Orange.widgets.utils.state_summary import format_summary_details,\
     format_multiple_summaries
 
 METRICS = [
+    ("Euclidean", distance.Euclidean),
+    ("Manhattan", distance.Manhattan),
+    ("Mahalanobis", distance.Mahalanobis),
+    ("Cosine", distance.Cosine),
+    ("Jaccard", distance.Jaccard),
+    ("Spearman", distance.SpearmanR),
+    ("Absolute Spearman", distance.SpearmanRAbsolute),
+    ("Pearson", distance.PearsonR),
+    ("Absolute Pearson", distance.PearsonRAbsolute),
+]
+
+ZH_METRICS = [
     ("欧几里德(Euclidean)", distance.Euclidean),
     ("曼哈顿(Manhattan)", distance.Manhattan),
     ("马哈拉诺比斯(Mahalanobis)", distance.Mahalanobis),
@@ -25,7 +37,6 @@ METRICS = [
     ("皮尔逊(Pearson)", distance.PearsonR),
     ("绝对皮尔逊(Absolute Pearson)", distance.PearsonRAbsolute),
 ]
-
 
 class OWNeighbors(OWWidget):
     name = "邻近(Neighbors)"
@@ -97,8 +108,8 @@ class OWNeighbors(OWWidget):
             summary = f"{self.info.format_number(n_data)}, " \
                       f"{self.info.format_number(n_refs)}"
             details = format_multiple_summaries([
-                ("数据", self.data),
-                ("参考数据", self.reference)
+                ("Data", self.data),
+                ("Reference", self.reference)
             ])
             kwargs = {"format": Qt.RichText}
         self.info.set_input_summary(summary, details, **kwargs)

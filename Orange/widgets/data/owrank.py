@@ -47,33 +47,32 @@ class ProblemType:
                 cls.REGRESSION if isinstance(variable, ContinuousVariable) else
                 cls.UNSUPERVISED)
 
-ScoreMeta = namedtuple("score_meta", ["name", "shortname", "scorer", 'problem_type', 'is_default'])
+ScoreMeta = namedtuple("score_meta", ["name", "zh_name", "shortname", "zh_shortname", "scorer", 'problem_type', 'is_default'])
 
 # Default scores.
 CLS_SCORES = [
-    ScoreMeta("信息增益(Information Gain)", "信息增益",
+    ScoreMeta("Information Gain", "信息增益", "Info. gain", "信息增益",
               score.InfoGain, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("信息增益比(Information Gain Ratio)", "增益比",
+    ScoreMeta("Information Gain Ratio", "信息增益比", "Gain ratio", "增益比",
               score.GainRatio, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("基尼下降(Gini Decrease)", "基尼",
+    ScoreMeta("Gini Decrease", "基尼下降", "Gini", "基尼",
               score.Gini, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("ANOVA", "ANOVA",
+    ScoreMeta("ANOVA", "ANOVA", "ANOVA", "ANOVA",
               score.ANOVA, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("χ²", "χ²",
+    ScoreMeta("χ²", "χ²", "χ²", "χ²",
               score.Chi2, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("ReliefF", "ReliefF",
+    ScoreMeta("ReliefF", "ReliefF", "ReliefF", "ReliefF",
               score.ReliefF, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("FCBF", "FCBF",
+    ScoreMeta("FCBF", "FCBF", "FCBF", "FCBF",
               score.FCBF, ProblemType.CLASSIFICATION, False)
 ]
 REG_SCORES = [
-    ScoreMeta("单变量回归(Univariate Regression)", "单变量回归",
+    ScoreMeta("Univariate Regression", "单变量回归", "Univar. reg.", "单变量回归",
               score.UnivariateLinearRegression, ProblemType.REGRESSION, True),
-    ScoreMeta("RReliefF", "RReliefF",
+    ScoreMeta("RReliefF", "RReliefF", "RReliefF", "RReliefF",
               score.RReliefF, ProblemType.REGRESSION, True)
 ]
 SCORES = CLS_SCORES + REG_SCORES
-
 
 class TableView(QTableView):
     def __init__(self, parent=None, **kwargs):
@@ -324,7 +323,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             stacked.addWidget(box)
             for method in scoring_methods:
                 box.layout().addWidget(QCheckBox(
-                    method.name, self,
+                    method.zh_name, self,
                     objectName=method.shortname,  # To be easily found in tests
                     checked=method.name in self.selected_methods,
                     stateChanged=partial(self.methodSelectionChanged, method_name=method.name)))
@@ -448,7 +447,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             if id in self.scorers:
                 self.scorers_results = {}
 
-            self.scorers[id] = ScoreMeta(scorer.name, scorer.name, scorer,
+            self.scorers[id] = ScoreMeta(scorer.name, scorer.name, scorer.name, scorer.name, scorer,
                                          ProblemType.from_variable(scorer.class_type),
                                          False)
 

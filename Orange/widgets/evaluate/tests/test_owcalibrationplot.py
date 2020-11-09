@@ -1,5 +1,6 @@
 import copy
 import warnings
+import unittest
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -638,3 +639,6 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         self.assertTrue(widget.Warning.omitted_nan_prob_points.is_shown())
         self._set_list_selection(widget.controls.selected_classifiers, [0, 2])
         self.assertFalse(widget.Warning.omitted_folds.is_shown())
+
+if __name__ == "__main__":
+    unittest.main()

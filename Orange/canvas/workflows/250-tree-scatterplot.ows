@@ -8,11 +8,11 @@
 		<node id="4" name="树(Tree)" position="(200.0, 219.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owtree.OWTreeLearner" title="分类树" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="4" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="树(Tree)" sink_node_id="1" source_channel="模型(Model)" source_node_id="4" />
-		<link enabled="true" id="2" sink_channel="数据(Data)" sink_node_id="3" source_channel="选定的数据(Selected Data)" source_node_id="1" />
-		<link enabled="true" id="3" sink_channel="数据(Data)" sink_node_id="2" source_channel="选定的数据(Selected Data)" source_node_id="1" />
-		<link enabled="true" id="4" sink_channel="数据子集(Data Subset)" sink_node_id="2" source_channel="数据(Data)" source_node_id="0" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="4" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Tree" sink_node_id="1" source_channel="Model" source_node_id="4" />
+		<link enabled="true" id="2" sink_channel="Data" sink_node_id="3" source_channel="Selected Data" source_node_id="1" />
+		<link enabled="true" id="3" sink_channel="Data" sink_node_id="2" source_channel="Selected Data" source_node_id="1" />
+		<link enabled="true" id="4" sink_channel="Data Subset" sink_node_id="2" source_channel="Data" source_node_id="0" />
 	</links>
 	<annotations>
 		<arrow end="(113.0, 111.0)" fill="#C1272D" id="0" start="(152.0, 76.0)" />

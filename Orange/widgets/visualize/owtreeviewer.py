@@ -190,13 +190,8 @@ class OWTreeGraph(OWTreeViewer2D):
         self.clf_dataset = None
         self.tree_adapter = None
 
-<<<<<<< HEAD
-        self.color_label = QLabel("Target class: ")
+        self.color_label = QLabel("目标类别:")
         combo = self.color_combo = ComboBoxSearch()
-=======
-        self.color_label = QLabel("目标类别: ")
-        combo = self.color_combo = gui.OrangeComboBox()
->>>>>>> chinese translation of all widgets
         combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         combo.setSizeAdjustPolicy(
             QComboBox.AdjustToMinimumContentsLengthWithIcon)

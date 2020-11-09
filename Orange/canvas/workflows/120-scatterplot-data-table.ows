@@ -6,8 +6,8 @@
 		<node id="2" name="数据表(Data Table)" position="(412.0, 205.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="2" source_channel="选定的数据(Selected Data)" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="2" source_channel="Selected Data" source_node_id="1" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="12" id="0" rect="(26.0, 7.0, 150.0, 112.59375)" type="text/plain">此“文件”小部件设置为读取 Iris 数据集。 双击图标以更改输入数据文件，并观察此工作流如何应用于其他一些数据集，例如 housing 或 auto-mpg。</text>

@@ -301,7 +301,7 @@ class OWROCAnalysis(widget.OWWidget):
     keywords = []
 
     class Inputs:
-        evaluation_results = Input("评价结果", Orange.evaluation.Results)
+        evaluation_results = Input("评估结果(Evaluation Results)", Orange.evaluation.Results, replaces=["Evaluation Results"])
 
     settingsHandler = EvaluationResultsContextHandler()
     target_index = settings.ContextSetting(0)
@@ -357,9 +357,9 @@ class OWROCAnalysis(widget.OWWidget):
                             "阈值处的平均真阳性率和假阳性率", "显示单个曲线"],
                      callback=self._replot)
 
-        gui.checkBox(hbox, self, "display_convex_curve",
+        gui.checkBox(abox, self, "display_convex_curve",
                      "显示凸ROC曲线", callback=self._replot)
-        gui.checkBox(hbox, self, "display_convex_hull",
+        gui.checkBox(abox, self, "display_convex_hull",
                      "显示ROC凸包", callback=self._replot)
 
         box = gui.vBox(self.controlArea, "分析(Analysis)")

@@ -178,15 +178,7 @@ class OWSilhouettePlot(widget.OWWidget):
 
         gui.rubber(self.controlArea)
 
-<<<<<<< HEAD
         box = gui.vBox(self.buttonsArea, box=True)
-=======
-        gui.separator(self.buttonsArea)
-        box = gui.vBox(self.buttonsArea, "输出")
-        # Thunk the call to commit to call conditional commit
-        gui.checkBox(box, self, "add_scores", "添加轮廓系数",
-                     callback=lambda: self.commit())
->>>>>>> chinese translation of all widgets
         gui.auto_send(box, self, "auto_commit", box=False)
         # Ensure that the controlArea is not narrower than buttonsArea
         self.controlArea.layout().addWidget(self.buttonsArea)

@@ -1110,10 +1110,6 @@ class DiscreteVariableEditor(VariableEditor):
 
         form = self.layout().itemAt(0)
         assert isinstance(form, QFormLayout)
-        self.ordered_cb = QCheckBox(
-            "有序的(Ordered)", self, toolTip="是否为有序分类数据"
-        )
-        self.ordered_cb.toggled.connect(self._set_ordered)
         #: A list model of discrete variable's values.
         self.values_model = CountedStateModel(
             flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable

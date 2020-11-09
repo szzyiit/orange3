@@ -62,8 +62,8 @@ class TestOWImpute(WidgetTest):
 
         # only meta columns
         data = data.transform(Domain([], [], data.domain.attributes))
-        self.send_signal("Data", data, wait=1000)
-        imp_data = self.get_output("Data")
+        self.send_signal("数据(Data)", data, wait=1000)
+        imp_data = self.get_output("数据(Data)")
         self.assertEqual(len(imp_data), len(data))
         self.assertEqual(imp_data.domain, data.domain)
         np.testing.assert_equal(imp_data.metas, data.metas)

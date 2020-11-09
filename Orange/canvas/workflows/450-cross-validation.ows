@@ -11,13 +11,13 @@
 		<node id="7" name="随机森林(Random Forest)" position="(225.0, 328.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owrandomforest.OWRandomForest" title="随机森林分类器" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="数据(Data)" sink_node_id="4" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="数据(Data)" sink_node_id="1" source_channel="数据(Data)" source_node_id="0" />
-		<link enabled="true" id="2" sink_channel="学习器(Learner)" sink_node_id="1" source_channel="学习器(Learner)" source_node_id="2" />
-		<link enabled="true" id="3" sink_channel="学习器(Learner)" sink_node_id="1" source_channel="学习器(Learner)" source_node_id="3" />
-		<link enabled="true" id="4" sink_channel="评价结果(Evaluation Results)" sink_node_id="6" source_channel="评价结果(Evaluation Results)" source_node_id="1" />
-		<link enabled="true" id="5" sink_channel="数据(Data)" sink_node_id="5" source_channel="选定的数据(Selected Data)" source_node_id="6" />
-		<link enabled="true" id="6" sink_channel="学习器(Learner)" sink_node_id="1" source_channel="学习器(Learner)" source_node_id="7" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="4" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="2" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="2" />
+		<link enabled="true" id="3" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="3" />
+		<link enabled="true" id="4" sink_channel="Evaluation Results" sink_node_id="6" source_channel="Evaluation Results" source_node_id="1" />
+		<link enabled="true" id="5" sink_channel="Data" sink_node_id="5" source_channel="Selected Data" source_node_id="6" />
+		<link enabled="true" id="6" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="7" />
 	</links>
 	<annotations>
 		<text font-family="Helvetica" font-size="14" id="0" rect="(16.0, 56.0, 180.0, 82.0)" type="text/plain">选择类标记的数据集。 比如文档数据集中的“iris.tab”。</text>
