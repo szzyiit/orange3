@@ -37,7 +37,7 @@ class TestLinearRegressionLearner(unittest.TestCase):
         z = clf(x2)
         self.assertTrue((abs(z.reshape(-1, 1) - y2) < 2.0).all())
 
-    def test_Regression(self):
+    def test_Regression_result_should_better_than_mean(self):
         ridge = RidgeRegressionLearner()
         lasso = LassoRegressionLearner()
         elastic = ElasticNetLearner()

@@ -591,8 +591,10 @@ SEL_MAX_INSTANCES = 10000
 
 
 class OWLinePlot(OWWidget):
-    name = "折线图(Line Plot)"
-    description = "数据轮廓的可视化（例如，时间序列）。"
+    # 根据其使用场景,更新是在对不同类别的数据做一个画像, 而不是我们理解的折线图
+    # 参考: https://orange.biolab.si/blog/2019/6/gene-expression-profiles-with-line-plot/
+    name = "数据画像(Line Plot)" 
+    description = "数据画像的可视化（例如，时间序列）。"
     icon = "icons/LinePlot.svg"
     priority = 180
 
