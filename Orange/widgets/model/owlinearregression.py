@@ -140,12 +140,12 @@ class OWLinearRegression(OWBaseLearner):
         coef_table = None
         if self.model is not None:
             domain = Domain(
-                [ContinuousVariable("coef")], metas=[StringVariable("name")])
+                [ContinuousVariable("系数")], metas=[StringVariable("名称")])
             coefs = list(self.model.coefficients)
             names = [attr.name for attr in self.model.domain.attributes]
             if self.fit_intercept:
                 coefs.insert(0, self.model.intercept)
-                names.insert(0, "intercept")
+                names.insert(0, "截距")
             coef_table = Table.from_list(domain, list(zip(coefs, names)))
             coef_table.name = "coefficients"
         self.Outputs.coefficients.send(coef_table)

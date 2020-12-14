@@ -67,6 +67,7 @@ class ModelTrainTest(OWWidget):
 
     class Outputs:
         losses = Output('损失函数值(Loss)', Table, default=True, replaces=['Loss'])
+        model = Output('模型(Model)', nn.Module, replaces=['Model'])
 
     def __init__(self):
         super().__init__()
@@ -206,7 +207,6 @@ class ModelTrainTest(OWWidget):
     def setProgressValue(self, value):
         assert self.thread() is QThread.currentThread()
         self.progressBarSet(value)
-        self.Outputs.losses.send(Table.from_list(self.domain, self.output_results))
 
     @pyqtSlot(concurrent.futures.Future)
     def _task_finished(self, f):
@@ -238,7 +238,8 @@ class ModelTrainTest(OWWidget):
                 correct += (predicted == labels).sum().item()
 
             self.label.setText('测试数据集的准确率为: {} %'.format(100 * correct / total))
-            # self.Outputs.losses.send(Table.from_list(self.domain, self.output_results))
+        self.Outputs.model.send(self.model)
+        self.Outputs.losses.send(Table.from_list(self.domain, self.output_results))
 
 
     def cancel(self):

@@ -41,6 +41,10 @@ from Orange.widgets.widget import OWWidget
 
 
 class WidgetTest(WidgetTestBase):
+    '''
+    Assert two tables are equal
+    '''
+
     def assert_table_equal(self, table1, table2):
         if table1 is None or table2 is None:
             self.assertIs(table1, table2)
@@ -221,9 +225,11 @@ class WidgetLearnerTestMixin:
     widget = None  # type: OWBaseLearner
 
     def init(self):
+        # init dataset for classification and regression
         cls_ds = Table(datasets.path("testing_dataset_cls"))
         reg_ds = Table(datasets.path("testing_dataset_reg"))
 
+        # init models
         if issubclass(self.widget.LEARNER, Fitter):
             self.data = cls_ds
             self.valid_datasets = (cls_ds, reg_ds)
@@ -249,6 +255,11 @@ class WidgetLearnerTestMixin:
         self.parameters = []
 
     def test_has_unconditional_apply(self):
+        '''
+        If there is a new signal comes in, handle that signal immediately
+        widgets should Apply, Send or Run when their input signals changed even if auto-apply/send/run is disabled.
+        see: https://github.com/biolab/orange3/issues/3455#issuecomment-449428361
+        '''
         self.assertTrue(hasattr(self.widget, "unconditional_apply"))
 
     def test_input_data(self):
