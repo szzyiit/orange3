@@ -22,7 +22,8 @@ from PIL import Image
 class CNNPredict(OWWidget):
     name = "卷积神经网络预测(CNN  Predict)"
     description = "使用训练好的 MNIST 模型预测"
-    # icon = "icons/cnn.png"
+    # icon source: https://dryicons.com/icon/crystal-ball-icon-11458
+    icon = "icons/predicts.svg"
 
     want_main_area = False
 

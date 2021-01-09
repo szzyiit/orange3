@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QLineEdit
 class WeatherReport(NLPMixin, BaiduAPI):
     name = " 天气播报(Weather Report)"
     description = "天气播报自动生成。"
-    icon = "icons/multi.png"
+    icon = "icons/rain_light.png"
 
     URL = "https://aip.baidubce.com/rest/2.0/nlp/v1/gen_article?charset=UTF-8&access_token="
     project_id = Setting('')
@@ -28,7 +28,7 @@ class WeatherReport(NLPMixin, BaiduAPI):
             settings_box,
             self,
             "project_id",
-            "输入 project_id",
+            "输入项目 ID",
             valueType=str,
         )
         project_id.setEchoMode(QLineEdit.Password)
