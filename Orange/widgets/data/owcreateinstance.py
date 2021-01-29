@@ -448,19 +448,19 @@ class VariableItemModel(QStandardItemModel):
 
 
 class OWCreateInstance(OWWidget):
-    name = "Create Instance"
-    description = "Interactively create a data instance from sample dataset."
+    name = "创建实例(Create Instance)"
+    description = "从样本数据集中交互创建实例。"
     icon = "icons/CreateInstance.svg"
     category = "Data"
-    keywords = ["simulator"]
+    keywords = ['chuangjian', 'shili', 'shuju', 'yangben']
     priority = 4000
 
     class Inputs:
-        data = Input("Data", Table)
-        reference = Input("Reference", Table)
+        data = Input("数据(Data)", Table, replaces=["Data"])
+        reference = Input("参考数据(Reference)", Table, replaces=['Reference'])
 
     class Outputs:
-        data = Output("Data", Table)
+        data = Output("数据(Data)", Table, replaces=["Data"])
 
     class Information(OWWidget.Information):
         nans_removed = Msg("Variables with only missing values were "
@@ -468,8 +468,9 @@ class OWCreateInstance(OWWidget):
 
     want_main_area = False
     ACTIONS = ["median", "mean", "random", "input"]
-    HEADER = [["name", "Variable"],
-              ["variable", "Value"]]
+    ACTIONS_NAME = ["中位数", "平均值", "随机", "手动"]
+    HEADER = [["name", "变量"],
+              ["variable", "值"]]
     Header = namedtuple(
         "header", [tag for tag, _ in HEADER]
     )(*range(len(HEADER)))
@@ -484,7 +485,7 @@ class OWCreateInstance(OWWidget):
         self.reference: Optional[Table] = None
 
         self.filter_edit = QLineEdit(textChanged=self.__filter_edit_changed,
-                                     placeholderText="Filter...")
+                                     placeholderText="筛选...")
         self.view = QTableView(sortingEnabled=True,
                                contextMenuPolicy=Qt.CustomContextMenu,
                                selectionMode=QTableView.NoSelection)
@@ -512,10 +513,10 @@ class OWCreateInstance(OWWidget):
 
         box = gui.hBox(vbox)
         gui.rubber(box)
-        for name in self.ACTIONS:
+        for action, name in zip(self.ACTIONS, self.ACTIONS_NAME):
             gui.button(
                 box, self, name.capitalize(),
-                lambda *args, fun=name: self._initialize_values(fun),
+                lambda *args, fun=action: self._initialize_values(fun),
                 autoDefault=False
             )
         gui.rubber(box)
@@ -525,7 +526,7 @@ class OWCreateInstance(OWWidget):
         box.layout().insertStretch(0)
         # pylint: disable=unnecessary-lambda
         append = gui.checkBox(None, self, "append_to_data",
-                              "Append this instance to input data",
+                              "将此实例追加到输入数据",
                               callback=lambda: self.commit())
         box.layout().insertWidget(0, append)
 
@@ -674,7 +675,7 @@ class OWCreateInstance(OWWidget):
         assert self.data
         assert len(data) == 1
 
-        var = DiscreteVariable("Source ID", values=(self.data.name, data.name))
+        var = DiscreteVariable("源头ID", values=(self.data.name, data.name))
         data = Table.concatenate([self.data, data], axis=0)
         domain = Domain(data.domain.attributes, data.domain.class_vars,
                         data.domain.metas + (var,))

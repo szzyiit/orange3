@@ -14,7 +14,8 @@ class OWTranspose(OWWidget):
     description = "转置数据表。"
     icon = "icons/Transpose.svg"
     priority = 2000
-    keywords = []
+    keywords = ['zhuanzhi']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

@@ -1793,11 +1793,12 @@ class ReinterpretVariableEditor(VariableEditor):
 
 
 class OWEditDomain(widget.OWWidget):
-    name = "编辑列(Edit Domain)"
-    description = "重命名变量，编辑分类和变量注释。"
+    name = "编辑特征(Edit Domain)"
+    description = "重命名特征，编辑特征和变量注释。"
     icon = "icons/EditDomain.svg"
     priority = 3125
-    keywords = ["rename", "drop", "reorder", "order"]
+    keywords = ["rename", "drop", "biaji", "tezheng", 'bianjitezheng', 'yu', 'bianjiyu']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -1855,7 +1856,7 @@ class OWEditDomain(widget.OWWidget):
         box.layout().addWidget(self._editor)
 
         self.le_output_name = gui.lineEdit(
-            self.mainArea, self, "output_table_name", "Output table name: ",
+            self.mainArea, self, "output_table_name", "输出表名: ",
             box=True, orientation=Qt.Horizontal)
 
         bbox = QDialogButtonBox()

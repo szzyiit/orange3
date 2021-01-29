@@ -744,7 +744,8 @@ class OWPivot(OWWidget):
     description = "根据列值重新调整数据表的形状。"
     icon = "icons/Pivot.svg"
     priority = 1000
-    keywords = ["pivot", "group", "aggregate"]
+    keywords = ["pivot", "group", "aggregate", 'toushibiao']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])

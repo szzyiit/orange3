@@ -160,7 +160,7 @@ class OWSelectRows(widget.OWWidget):
     icon = "icons/SelectRows.svg"
     priority = 100
     category = "Data"
-    keywords = ["filter"]
+    keywords = ["filter", 'xuanze', 'hang', 'xuanzehang']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

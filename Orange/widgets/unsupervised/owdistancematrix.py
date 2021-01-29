@@ -185,7 +185,8 @@ class OWDistanceMatrix(widget.OWWidget):
     description = "查看距离矩阵"
     icon = "icons/DistanceMatrix.svg"
     priority = 200
-    keywords = []
+    keywords = ['juzhen', 'julijuzhen']
+    category = 'unsupervised'
 
     class Inputs:
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])

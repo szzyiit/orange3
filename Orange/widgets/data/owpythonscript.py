@@ -401,7 +401,8 @@ class OWPythonScript(OWWidget):
     description = "编写一个 python 脚本并在输入数据或模型上运行它。"
     icon = "icons/PythonScript.svg"
     priority = 3150
-    keywords = ["file", "program", "function"]
+    keywords = ["file", "program", 'jiaoben']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data', "in_data"],
@@ -421,7 +422,6 @@ class OWPythonScript(OWWidget):
 
     signal_names = ("data", "learner", "classifier", "object")
 
-    signal_names2 = ("数据", "学习器", "分类器", "对象")
     settings_version = 2
     scriptLibrary: 'List[_ScriptData]' = Setting([{
         "name": "Hello world",
@@ -456,9 +456,9 @@ class OWPythonScript(OWWidget):
         gui.label(
             self.infoBox, self,
             "<p>执行python脚本.</p><p>输入变量:<ul><li> " +
-            "<li>".join(map("输入{0}, 输入{0}".format, self.signal_names2)) +
+            "<li>".join(map("in_{0}, in_{0}s".format, self.signal_names)) +
             "</ul></p><p>输出变量:<ul><li>" +
-            "<li>".join(map("输出{0}".format, self.signal_names2)) +
+            "<li>".join(map("out_{0}".format, self.signal_names)) +
             "</ul></p>"
         )
 

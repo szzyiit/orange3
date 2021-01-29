@@ -45,8 +45,9 @@ class OWVennDiagram(widget.OWWidget):
     description = "可视化数据实例的重叠(数据来自输入数据集集合)"
     icon = "icons/VennDiagram.svg"
     priority = 280
-    keywords = []
+    keywords = ['weientu']
     settings_version = 2
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, multiple=True, replaces=['Data'])
@@ -120,8 +121,8 @@ class OWVennDiagram(widget.OWWidget):
         controls = gui.hBox(self.mainArea)
         box = gui.radioButtonsInBox(
             controls, self, 'rowwise',
-            ["Columns (features)", "Rows (instances), matched by", ],
-            box="Elements", callback=self._on_matching_changed
+            ["列 (特征)", "行, 根据...匹配", ],
+            box="元素", callback=self._on_matching_changed
         )
         gui.comboBox(
             gui.indentedBox(box), self, "selected_feature",
@@ -130,9 +131,9 @@ class OWVennDiagram(widget.OWWidget):
             )
         box.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
 
-        self.outputs_box = box = gui.vBox(controls, "Output")
+        self.outputs_box = box = gui.vBox(controls, "输出")
         self.output_duplicates_cb = gui.checkBox(
-            box, self, "output_duplicates", "Output duplicates",
+            box, self, "output_duplicates", "输出重复值",
             callback=lambda: self.commit())  # pylint: disable=unnecessary-lambda
         gui.auto_send(box, self, "autocommit", box=False)
         self.output_duplicates_cb.setEnabled(bool(self.rowwise))

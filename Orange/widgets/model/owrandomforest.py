@@ -17,7 +17,8 @@ class OWRandomForest(OWBaseLearner):
         "Orange.widgets.regression.owrandomforestregression.OWRandomForestRegression",
     ]
     priority = 40
-    keywords = []
+    keywords = ['suijisenlin', 'senlin']
+    category = 'model'
 
     LEARNER = RandomForestLearner
 
@@ -47,7 +48,7 @@ class OWRandomForest(OWBaseLearner):
             callback=self.settings_changed)
         self.max_features_spin = gui.spin(
             box, self, "max_features", 2, 50, controlWidth=80,
-            label="每次拆分时考虑的属性数: ",
+            label="每次拆分考虑的属性数: ",
             callback=self.settings_changed, checked="use_max_features",
             checkCallback=self.settings_changed, alignment=Qt.AlignRight,)
         self.random_state = gui.checkBox(
@@ -55,15 +56,15 @@ class OWRandomForest(OWBaseLearner):
             callback=self.settings_changed)
         self.weights = gui.checkBox(
             box, self,
-            "class_weight", label="Balance class distribution",
+            "class_weight", label="平衡类别分布",
             callback=self.settings_changed,
-            tooltip="Weigh classes inversely proportional to their frequencies."
+            tooltip="将类别权重设置为出现频率的反比"
         )
 
         box = gui.vBox(self.controlArea, "生长控制")
         self.max_depth_spin = gui.spin(
             box, self, "max_depth", 1, 50, controlWidth=80,
-            label="单个树的极限深度: ", alignment=Qt.AlignRight,
+            label="单个树深度: ", alignment=Qt.AlignRight,
             callback=self.settings_changed, checked="use_max_depth",
             checkCallback=self.settings_changed)
         self.min_samples_split_spin = gui.spin(

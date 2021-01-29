@@ -465,7 +465,7 @@ class CSVOptionsWidget(QWidget):
 
         w = encodings.SelectEncodingsWidget(
             self, Qt.Tool,
-            windowTitle="Customize Encodings List",
+            windowTitle="自定义编码列表",
             objectName="-encoding-selection-tool-window"
         )
         w.setAttribute(Qt.WA_DeleteOnClose)
@@ -488,7 +488,7 @@ class CSVOptionsWidget(QWidget):
         for c in codecs:
             cb.addItem(encodings.display_name(c), userData=c)
         cb.insertSeparator(cb.count())
-        cb.addItem("Customize Encodings List...", userData=...)
+        cb.addItem("自定义编码列表...", userData=...)
         idx = cb.findData(current, Qt.UserRole)
         if idx != -1:
             cb.setCurrentIndex(idx)

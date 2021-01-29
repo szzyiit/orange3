@@ -115,7 +115,7 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
 
     def test_class_weights(self):
         table = Table("iris")
-        self.send_signal("Data", table)
+        self.send_signal("数据(Data)", table)
         self.assertFalse(self.widget.class_weight)
         self.widget.controls.class_weight.setChecked(True)
         self.assertTrue(self.widget.class_weight)

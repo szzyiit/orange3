@@ -9,6 +9,7 @@ class OWPlayground(OWWidget):
     description = "使用TensorFlow 游乐场自由尝试深度学习"
     icon = "icons/playground.png"
     priority = 10
+    keywords = ['youlechang', 'shenduxuexi']
 
     resizing_enabled = False
 

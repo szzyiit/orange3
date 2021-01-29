@@ -221,7 +221,7 @@ class TestOWCSVFileImport(WidgetTest):
         )
         widget.commit()
         self.wait_until_finished(widget)
-        output = self.get_output("Data", widget)
+        output = self.get_output("数据(Data)", widget)
         self.assertTupleEqual(('1', '3', '4', '5', '12'), output.domain.attributes[1].values)
 
     def test_backward_compatibility(self):

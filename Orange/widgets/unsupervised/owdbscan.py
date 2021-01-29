@@ -59,6 +59,7 @@ class OWDBSCAN(widget.OWWidget):
     description = "基于密度的空间聚类."
     icon = "icons/DBSCAN.svg"
     priority = 2150
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

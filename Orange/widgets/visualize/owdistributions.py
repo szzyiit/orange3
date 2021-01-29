@@ -251,7 +251,8 @@ class OWDistributions(OWWidget):
     description = "在图形中显示数据特征的值分布。"
     icon = "icons/Distribution.svg"
     priority = 120
-    keywords = ["histogram"]
+    keywords = ["histogram", 'fenbu', 'zhifangtu']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, doc="Set the input dataset", replaces=['Data'])
@@ -325,7 +326,7 @@ class OWDistributions(OWWidget):
             viewType=ListViewSearch
         )
         gui.checkBox(
-            varview.box, self, "sort_by_freq", "Sort categories by frequency",
+            varview.box, self, "sort_by_freq", "按频率对类别进行排序",
             callback=self._on_sort_by_freq, stateWhenDisabled=False)
 
         box = self.continuous_box = gui.vBox(self.controlArea, "分布")

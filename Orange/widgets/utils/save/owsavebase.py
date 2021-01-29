@@ -86,17 +86,17 @@ class OWSaveBase(widget.OWWidget, openclass=True):
         gui.widgetBox(self.controlArea, orientation=grid)
         grid.addWidget(
             gui.checkBox(
-                None, self, "auto_save", "Autosave when receiving new data",
+                None, self, "auto_save", "接收到新数据自动保存",
                 callback=self.update_messages),
             start_row, 0, 1, 2)
         grid.setRowMinimumHeight(start_row + 1, 8)
         self.bt_save = gui.button(
             None, self,
-            label=f"Save as {self.stored_name}" if self.stored_name else "Save",
+            label=f"另存为 {self.stored_name}" if self.stored_name else "保存",
             callback=self.save_file)
         grid.addWidget(self.bt_save, start_row + 2, 0)
         grid.addWidget(
-            gui.button(None, self, "Save as ...", callback=self.save_file_as),
+            gui.button(None, self, "另存为 ...", callback=self.save_file_as),
             start_row + 2, 1)
 
         self.adjustSize()

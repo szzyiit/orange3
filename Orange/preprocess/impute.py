@@ -147,7 +147,7 @@ class Default(BaseImputeMethod):
 
 
 class FixedValueByType(BaseImputeMethod):
-    name = "Fixed value"
+    name = "固定值"
     short_name = "Fixed Value"
     format = "{var.name}"
 

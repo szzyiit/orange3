@@ -269,7 +269,7 @@ class DiscreteFeatureEditor(FeatureEditor):
         self.valuesedit.textChanged.connect(self._invalidate)
 
         layout = self.layout()
-        label = QLabel(self.tr("Values (optional)"))
+        label = QLabel(self.tr("取值(可选)"))
         label.setToolTip(tooltip)
         layout.addRow(label, self.valuesedit)
 
@@ -365,7 +365,8 @@ class OWFeatureConstructor(OWWidget):
     name = "特征构造器(Feature Constructor)"
     description = "用输入数据集中的现有特征构造新特征。"
     icon = "icons/FeatureConstructor.svg"
-    keywords = ['function', 'lambda']
+    keywords = ['tezheng', 'gouzao', 'tezhenggouzao']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])

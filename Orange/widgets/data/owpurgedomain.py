@@ -12,11 +12,11 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWPurgeDomain(widget.OWWidget):
-    name = "清除列(Purge Domain)"
+    name = "清除特征(Purge Domain)"
     description = "从数据集中删除冗余值和特征,对值进行排序。"
     icon = "icons/PurgeDomain.svg"
     category = "Data"
-    keywords = ["remove", "delete", "unused"]
+    keywords = ["remove", "delete", "unused", 'qinli', 'qinchu', 'tezheng']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -87,8 +87,8 @@ class OWPurgeDomain(widget.OWWidget):
                          callback=self.optionsChanged)
         add_line(boxAt)
         gui.label(boxAt, self,
-                  "Sorted: %(resortedAttrs)s, "
-                  "reduced: %(reducedAttrs)s, removed: %(removedAttrs)s")
+                  "排序了: %(resortedAttrs)s, "
+                  "减少了: %(reducedAttrs)s, 删除了: %(removedAttrs)s")
 
         boxAt = gui.vBox(self.controlArea, "类别(Classes)", addSpace=True)
         for not_first, (value, label) in enumerate(self.class_options):
@@ -98,8 +98,8 @@ class OWPurgeDomain(widget.OWWidget):
                          callback=self.optionsChanged)
         add_line(boxAt)
         gui.label(boxAt, self,
-                  "Sorted: %(resortedClasses)s,"
-                  "reduced: %(reducedClasses)s, removed: %(removedClasses)s")
+                  "排序了: %(resortedClasses)s,"
+                  "减少了: %(reducedClasses)s, 删除了: %(removedClasses)s")
 
         boxAt = gui.vBox(self.controlArea, "元属性", addSpace=True)
         for not_first, (value, label) in enumerate(self.meta_options):

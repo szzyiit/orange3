@@ -30,5 +30,5 @@ WIDGET_HELP_PATH = (
     (os.path.join(sysconfig.get_path("data"),
                   "share/help/en/orange3/htmlhelp/index.html"),
      None),
-    ("https://docs.biolab.si/orange/3/visual-programming/", ""),
+    ("https://chengxianzn.one/docs/Orange3/", ""),
 )

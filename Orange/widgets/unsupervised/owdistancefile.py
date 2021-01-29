@@ -17,8 +17,8 @@ class OWDistanceFile(widget.OWWidget, RecentPathsWComboMixin):
     description = "从文件读取距离"
     icon = "icons/DistanceFile.svg"
     priority = 10
-    category = "Data"
-    keywords = ["load", "read", "open"]
+    category = 'unsupervised'
+    keywords = ["load", "read", "open", 'juliwenjian']
 
     class Outputs:
         distances = Output("距离(Distances)", DistMatrix, dynamic=False, replaces=['Distances'])

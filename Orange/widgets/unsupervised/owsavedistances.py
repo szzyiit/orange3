@@ -8,7 +8,8 @@ class OWSaveDistances(OWSaveBase):
     name = "保存距离矩阵(Save Distance Matrix)"
     description = "将距离矩阵保存到输出文件。"
     icon = "icons/SaveDistances.svg"
-    keywords = ["distance matrix", "save"]
+    keywords = ["distance matrix", "save", 'baocunjuli', 'juli']
+    category = 'unsupervised'
 
     filters = ["Distance File (*.dst)"]
 

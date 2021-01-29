@@ -75,7 +75,8 @@ class OWSieveDiagram(OWWidget):
     description = "将观察到的频率和预期的频率可视化为一组值。"
     icon = "icons/SieveDiagram.svg"
     priority = 200
-    keywords = []
+    keywords = ['shaiwangtu']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])

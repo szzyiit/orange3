@@ -229,7 +229,8 @@ class OWScatterPlot(OWDataProjectionWidget):
     description = "具有智能数据可视化增强功能的交互式散点图可视化工具。"
     icon = "icons/ScatterPlot.svg"
     priority = 140
-    keywords = []
+    keywords = ['sandiantu']
+    category = 'visualize'
 
     class Inputs(OWDataProjectionWidget.Inputs):
         features = Input("特征(Features)", AttributeList, replaces=['Features'])

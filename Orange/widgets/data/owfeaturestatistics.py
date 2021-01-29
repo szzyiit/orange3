@@ -117,8 +117,8 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
             return {self.ICON: '',
                     self.NAME: '名称',
                     self.DISTRIBUTION: '分布',
-                    self.CENTER: '中心',
-                    self.DISPERSION: '分散',
+                    self.CENTER: '集中趋势',
+                    self.DISPERSION: '离散',
                     self.MIN: '最小.',
                     self.MAX: '最大.',
                     self.MISSING: '缺失',
@@ -702,6 +702,8 @@ class OWFeatureStatistics(widget.OWWidget):
     name = '特征统计(Feature Statistics)'
     description = '显示数据特征的基本统计信息。'
     icon = 'icons/FeatureStatistics.svg'
+    category = "Data"
+    keywords = ['tezheng', 'tongji', 'tezhengtongji']
 
     class Inputs:
         data = Input('数据(Data)', Table, default=True, replaces=['Data'])

@@ -48,18 +48,11 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         OWComponent.__init__(self, master)
 
         box = gui.hBox(self)
-<<<<<<< HEAD
         self.max_attr_combo = gui.comboBox(
             box, self, "max_attrs",
-            label="Number of variables:", orientation=Qt.Horizontal,
-            items=["one", "two", "three", "four",
-                   "at most two", "at most three", "at most four"],
-=======
-        self.max_attr_spin = gui.spin(
-            box, self, "max_attrs", 2, 4,
-            label="将属性数量限制为: ",
-            controlWidth=50, alignment=Qt.AlignRight,
->>>>>>> chinese translation of all widgets
+            label="变量数目:", orientation=Qt.Horizontal,
+            items=["1", "2", "3", "4",
+                   "最多 2", "最多 3", "最多 4"],
             callback=self.max_attr_changed)
         gui.rubber(box)
         self.layout().addWidget(self.button)
@@ -108,7 +101,7 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         results until actually restarting the search.
         """
         if self.max_attrs != self.last_run_max_attr or self.saved_state is None:
-            self.button.setText("Start")
+            self.button.setText("开始")
         else:
             self.button.setText("Continue")
         self.button.setEnabled(self.check_preconditions())
@@ -296,11 +289,12 @@ class MosaicVizRank(VizRankDialog, OWComponent):
 
 
 class OWMosaicDisplay(OWWidget):
-    name = "马赛克显示(Mosaic Display)"
+    name = "马赛克图(Mosaic Display)"
     description = "在马赛克图中显示数据。"
     icon = "icons/MosaicDisplay.svg"
     priority = 220
-    keywords = []
+    keywords = ['masaiketu']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])
@@ -384,7 +378,7 @@ class OWMosaicDisplay(OWWidget):
         box2 = gui.vBox(self.controlArea, box="内部着色")
         self.color_model = DomainModel(
             order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(Pearson residuals)")
+            placeholder="(皮尔逊残差)")
         self.cb_attr_color = gui.comboBox(
             box2, self, value="variable_color",
             orientation=Qt.Horizontal, contentsLength=12, labelWidth=50,

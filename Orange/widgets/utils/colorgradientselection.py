@@ -88,8 +88,8 @@ class ColorGradientSelection(QWidget):
         form.setWidget(0, QFormLayout.SpanningRole, self.gradient_cb)
         if self.center_box:
             form.setWidget(1, QFormLayout.SpanningRole, self.center_box)
-        form.addRow(self.tr("Low:"), slider_low)
-        form.addRow(self.tr("High:"), slider_high)
+        form.addRow(self.tr("低:"), slider_low)
+        form.addRow(self.tr("高:"), slider_high)
         self.slider_low = slider_low
         self.slider_high = slider_high
         self.slider_low.valueChanged.connect(self.__on_slider_low_moved)

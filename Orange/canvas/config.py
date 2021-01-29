@@ -198,16 +198,16 @@ class Config(config.Config):
         #: Submit a bug report action in the Help menu
         "Bug Report": "https://github.com/biolab/orange3/issues",
         #: A url quick tour/getting started url
-        "Quick Start": "https://orange.biolab.si/getting-started/",
+        "Quick Start": "https://chengxianzn.one/tutorials/getting-started/",
         #: The 'full' documentation, should be something like current /docs/
         #: but specific for 'Visual Programing' only
-        "Documentation": "https://orange.biolab.si/widget-catalog/",
+        "Documentation": "https://chengxianzn.one/docs/",
         #: YouTube tutorials
         "Screencasts":
             "https://space.bilibili.com/13055460/channel/detail?cid=97474",
         #: Used for 'Submit Feedback' action in the help menu
         "Feedback": "https://wj.qq.com/s2/5193545/072f/",
-        "guanzhu": "http://zhaoyang.org.cn/",
+        "guanzhu": "https://chengxianzn.one/",
     }
 
 

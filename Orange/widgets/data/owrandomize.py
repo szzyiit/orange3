@@ -17,7 +17,8 @@ class OWRandomize(OWWidget):
     description = "随机化数据表中的特征、类别(和/或)元。"
     icon = "icons/Random.svg"
     priority = 2100
-    keywords = []
+    keywords = ['suiji']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -40,7 +41,7 @@ class OWRandomize(OWWidget):
         self.data = None
 
         # GUI
-        box = gui.hBox(self.controlArea, "无序的列(Shuffled columns)")
+        box = gui.hBox(self.controlArea, "混排的列(Shuffled columns)")
         box.layout().setSpacing(20)
         self.class_check = gui.checkBox(
             box, self, "shuffle_class", "类别(Classes)",
@@ -52,7 +53,7 @@ class OWRandomize(OWWidget):
             box, self, "shuffle_metas", "元(Metas)",
             callback=self._shuffle_check_changed)
 
-        box = gui.vBox(self.controlArea, "无序的行(Shuffled rows)")
+        box = gui.vBox(self.controlArea, "混排的行(Shuffled rows)")
         hbox = gui.hBox(box)
         gui.widgetLabel(hbox, "无")
         self.scope_slider = gui.hSlider(
@@ -65,7 +66,7 @@ class OWRandomize(OWWidget):
         self._set_scope_label()
         gui.separator(box, 10, 10)
         self.replicable_check = gui.checkBox(
-            box, self, "random_seed", "可复制的无序(Replicable shuffling)",
+            box, self, "random_seed", "可复制的混排(Replicable shuffling)",
             callback=self._shuffle_check_changed)
 
         self.info.set_input_summary(self.info.NoInput)

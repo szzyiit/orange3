@@ -17,14 +17,15 @@ MAXINT = 2 ** 31 - 1
 
 
 class OWSGD(OWBaseLearner):
-    name = '随机梯度下降法(Stochastic Gradient Descent)'
+    name = '随机梯度下降(Stochastic Gradient Descent)'
     description = '利用梯度下降的随机逼近最小化目标函数'
     icon = "icons/SGD.svg"
     replaces = [
         "Orange.widgets.regression.owsgdregression.OWSGDRegression",
     ]
     priority = 90
-    keywords = ["sgd"]
+    keywords = ["sgd", 'suiji', 'suijitidu', 'tiduxiajiang']
+    category = 'model'
 
     settings_version = 2
 
@@ -76,9 +77,9 @@ class OWSGD(OWBaseLearner):
         ('Optimal', 'optimal'),
         ('Inverse scaling', 'invscaling'))
     Chinese_learning_rates = (
-        ('常量(Constant)', 'constant'),
+        ('常数(Constant)', 'constant'),
         ('最优的(Optimal)', 'optimal'),
-        ('逆比例(Inverse scaling)', 'invscaling'))
+        ('反比例(Inverse scaling)', 'invscaling'))
 
     learner_name = Setting('SGD')
     #: Loss function index for classification problems

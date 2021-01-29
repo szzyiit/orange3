@@ -28,13 +28,13 @@ class TestOWConcurrentWidget(WidgetTest, ProjectionWidgetTestMixin,
 
     def test_button_no_data(self):
         self.widget.run_button.click()
-        self.assertEqual(self.widget.run_button.text(), "Start")
+        self.assertEqual(self.widget.run_button.text(), "开始")
 
     def test_button_with_data(self):
         self.send_signal(self.widget.Inputs.data, self.data)
-        self.assertEqual(self.widget.run_button.text(), "Stop")
+        self.assertEqual(self.widget.run_button.text(), "停止")
         self.wait_until_finished()
-        self.assertEqual(self.widget.run_button.text(), "Start")
+        self.assertEqual(self.widget.run_button.text(), "开始")
 
     def test_button_toggle(self):
         self.send_signal(self.widget.Inputs.data, self.data)

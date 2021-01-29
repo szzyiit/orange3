@@ -138,7 +138,8 @@ class OWHeatMap(widget.OWWidget):
     description = "为一对属性绘制热图。"
     icon = "icons/Heatmap.svg"
     priority = 260
-    keywords = []
+    keywords = ['retu', 'relitu']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -365,8 +366,8 @@ class OWHeatMap(widget.OWWidget):
         )
         self.split_columns_var = None
         self.col_split_cb.activated.connect(self.__on_split_cols_activated)
-        form.addRow("Rows:", self.row_split_cb)
-        form.addRow("Columns:", self.col_split_cb)
+        form.addRow("行:", self.row_split_cb)
+        form.addRow("列:", self.col_split_cb)
 
         box = gui.vBox(self.controlArea, '注释和图例')
 

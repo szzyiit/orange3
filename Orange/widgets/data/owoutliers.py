@@ -176,7 +176,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
     icon = "icons/Outliers.svg"
     priority = 3000
     category = "Data"
-    keywords = ["inlier"]
+    keywords = ["inlier", 'yichang']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

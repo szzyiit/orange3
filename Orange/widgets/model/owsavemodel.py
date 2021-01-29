@@ -12,7 +12,8 @@ class OWSaveModel(OWSaveBase):
     icon = "icons/SaveModel.svg"
     replaces = ["Orange.widgets.classify.owsaveclassifier.OWSaveClassifier"]
     priority = 3000
-    keywords = []
+    keywords = ['moxing', 'baocunmoxing']
+    category = 'model'
 
     class Inputs:
         model = Input("模型(Model)", Model, replaces=['Model'])

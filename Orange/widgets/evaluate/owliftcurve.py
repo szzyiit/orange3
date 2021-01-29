@@ -48,7 +48,8 @@ class OWLiftCurve(widget.OWWidget):
     description = "根据分类器的评估结果构建并显示提升曲线。"
     icon = "icons/LiftCurve.svg"
     priority = 1020
-    keywords = ["lift", "cumulative gain"]
+    keywords = ["lift", "cumulative gain", 'tishengquxian']
+    category = 'evaluate'
 
     class Inputs:
         evaluation_results = Input(

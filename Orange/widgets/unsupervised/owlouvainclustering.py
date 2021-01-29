@@ -50,6 +50,7 @@ class OWLouvainClustering(widget.OWWidget):
     description = "检测最近邻居网络或者邻居的社区"
     icon = "icons/LouvainClustering.svg"
     priority = 2110
+    category = 'unsupervised'
 
     settings_version = 2
 

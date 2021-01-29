@@ -175,7 +175,8 @@ class OWDataTable(OWWidget):
     description = "在电子表格中查看数据集。"
     icon = "icons/Table.svg"
     priority = 50
-    keywords = []
+    keywords = ['shujubiao', 'biao']
+    category = "Data"
 
     buttons_area_orientation = Qt.Vertical
 

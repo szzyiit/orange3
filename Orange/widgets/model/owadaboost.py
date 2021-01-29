@@ -19,7 +19,8 @@ class OWAdaBoost(OWBaseLearner):
         "Orange.widgets.regression.owadaboostregression.OWAdaBoostRegression",
     ]
     priority = 80
-    keywords = ["boost"]
+    keywords = ["boost", 'tisheng', 'zishiying']
+    category = 'model'
 
     LEARNER = SklAdaBoostLearner
 
@@ -73,7 +74,7 @@ class OWAdaBoost(OWBaseLearner):
             orientation=Qt.Horizontal, callback=self.settings_changed)
         self.reg_algorithm_combo = gui.comboBox(
             box, self, "loss_index", label="回归损失函数(Regression loss function):",
-            items=self.losses,
+            items=self.Chinese_losses,
             orientation=Qt.Horizontal, callback=self.settings_changed)
 
     def create_learner(self):

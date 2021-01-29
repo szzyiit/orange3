@@ -154,10 +154,11 @@ class OWMDSGraph(OWScatterPlotBase):
 
 
 class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
-    name = "多维尺度变换(MDS)"
+    name = "多维尺度分析(MDS)"
     description = "由距离矩阵构造的多维尺度二维数据投影。"
     icon = "icons/MDS.svg"
     keywords = ["multidimensional scaling", "multi dimensional scaling"]
+    category = 'unsupervised'
 
     class Inputs(OWDataProjectionWidget.Inputs):
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])

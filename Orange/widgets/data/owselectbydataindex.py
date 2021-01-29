@@ -18,6 +18,8 @@ class OWSelectByDataIndex(widget.OWWidget):
     description = "根据数据子集的索引匹配实例。"
     icon = "icons/SelectByDataIndex.svg"
     priority = 1112
+    category = "Data"
+    keywords = ['suoyin', 'xuanze']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

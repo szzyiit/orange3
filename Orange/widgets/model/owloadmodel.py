@@ -19,7 +19,8 @@ class OWLoadModel(widget.OWWidget, RecentPathsWComboMixin):
     priority = 3050
     replaces = ["Orange.widgets.classify.owloadclassifier.OWLoadClassifier"]
     icon = "icons/LoadModel.svg"
-    keywords = ["file", "open", "model"]
+    keywords = ["file", "open", "model", 'zairumoxing', 'jiazaimoxing', 'moxing']
+    category = 'model'
 
     class Outputs:
         model = Output("模型(Model)", Model, replaces=['Model'])

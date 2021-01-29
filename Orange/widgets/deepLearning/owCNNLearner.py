@@ -26,6 +26,7 @@ class CNNLearner(OWWidget):
     name = "卷积神经网络学习器(CNN Learner)"
     description = "构建一个训练 MNIST 数据集的简单卷积神经网络"
     icon = "icons/cnn.png"
+    keywords = ['juanji', 'shenjingwangluo', 'shenduxuexi']
 
     want_main_area = True
     out_channels = [1, 2, 4, 8, 10, 16, 20, 32, 48, 64, 0]

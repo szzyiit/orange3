@@ -257,7 +257,8 @@ class OWDiscretize(widget.OWWidget):
     name = "离散化(Discretize)"
     description = "离散化数值型特征."
     icon = "icons/Discretize.svg"
-    keywords = []
+    keywords = ['lisan']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, doc="Input data table", replaces=['Data'])

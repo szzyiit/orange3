@@ -13,11 +13,12 @@ from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
 
 class OWTransform(OWWidget):
-    name = "变换(Apply Domain)"
+    name = "应用变换(Apply Domain)"
     description = "在数据表上应用模板域"
     icon = "icons/Transform.svg"
     priority = 2110
-    keywords = ["transform"]
+    keywords = ["transform", 'yingyong', 'bianhuan', 'yingyongbianhuan']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])

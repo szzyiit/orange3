@@ -57,9 +57,9 @@ from Orange.widgets.settings import widget_settings_dir
 
 log = logging.getLogger(__name__)
 
-statistics_server_url = os.getenv(
-    'ORANGE_STATISTICS_API_URL', "https://orange.biolab.si/usage-statistics"
-)
+# statistics_server_url = os.getenv(
+#     'ORANGE_STATISTICS_API_URL', "https://orange.biolab.si/usage-statistics"
+# )
 
 
 def ua_string():
@@ -130,7 +130,7 @@ def check_for_updates():
                 if role == notif.RejectRole:
                     settings.setValue('startup/latest-skipped-version', latest)
                 if role == notif.AcceptRole:
-                    QDesktopServices.openUrl(QUrl("https://orange.biolab.si/download/"))
+                    QDesktopServices.openUrl(QUrl("chegnxianzn.one"))
 
             notif.clicked.connect(handle_click)
             canvas.notification_server_instance.registerNotification(notif)

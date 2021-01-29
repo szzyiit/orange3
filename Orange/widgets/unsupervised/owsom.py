@@ -173,17 +173,18 @@ N_ITERATIONS = 200
 
 
 class OWSOM(OWWidget):
-    name = "Self-Organizing Map"
-    description = "Computation of self-organizing map."
+    name = "自组织映射(Self-Organizing Map)"
+    description = "自组织映射的计算."
     icon = "icons/SOM.svg"
     keywords = ["SOM"]
+    category = 'unsupervised'
 
     class Inputs:
-        data = Input("Data", Table, replaces=['Data'])
+        data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table, replaces=['Data'])
+        selected_data = Output("数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output("数据(Data)", Table, replaces=['Data'])
 
     settingsHandler = DomainContextHandler()
     auto_dimension = Setting(True)
@@ -236,12 +237,12 @@ class OWSOM(OWWidget):
 
         box = gui.vBox(self.controlArea, box="SOM")
         shape = gui.comboBox(
-            box, self, "", items=("Hexagonal grid", "Square grid"))
+            box, self, "", items=("六角形", "方形网格"))
         shape.setCurrentIndex(1 - self.hexagonal)
 
         box2 = gui.indentedBox(box, 10)
         auto_dim = gui.checkBox(
-            box2, self, "auto_dimension", "Set dimensions automatically",
+            box2, self, "auto_dimension", "自动设置维度",
             callback=self.on_auto_dimension_changed)
         self.manual_box = box3 = gui.hBox(box2)
         spinargs = dict(
@@ -257,27 +258,27 @@ class OWSOM(OWWidget):
 
         initialization = gui.comboBox(
             box, self, "initialization",
-            items=("Initialize with PCA", "Random initialization",
-                   "Replicable random"))
+            items=("PCA 初始化", "随机初始化",
+                   "可复制的随机"))
 
         start = gui.button(
-            box, self, "Restart", callback=self.restart_som_pressed,
+            box, self, "重启", callback=self.restart_som_pressed,
             sizePolicy=(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
 
         self.opt_controls = self.OptControls(
             shape, auto_dim, spin_x, spin_y, initialization, start)
 
-        box = gui.vBox(self.controlArea, "Color")
+        box = gui.vBox(self.controlArea, "颜色")
         gui.comboBox(
             box, self, "attr_color", searchable=True,
             callback=self.on_attr_color_change,
-            model=DomainModel(placeholder="(Same color)",
+            model=DomainModel(placeholder="(相同颜色)",
                               valid_types=DomainModel.PRIMITIVE))
         gui.checkBox(
-            box, self, "pie_charts", label="Show pie charts",
+            box, self, "pie_charts", label="显示饼图",
             callback=self.on_pie_chart_change)
         gui.checkBox(
-            box, self, "size_by_instances", label="Size by number of instances",
+            box, self, "size_by_instances", label="按实例数量设置大小",
             callback=self.on_attr_size_change)
 
         gui.rubber(self.controlArea)
@@ -523,7 +524,7 @@ class OWSOM(OWWidget):
         c = self.opt_controls
         c.shape.setEnabled(enable)
         c.auto_dim.setEnabled(enable)
-        c.start.setText("Start" if enable else "Stop")
+        c.start.setText("开始" if enable else "停止")
 
     def update_layout(self):
         self.set_legend_pos()

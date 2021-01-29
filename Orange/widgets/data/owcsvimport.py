@@ -245,6 +245,13 @@ class CSVImportDialog(QDialog):
                              QDialogButtonBox.RestoreDefaults),
             objectName="dialog-button-box",
         )
+
+        # 翻译上面的 buttons
+        self._buttons.button(QDialogButtonBox.Ok).setText('确定')
+        self._buttons.button(QDialogButtonBox.Cancel).setText('取消')
+        self._buttons.button(QDialogButtonBox.Reset).setText('重置')
+        self._buttons.button(QDialogButtonBox.RestoreDefaults).setText('恢复默认')
+
         # TODO: Help button
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -603,7 +610,7 @@ class OWCSVFileImport(widget.OWWidget):
     icon = "icons/CSVFile.svg"
     priority = 11
     category = "Data"
-    keywords = ["file", "load", "read", "open", "csv"]
+    keywords = ["file", "load", "read", "open", "csv", 'wenjian', 'daoru', 'zairu']
 
     outputs = [
         widget.OutputSignal(
@@ -670,9 +677,9 @@ class OWCSVFileImport(widget.OWWidget):
         self.import_items_model = VarPathItemModel(self)
         self.import_items_model.setReplacementEnv(self._replacements())
         self.recent_combo = ItemStyledComboBox(
-            self, objectName="recent-combo", toolTip="Recent files.",
+            self, objectName="recent-combo", toolTip="最近的文件.",
             sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
-            minimumContentsLength=16, placeholderText="Recent files…"
+            minimumContentsLength=16, placeholderText="最近的文件…"
         )
         self.recent_combo.setModel(self.import_items_model)
         self.recent_combo.activated.connect(self.activate_recent)
@@ -680,7 +687,7 @@ class OWCSVFileImport(widget.OWWidget):
             QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         self.browse_button = QPushButton(
             "…", icon=self.style().standardIcon(QStyle.SP_DirOpenIcon),
-            toolTip="Browse filesystem", autoDefault=False,
+            toolTip="浏览系统文件", autoDefault=False,
         )
         # A button drop down menu with selection of explicit workflow dir
         # relative import. This is only enabled when 'basedir' workflow env
@@ -730,6 +737,7 @@ class OWCSVFileImport(widget.OWWidget):
 
         self.cancel_button = b = button_box.button(QDialogButtonBox.Cancel)
         b.clicked.connect(self.cancel)
+        b.setText('取消')
         b.setEnabled(False)
         b.setAutoDefault(False)
 

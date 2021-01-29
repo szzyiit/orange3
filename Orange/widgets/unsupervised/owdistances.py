@@ -68,7 +68,8 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
     name = "距离(Distances)"
     description = "计算成对距离矩阵."
     icon = "icons/Distance.svg"
-    keywords = []
+    keywords = ['juli']
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])

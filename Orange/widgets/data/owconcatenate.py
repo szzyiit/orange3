@@ -33,7 +33,8 @@ class OWConcatenate(widget.OWWidget):
     description = "连接（附加）两个或多个数据集。"
     priority = 1111
     icon = "icons/Concatenate.svg"
-    keywords = ["append", "join", "extend"]
+    keywords = ["join", 'lianjie']
+    category = 'Data'
 
     class Inputs:
         primary_data = Input("主要数据(Primary Data)", Orange.data.Table, replaces=['Primary Data'])
@@ -118,7 +119,7 @@ class OWConcatenate(widget.OWWidget):
             callback=self.apply, stateWhenDisabled=False)
         ###
         box = gui.vBox(
-            self.controlArea, self.tr("数据源识别"),
+            self.controlArea, self.tr("数据源标识"),
             addSpace=False)
 
         cb = gui.checkBox(

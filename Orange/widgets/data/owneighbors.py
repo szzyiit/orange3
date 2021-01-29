@@ -42,6 +42,8 @@ class OWNeighbors(OWWidget):
     name = "邻近(Neighbors)"
     description = "根据参考数据计算最近邻。"
     icon = "icons/Neighbors.svg"
+    category = "Data"
+    keywords = ['jinlin', 'linju']
 
     replaces = ["orangecontrib.prototypes.widgets.owneighbours.OWNeighbours"]
 
@@ -86,7 +88,7 @@ class OWNeighbors(OWWidget):
         box = gui.vBox(self.controlArea, box=True)
         gui.comboBox(
             box, self, "distance_index", orientation=Qt.Horizontal,
-            label="距离:", items=[d[0] for d in METRICS],
+            label="距离:", items=[d[0] for d in ZH_METRICS],
             callback=self.recompute)
         gui.spin(
             box, self, "n_neighbors", label="限制邻居数为:",

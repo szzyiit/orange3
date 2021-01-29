@@ -91,7 +91,8 @@ class OWCalibrationPlot(widget.OWWidget):
     description = "基于分类器评估的校准图。"
     icon = "icons/CalibrationPlot.svg"
     priority = 1030
-    keywords = []
+    keywords = ['jiaozhun', 'jiaodui']
+    category = 'evaluate'
 
     class Inputs:
         evaluation_results = Input("评估结果(Evaluation Results)", Results, replaces=['Evaluation Results'])

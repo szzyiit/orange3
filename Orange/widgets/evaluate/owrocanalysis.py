@@ -298,7 +298,8 @@ class OWROCAnalysis(widget.OWWidget):
     description = "根据分类器的评估结果显示接受者操作曲线。"
     icon = "icons/ROCAnalysis.svg"
     priority = 1010
-    keywords = []
+    keywords = ['fenxi']
+    category = 'evaluate'
 
     class Inputs:
         evaluation_results = Input("评估结果(Evaluation Results)", Orange.evaluation.Results, replaces=["Evaluation Results"])
@@ -353,7 +354,7 @@ class OWROCAnalysis(widget.OWWidget):
 
         abox = gui.vBox(self.controlArea, "曲线")
         gui.comboBox(abox, self, "roc_averaging",
-                     items=["从折叠合并预测", "平均真阳性率",
+                     items=["合并折叠预测", "平均真阳性率",
                             "阈值处的平均真阳性率和假阳性率", "显示单个曲线"],
                      callback=self._replot)
 
@@ -368,7 +369,7 @@ class OWROCAnalysis(widget.OWWidget):
                      "默认阈值（0.5）点",
                      callback=self._on_display_def_threshold_changed)
 
-        gui.checkBox(box, self, "display_perf_line", "显示性能行",
+        gui.checkBox(box, self, "display_perf_line", "显示性能线",
                      callback=self._on_display_perf_line_changed)
         grid = QGridLayout()
         gui.indentedBox(box, orientation=grid)

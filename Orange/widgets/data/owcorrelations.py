@@ -238,6 +238,8 @@ class OWCorrelations(OWWidget):
     description = "计算所有成对属性的关联性。"
     icon = "icons/Correlations.svg"
     priority = 1106
+    category = 'Data'
+    keywords = ['xiangguan']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
