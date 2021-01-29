@@ -124,7 +124,7 @@ class RegressionScore(Score, abstract=True):
 # pylint: disable=invalid-name
 class CA(ClassificationScore):
     __wraps__ = skl_metrics.accuracy_score
-    long_name = "分类准确率(CA)"
+    long_name = "分类准确率"
 
 
 class PrecisionRecallFSupport(ClassificationScore):
@@ -173,10 +173,13 @@ class TargetScore(ClassificationScore):
 
 class Precision(TargetScore):
     __wraps__ = skl_metrics.precision_score
+    long_name = "精度"
 
 
 class Recall(TargetScore):
     __wraps__ = skl_metrics.recall_score
+    long_name = "召回"
+
 
 
 class F1(TargetScore):
@@ -270,6 +273,7 @@ class LogLoss(ClassificationScore):
 
     """
     __wraps__ = skl_metrics.log_loss
+    long_name = "log 损失"
 
     def compute_score(self, results, eps=1e-15, normalize=True,
                       sample_weight=None):
@@ -285,6 +289,7 @@ class LogLoss(ClassificationScore):
 
 class Specificity(ClassificationScore):
     is_binary = True
+    long_name = "特异度"
 
     @staticmethod
     def calculate_weights(results):

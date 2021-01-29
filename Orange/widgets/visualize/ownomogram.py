@@ -650,7 +650,8 @@ class OWNomogram(OWWidget):
     description = " 朴素贝叶斯和逻辑回归分类器可视化的列线图。"
     icon = "icons/Nomogram.svg"
     priority = 2000
-    keywords = []
+    keywords = ['liexiantu']
+    category = 'visualize'
 
     class Inputs:
         classifier = Input("分类器(Classifier)", Model, replaces=['Classifier'])

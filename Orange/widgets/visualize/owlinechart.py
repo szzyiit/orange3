@@ -256,6 +256,8 @@ class OWLineChart(widget.OWWidget):
     description = "以折线图形式观察某一列数据."
     icon = 'icons/LineChart.svg'
     priority = 90
+    category = 'visualize'
+    keywords = ['zhexiantu']
 
     class Inputs:
         time_series = Input("数据(Data)", Table, replaces='Data')

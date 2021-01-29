@@ -17,11 +17,11 @@ from Orange.widgets.widget import Input, Output
 
 
 class OWContinuize(widget.OWWidget):
-    name = "数值化(Continuize)"
+    name = "连续化(Continuize)"
     description = ("将分类属性转换为数值属性，还可以归一化这些值" )
     icon = "icons/Continuize.svg"
-    category = "数据(Data)"
-    keywords = ["encode", "dummy", "numeric", "one-hot", "binary"]
+    category = "Data"
+    keywords = ["encode", "dummy", "one-hot", 'lianxu', 'shuzhi']
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -45,7 +45,7 @@ class OWContinuize(widget.OWWidget):
         ("以第一个值为基数", Continuize.FirstAsBase),
         ("最常见值作为基数", Continuize.FrequentAsBase),
         ("每个值一个属性", Continuize.Indicators),
-        ("忽略多项式属性", Continuize.RemoveMultinomial),
+        ("忽略多值属性", Continuize.RemoveMultinomial),
         ("删除分类属性", Continuize.Remove),
         ("按有序数据处理", Continuize.AsOrdinal),
         ("除以取值数目", Continuize.AsNormalizedOrdinal))

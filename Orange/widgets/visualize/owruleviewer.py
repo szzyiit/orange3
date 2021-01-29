@@ -22,7 +22,8 @@ class OWRuleViewer(widget.OWWidget):
     description = "查看由数据引发的规则。"
     icon = "icons/CN2RuleViewer.svg"
     priority = 1140
-    keywords = []
+    keywords = ['cn2guize', 'guize']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

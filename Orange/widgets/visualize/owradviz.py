@@ -118,9 +118,9 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         anything so the user can still see the results until actually restarting the search.
         """
         if self.n_attrs != self.last_run_n_attrs or self.saved_state is None:
-            self.button.setText("Start")
+            self.button.setText("开始")
         else:
-            self.button.setText("Continue")
+            self.button.setText("继续")
         self.button.setEnabled(self.check_preconditions())
 
     def progressBarSet(self, value):
@@ -315,6 +315,7 @@ class OWRadviz(OWAnchorProjectionWidget):
     icon = "icons/Radviz.svg"
     priority = 241
     keywords = ["viz"]
+    category = 'visualize'
 
     settings_version = 3
 

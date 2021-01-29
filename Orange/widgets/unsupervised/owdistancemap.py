@@ -250,7 +250,8 @@ class OWDistanceMap(widget.OWWidget):
     description = "可视化距离矩阵"
     icon = "icons/DistanceMap.svg"
     priority = 1200
-    keywords = []
+    keywords = ['juliyingshe', 'yingshe', 'julitu']
+    category = 'unsupervised'
 
     class Inputs:
         distances = Input("距离(Distances)", Orange.misc.DistMatrix, replaces=['Distances'])

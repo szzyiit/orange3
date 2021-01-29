@@ -168,7 +168,7 @@ class OWCreateClass(widget.OWWidget):
     description = "从字符串属性创类别属性"
     icon = "icons/CreateClass.svg"
     category = "Data"
-    keywords = []
+    keywords = ['chuangjian', 'leibie', 'fenlei']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

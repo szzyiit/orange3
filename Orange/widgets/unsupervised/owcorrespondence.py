@@ -33,7 +33,8 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
     name = "对应分析(Correspondence Analysis)"
     description = "分类多元数据的对应分析。"
     icon = "icons/CorrespondenceAnalysis.svg"
-    keywords = []
+    keywords = ['duiyingfenxi']
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

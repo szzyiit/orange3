@@ -42,7 +42,8 @@ class OWPythagorasTree(OWWidget):
     name = '毕达哥拉斯树(Pythagorean Tree)'
     description = '类似树结构的毕达哥拉斯树可视化。'
     icon = 'icons/PythagoreanTree.svg'
-    keywords = ["fractal"]
+    keywords = ["fractal", 'bidagelasishu', 'gougushu']
+    category = 'visualize'
 
     priority = 1000
 

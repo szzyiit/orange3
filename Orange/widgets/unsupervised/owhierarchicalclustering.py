@@ -107,7 +107,8 @@ class OWHierarchicalClustering(widget.OWWidget):
     description = "显示从输入距离矩阵构造的层次聚类的树形图。"
     icon = "icons/HierarchicalClustering.svg"
     priority = 2100
-    keywords = []
+    keywords = ['cengcijulei', 'julei']
+    category = 'unsupervised'
 
     class Inputs:
         distances = Input("距离(Distances)", Orange.misc.DistMatrix, replaces=['Distances'])

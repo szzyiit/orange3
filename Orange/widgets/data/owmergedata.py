@@ -20,8 +20,8 @@ from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, Msg
 
-INSTANCEID = "Instance id"
-INDEX = "Row index"
+INSTANCEID = "实例 ID"
+INDEX = "行索引"
 
 
 class ConditionBox(QWidget):
@@ -87,7 +87,7 @@ class ConditionBox(QWidget):
 
         row = self.layout().count()
         row_items = self.RowItems(
-            QLabel("and" if row else self.pre_label),
+            QLabel("和" if row else self.pre_label),
             get_combo(self.model_left),
             QLabel(self.in_label),
             get_combo(self.model_right),
@@ -250,10 +250,11 @@ class OWMergeData(widget.OWWidget):
     description = "根据选择的特征合并数据集."
     icon = "icons/MergeData.svg"
     priority = 1110
-    keywords = ["join"]
+    keywords = ["join", 'hebing']
+    category = "Data"
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table, default=True, replaces=["Data A", 'Data'])
+        data = Input("主数据(Data)", Orange.data.Table, default=True, replaces=["Data A", 'Data'])
         extra_data = Input("附加数据(Extra Data)", Orange.data.Table, replaces=["Data B", 'Extra Data'])
 
     class Outputs:
@@ -262,9 +263,9 @@ class OWMergeData(widget.OWWidget):
                       replaces=["Data", "Merged Data A+B", "Merged Data B+A", "Merged Data"])
 
     LeftJoin, InnerJoin, OuterJoin = range(3)
-    OptionNames = ("从附加数据添加列(Left Join)",
-                   "寻找匹配行(Inner Join)",
-                   "连接表格 (Outer Join)")
+    OptionNames = ("从附加数据添加列(左连接)",
+                   "寻找匹配行(内连接)",
+                   "连接表格 (全外连接)")
     OptionDescriptions = (
         "附加数据中的列将添加到数据中. 没有匹配行的实例将添加缺失值。",
 

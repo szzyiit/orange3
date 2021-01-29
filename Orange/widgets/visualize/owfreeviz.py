@@ -132,6 +132,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     icon = "icons/Freeviz.svg"
     priority = 240
     keywords = ["viz"]
+    category = 'visualize'
 
     settings_version = 3
     initialization = settings.Setting(InitType.Circular)

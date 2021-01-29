@@ -19,6 +19,7 @@ class OWSave(OWSaveBase):
     icon = "icons/Save.svg"
     category = "Data"
     keywords = ["export"]
+    keywords = ['baocun']
 
     settings_version = 2
 

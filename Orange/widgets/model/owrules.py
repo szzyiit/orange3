@@ -215,7 +215,8 @@ class OWRuleLearner(OWBaseLearner):
         "Orange.widgets.classify.owrules.OWRuleLearner",
     ]
     priority = 19
-    keywords = []
+    keywords = ['guizeguina']
+    category = 'model'
 
     LEARNER = CustomRuleLearner
     supports_sparse = False
@@ -225,7 +226,7 @@ class OWRuleLearner(OWBaseLearner):
     storage_measures = ["entropy", "laplace", "wracc"]
 
     # default parameter values
-    learner_name = Setting("CN2 rule inducer")
+    learner_name = Setting("CN2 规则归纳器")
     rule_ordering = Setting(0)
     covering_algorithm = Setting(0)
     gamma = Setting(0.7)
@@ -258,7 +259,7 @@ class OWRuleLearner(OWBaseLearner):
             widget=covering_algorithm_box, master=self,
             value="covering_algorithm",
             callback=self.settings_changed,
-            btnLabels=("互斥的(Exclusive)", "加权(Weighted)"))
+            btnLabels=("互斥(Exclusive)", "加权(Weighted)"))
         covering_algorithm_rbs.layout().setSpacing(7)
 
         insert_gamma_box = gui.vBox(widget=covering_algorithm_box, box=None)
@@ -274,8 +275,8 @@ class OWRuleLearner(OWBaseLearner):
 
         gui.comboBox(
             widget=middle_box, master=self, value="evaluation_measure",
-            label="评价措施:", orientation=Qt.Horizontal,
-            items=("熵值(Entropy)", "拉普拉斯精度(Laplace accuracy)", "WRAcc"),
+            label="评价指标:", orientation=Qt.Horizontal,
+            items=("熵值(Entropy)", "拉普拉斯精度(Laplace accuracy)", "加权相对精度(WRAcc0"),
             callback=self.settings_changed, contentsLength=3)
 
         gui.spin(

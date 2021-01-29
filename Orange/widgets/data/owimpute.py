@@ -135,7 +135,8 @@ class OWImpute(OWWidget):
     description = "在数据表中填充缺失值。"
     icon = "icons/Impute.svg"
     priority = 2130
-    keywords = ["substitute", "missing"]
+    keywords = ["missing", 'tianchong', 'queshi']
+    category = 'Data'
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -201,7 +202,7 @@ class OWImpute(OWWidget):
 
         hlayout = QHBoxLayout()
         box.layout().addLayout(hlayout)
-        button = QRadioButton("Fixed values; numeric variables:")
+        button = QRadioButton("固定值; 数值变量:")
         button_group.addButton(button, Method.Default)
         button.setChecked(Method.Default == self.default_method_index)
         hlayout.addWidget(button)
@@ -220,7 +221,7 @@ class OWImpute(OWWidget):
         )
         hlayout.addWidget(self.numeric_value_widget)
 
-        hlayout.addWidget(QLabel(", time:"))
+        hlayout.addWidget(QLabel(", 时间:"))
 
         self.time_widget = gui.DateTimeEditWCalendarTime(self)
         self.time_widget.setEnabled(self.default_method_index == Method.Default)

@@ -255,6 +255,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
     icon = "icons/TSNE.svg"
     priority = 920
     keywords = ["tsne"]
+    category = 'unsupervised'
 
     settings_version = 4
     perplexity = ContextSetting(30)
@@ -336,7 +337,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
 
         box.layout().addLayout(form)
 
-        self.run_button = gui.button(box, self, "Start", callback=self._toggle_run)
+        self.run_button = gui.button(box, self, "开始", callback=self._toggle_run)
 
     def _multiscale_changed(self):
         self.controls.perplexity.setDisabled(self.multiscale)
@@ -357,7 +358,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
 
     def _stop_running_task(self):
         self.cancel()
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
 
     def _set_modified(self, state):
         """Mark the widget (GUI) as containing modified state."""
@@ -567,7 +568,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
 
     def on_done(self, task):
         # type: (Task) -> None
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
         # NOTE: All of these have already been set by on_partial_result,
         # we double check that they are aliases
         if task.pca_projection is not None:
@@ -607,7 +608,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
     def clear(self):
         """Clear widget state. Note that this doesn't clear the data."""
         super().clear()
-        self.run_button.setText("Start")
+        self.run_button.setText("开始")
         self.cancel()
         self.pca_projection = None
         self.initialization = None

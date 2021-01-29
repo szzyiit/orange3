@@ -25,7 +25,8 @@ class OWPCA(widget.OWWidget):
     description = "主成分分析与 scree图。"
     icon = "icons/PCA.svg"
     priority = 3050
-    keywords = ["principal component analysis", "linear transformation"]
+    keywords = ["principal component analysis", "linear transformation", 'zhuchengfen']
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

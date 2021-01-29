@@ -249,7 +249,8 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     description = "根据数据特征的相关性对其进行排名和筛选。"
     icon = "icons/Rank.svg"
     priority = 1102
-    keywords = []
+    keywords = ['paiming', 'mingci', 'paixu']
+    category = "Data"
 
     buttons_area_orientation = Qt.Vertical
 
@@ -259,7 +260,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
     class Outputs:
         reduced_data = Output("选中的数据(Reduced Data)", Table, default=True, replaces=['Reduced Data'])
-        scores = Output("分数(Scores)", Table, replaces=['Scores'])
+        scores = Output("评分(Scores)", Table, replaces=['Scores'])
         features = Output("特征(Features)", AttributeList, dynamic=False, replaces=['Features'])
 
     SelectNone, SelectAll, SelectManual, SelectNBest = range(4)

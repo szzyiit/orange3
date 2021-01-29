@@ -9,7 +9,7 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
 class OWKNNLearner(OWBaseLearner):
-    name = "k 邻近(kNN)"
+    name = "k 近邻(kNN)"
     description = "根据最近的训练实例进行预测"
     icon = "icons/KNN.svg"
     replaces = [
@@ -17,25 +17,26 @@ class OWKNNLearner(OWBaseLearner):
         "Orange.widgets.regression.owknnregression.OWKNNRegression",
     ]
     priority = 20
-    keywords = ["k nearest", "knearest", "neighbor", "neighbour"]
+    keywords = ["k nearest", "knearest", "neighbor", "neighbour", 'linjin', 'linju']
 
     LEARNER = KNNLearner
+    category = 'model'
 
     weights = ["uniform", "distance"]
     Chinese_weights = ["统一的", "距离"]
     metrics = ["euclidean", "manhattan", "chebyshev", "mahalanobis"]
-    Chinese_metrics = ["欧几里德", "曼哈顿", "切比雪夫", "马哈拉诺比斯(Mahalanobis)"]
+    Chinese_metrics = ["欧几里德", "曼哈顿", "绝对最大差异", "马哈拉诺比斯(Mahalanobis)"]
 
-    learner_name = Setting("kNN")
+    learner_name = Setting("k近邻(kNN)")
     n_neighbors = Setting(5)
     metric_index = Setting(0)
     weight_index = Setting(0)
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.vBox(self.controlArea, "邻近(Neighbors)")
+        box = gui.vBox(self.controlArea, "近邻(Neighbors)")
         self.n_neighbors_spin = gui.spin(
-            box, self, "n_neighbors", 1, 100, label="邻近数(Number of neighbors):",
+            box, self, "n_neighbors", 1, 100, label="近邻数(Number of neighbors):",
             alignment=Qt.AlignRight, callback=self.settings_changed,
             controlWidth=80)
         self.metrics_combo = gui.comboBox(

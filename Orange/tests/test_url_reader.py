@@ -3,6 +3,7 @@ import unittest
 from Orange.data.io import UrlReader
 
 
+# 可能会有网络问题, 没啥关系
 class TestUrlReader(unittest.TestCase):
     def test_basic_file(self):
         data = UrlReader("https://datasets.biolab.si/core/titanic.tab").read()

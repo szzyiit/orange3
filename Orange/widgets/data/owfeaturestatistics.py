@@ -734,6 +734,8 @@ class OWFeatureStatistics(widget.OWWidget):
     name = '特征统计(Feature Statistics)'
     description = '显示数据特征的基本统计信息。'
     icon = 'icons/FeatureStatistics.svg'
+    category = "Data"
+    keywords = ['tezheng', 'tongji', 'tezhengtongji']
 
     class Inputs:
         data = Input('数据(Data)', Table, default=True, replaces=['Data'])

@@ -5,6 +5,7 @@ class MultiImageLabel(ImageMixin, TencentAPI):
     name = "多标签识别 (Multi Label Recognition)"
     description = "识别一个图像的标签信息,对图像分类。"
     icon = "icons/multi.png"
+    keywords = ['qq', 'tengxun', 'duobianqian', 'tuxiang', 'shibie']
 
     URL = 'https://api.ai.qq.com/fcgi-bin/image/image_tag'
 

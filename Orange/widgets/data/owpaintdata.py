@@ -728,20 +728,21 @@ def _icon(name, icon_path="icons/paintdata",
 
 class OWPaintData(OWWidget):
     TOOLS = [
-        ("毛刷(Brush)", "建立多个实例", AirBrushTool, _icon("brush.svg")),
-        ("单个放置(Put)", "放置单个实例", PutInstanceTool, _icon("put.svg")),
-        ("选择(Select)", " 选择并移动实例", SelectTool,
+        ("毛刷", "建立多个实例", AirBrushTool, _icon("brush.svg")),
+        ("单个放置", "放置单个实例", PutInstanceTool, _icon("put.svg")),
+        ("选择", " 选择并移动实例", SelectTool,
          _icon("select-transparent_42px.png")),
-        ("抖动(Jitter)", " 抖动实例", JitterTool, _icon("jitter.svg")),
-        ("磁铁(Magnet)", " 吸引多个实例", MagnetTool, _icon("magnet.svg")),
-        ("清除(Clear)", " 清除绘图", ClearTool, _icon("../../../icons/Dlg_clear.png"))
+        ("抖动", " 抖动实例", JitterTool, _icon("jitter.svg")),
+        ("磁吸", " 吸引多个实例", MagnetTool, _icon("magnet.svg")),
+        ("清除", " 清除绘图", ClearTool, _icon("../../../icons/Dlg_clear.png"))
     ]
 
     name = "绘制数据(Paint Data)"
     description = "通过在平面上绘制数据点来创建数据。"
     icon = "icons/PaintData.svg"
     priority = 60
-    keywords = ["create", "draw"]
+    keywords = ["create", "draw", 'huizhi', 'hua']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

@@ -191,9 +191,10 @@ class SelectEncodingsWidget(QWidget):
         buttons = QDialogButtonBox(
             standardButtons=QDialogButtonBox.RestoreDefaults
         )
-        b = buttons.addButton("Select all", QDialogButtonBox.ActionRole)
+        b = buttons.addButton("全选", QDialogButtonBox.ActionRole)
         b.clicked.connect(self.selectAll)
         b = buttons.button(QDialogButtonBox.RestoreDefaults)
+        b.setText('恢复默认')
         b.clicked.connect(self.reset)
         self.layout().addWidget(buttons)
         self.setAttribute(Qt.WA_MacSmallSize)

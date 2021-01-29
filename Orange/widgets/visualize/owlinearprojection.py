@@ -176,9 +176,9 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
 
     def _n_attrs_changed(self):
         if self.n_attrs != self.last_run_n_attrs or self.saved_state is None:
-            self.button.setText("Start")
+            self.button.setText("开始")
         else:
-            self.button.setText("Continue")
+            self.button.setText("继续")
         self.button.setEnabled(self.check_preconditions())
 
 
@@ -265,7 +265,8 @@ class OWLinearProjection(OWAnchorProjectionWidget):
     description = "数据在二维平面上的多轴投影。"
     icon = "icons/LinearProjection.svg"
     priority = 240
-    keywords = []
+    keywords = ['xianxingtouying', 'touying']
+    category = 'visualize'
 
     Projection_name = {Placement.Circular: "圆形布局",
                        Placement.LDA: "线性判别分析(Linear Discriminant Analysis)",

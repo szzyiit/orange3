@@ -169,6 +169,7 @@ class OWManifoldLearning(OWWidget):
     priority = 2200
     keywords = []
     settings_version = 2
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

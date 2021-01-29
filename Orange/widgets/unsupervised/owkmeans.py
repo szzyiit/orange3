@@ -103,7 +103,8 @@ class OWKMeans(widget.OWWidget):
     description = "基于轮廓质量估计的 K 均值聚类算法"
     icon = "icons/KMeans.svg"
     priority = 2100
-    keywords = ["kmeans", "clustering"]
+    keywords = ["kmeans", "clustering", 'kjunzhi']
+    category = 'unsupervised'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

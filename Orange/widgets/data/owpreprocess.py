@@ -262,9 +262,9 @@ class RemoveSparseEditor(BaseEditor):
         self.filter0 = True
         self.setLayout(QVBoxLayout())
 
-        self.layout().addWidget(QLabel("Remove features with too many"))
-        options = ["missing values",
-                   "zeros"]
+        self.layout().addWidget(QLabel("删除特征如果此特征有过多："))
+        options = ["缺失值",
+                   "0"]
         self.filter_buttons = QButtonGroup(exclusive=True)
         self.filter_buttons.buttonClicked.connect(self.filterByClicked)
         for idx, option, in enumerate(options):
@@ -274,19 +274,19 @@ class RemoveSparseEditor(BaseEditor):
 
         self.layout().addSpacing(20)
 
-        filter_settings = QGroupBox(title='Threshold:', flat=True)
+        filter_settings = QGroupBox(title='阈值:', flat=True)
         filter_settings.setLayout(QFormLayout())
         self.settings_buttons = QButtonGroup(exclusive=True)
         self.settings_buttons.buttonClicked.connect(self.filterSettingsClicked)
 
-        btn_perc = QRadioButton(self, text='Percentage', checked=not self.useFixedThreshold)
+        btn_perc = QRadioButton(self, text='百分比', checked=not self.useFixedThreshold)
         self.settings_buttons.addButton(btn_perc, id=0)
         self.percSpin = QSpinBox(minimum=0, maximum=100, value=self.percThresh,
                                  enabled=not self.useFixedThreshold)
         self.percSpin.valueChanged[int].connect(self.setPercThresh)
         self.percSpin.editingFinished.connect(self.edited)
 
-        btn_fix = QRadioButton(self, text='Fixed', checked=self.useFixedThreshold)
+        btn_fix = QRadioButton(self, text='数量为', checked=self.useFixedThreshold)
         self.settings_buttons.addButton(btn_fix, id=1)
         self.fixedSpin = QSpinBox(minimum=0, maximum=1000000, value=self.fixedThresh,
                                   enabled=self.useFixedThreshold)
@@ -824,7 +824,7 @@ class Randomize(BaseEditor):
         self.__rand_seed_ch.clicked.connect(self.edited)
 
         form.addRow("随机化(Randomize):", self.__rand_type_cb)
-        form.addRow("可复制的无序(Replicable shuffling):", self.__rand_seed_ch)
+        form.addRow("可复制混排(Replicable shuffling):", self.__rand_seed_ch)
         self.layout().addLayout(form)
 
     def setParameters(self, params):
@@ -1024,7 +1024,7 @@ PREPROCESS_ACTIONS = [
     ),
     PreprocessAction(
         "Remove Sparse", "orange.preprocess.remove_sparse", "Feature Selection",
-        Description("Remove Sparse Features",
+        Description("删除稀疏特征",
                     icon_path("PurgeDomain.svg")),
         RemoveSparseEditor
     ),
@@ -1067,7 +1067,8 @@ class OWPreprocess(widget.OWWidget, openclass=True):
     description = "构建数据预处理流程(pipeline)。"
     icon = "icons/Preprocess.svg"
     priority = 2105
-    keywords = ["process"]
+    keywords = ["process", 'yuchuli', 'chuli']
+    category = "Data"
 
     settings_version = 2
 

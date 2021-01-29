@@ -49,7 +49,7 @@ LONG_DESCRIPTION = open(README_FILE).read()
 LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'info@biolab.si'
-URL = 'http://orange.biolab.si/'
+URL = 'chengxianzn.one'
 LICENSE = 'GPLv3+'
 
 KEYWORDS = [

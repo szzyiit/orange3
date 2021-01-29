@@ -66,7 +66,8 @@ class OWNNLearner(OWBaseLearner):
     description = "一种具有反向传播的多层感知器（MLP）算法。"
     icon = "icons/NN.svg"
     priority = 90
-    keywords = ["mlp"]
+    keywords = ["mlp", 'shenjingwangluo']
+    category = 'model'
 
     LEARNER = NNLearner
 

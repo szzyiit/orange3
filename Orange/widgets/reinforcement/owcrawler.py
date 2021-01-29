@@ -9,6 +9,7 @@ class Crawler(OWWidget):
     name = "爬行者(Crawler)"
     description = "训练一个爬行机器人, 熟悉强化学习的各种参数"
     icon = "icons/robot.svg"
+    keywords = ['paixingzhe']
 
     want_main_area = False
 

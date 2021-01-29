@@ -64,8 +64,9 @@ class OWVennDiagram(widget.OWWidget):
     description = "可视化数据实例的重叠(数据来自输入数据集集合)"
     icon = "icons/VennDiagram.svg"
     priority = 280
-    keywords = []
+    keywords = ['weientu']
     settings_version = 2
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Table, multiple=True, replaces=['Data'])
@@ -134,7 +135,7 @@ class OWVennDiagram(widget.OWWidget):
 
         box = gui.radioButtonsInBox(
             self.buttonsArea, self, 'rowwise',
-            ["Columns (features)", "Rows (instances), matched by", ],
+            ["列 (特征)", "行, 根据...匹配", ],
             callback=self._on_matching_changed
         )
         gui.rubber(self.buttonsArea)
@@ -154,6 +155,7 @@ class OWVennDiagram(widget.OWWidget):
         box.layout().setSpacing(6)
         box.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
 
+<<<<<<< HEAD
         self.outputs_box = box = gui.vBox(self.buttonsArea,
                                           sizePolicy=(QSizePolicy.Preferred,
                                                       QSizePolicy.Preferred),
@@ -169,6 +171,14 @@ class OWVennDiagram(widget.OWWidget):
                              contentsMargins=(0, 0, 0, 0))
         gui.rubber(box)
         self._update_duplicates_cb()
+=======
+        self.outputs_box = box = gui.vBox(controls, "输出")
+        self.output_duplicates_cb = gui.checkBox(
+            box, self, "output_duplicates", "输出重复值",
+            callback=lambda: self.commit())  # pylint: disable=unnecessary-lambda
+        gui.auto_send(box, self, "autocommit", box=False)
+        self.output_duplicates_cb.setEnabled(bool(self.rowwise))
+>>>>>>> add keywords for pinyin and help link
         self._queue = []
 
     def resizeEvent(self, event):

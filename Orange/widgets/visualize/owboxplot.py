@@ -121,7 +121,8 @@ class OWBoxPlot(widget.OWWidget):
     description = "在箱线图中可视化特征值的分布。"
     icon = "icons/BoxPlot.svg"
     priority = 100
-    keywords = ["whisker"]
+    keywords = ["whisker", 'huxutu', 'xiangxiantu']
+    category = 'visualize'
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -207,7 +208,7 @@ class OWBoxPlot(widget.OWWidget):
         view.setModel(sorted_model)
         view.setSelectionMode(view.SingleSelection)
         view.selectionModel().selectionChanged.connect(self.attr_changed)
-        view.setMinimumSize(QSize(30, 30))
+        view.setMinimumSize(QSize(30, 100))
         # Any other policy than Ignored will let the QListBox's scrollbar
         # set the minimal height (see the penultimate paragraph of
         # http://doc.qt.io/qt-4.8/qabstractscrollarea.html#addScrollBarWidget)
@@ -228,13 +229,13 @@ class OWBoxPlot(widget.OWWidget):
         view = self.group_list = ListViewSearch()
         view.setModel(sorted_model)
         view.selectionModel().selectionChanged.connect(self.grouping_changed)
-        view.setMinimumSize(QSize(30, 30))
+        view.setMinimumSize(QSize(30, 100))
         # See the comment above
         view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         box.layout().addWidget(view)
         gui.checkBox(
             box, self, "order_grouping_by_importance",
-            "Order by relevance to variable",
+            "按与变量相关性排序",
             tooltip="Order by 𝜒² or ANOVA over the variable values",
             callback=self.apply_group_sorting)
 

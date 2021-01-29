@@ -534,9 +534,11 @@ class ContinuousTable(ColorTable):
 
 
 class OWColor(widget.OWWidget):
-    name = "颜色(Color)"
-    description = "设置变量的颜色图例。"
+    name = "着色(Color)"
+    description = "设置变量彩色图例。"
     icon = "icons/Colors.svg"
+    category = 'Data'
+    keywords = ['zhuose', 'yanse']
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -573,9 +575,9 @@ class OWColor(widget.OWWidget):
         box.layout().addWidget(self.cont_view)
 
         box = gui.hBox(self.buttonsArea)
-        gui.button(box, self, "Save", callback=self.save)
-        gui.button(box, self, "Load", callback=self.load)
-        gui.button(box, self, "Reset", callback=self.reset)
+        gui.button(box, self, "保存", callback=self.save)
+        gui.button(box, self, "载入", callback=self.load)
+        gui.button(box, self, "重置", callback=self.reset)
         gui.rubber(self.buttonsArea)
         gui.auto_apply(self.buttonsArea, self, "auto_apply")
 

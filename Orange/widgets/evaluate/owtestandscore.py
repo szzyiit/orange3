@@ -132,8 +132,10 @@ class OWTestAndScore(OWWidget):
     description = "交叉验证精度估计。"
     icon = "icons/TestLearners1.svg"
     priority = 100
-    keywords = ['Cross Validation', 'CV']
+    keywords = ['Cross Validation', 'CV', 'xunlianheceshi',
+                'xunlianyuceshi', 'ceshi', 'moxing']
     replaces = ["Orange.widgets.evaluate.owtestlearners.OWTestLearners"]
+    category = 'evaluate'
 
     class Inputs:
         train_data = Input("数据(Data)", Table, default=True, replaces=['Data'])

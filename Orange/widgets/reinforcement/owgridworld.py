@@ -12,6 +12,7 @@ class GridWold(OWWidget):
     icon = "icons/gridworld.png"
     manual_mode, auto_mode = 0, 1
     mode = manual_mode
+    keywords = ['gezishijie']
 
     discount = 0.9
     noise_ratio = 0.2

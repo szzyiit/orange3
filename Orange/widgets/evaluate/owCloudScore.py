@@ -12,6 +12,7 @@ class CloudScore(OWWidget):
     name = "云测评 (Cloud Scoring)"
     description = "结果上传云端进行评分"
     # icon = "icons/gridworld.png"
+    category = 'evaluate'
 
     def __init__(self):
         super().__init__()

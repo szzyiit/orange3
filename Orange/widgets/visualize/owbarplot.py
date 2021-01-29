@@ -19,7 +19,7 @@ from Orange.widgets import gui
 from Orange.widgets.settings import Setting, ContextSetting, \
     DomainContextHandler, SettingProvider
 from Orange.widgets.utils.annotated_data import create_annotated_table, \
-    ANNOTATED_DATA_SIGNAL_NAME
+    ANNOTATED_DATA_SIGNAL_Chinese_NAME
 from Orange.widgets.utils import instance_tooltip
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.plot import OWPlotGUI, SELECT, PANNING, ZOOMING
@@ -366,19 +366,22 @@ class BarPlotGraph(pg.PlotWidget):
 
 
 class OWBarPlot(OWWidget):
-    name = "Bar Plot"
-    description = "Visualizes comparisons among categorical variables."
+    name = "条形图(Bar Plot)"
+    description = "可视化比较离散的分类数据."
     icon = "icons/BarPlot.svg"
     priority = 190
-    keywords = ["chart"]
+    keywords = ["chart", 'tiaoxingtu']
+    category = 'visualize'
 
     class Inputs:
-        data = Input("Data", Table, default=True)
-        data_subset = Input("Data Subset", Table)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
+        data_subset = Input("数据子集(Data Subset)", Table,
+                            replaces=['Data Subset'])
 
     class Outputs:
-        selected_data = Output("Selected Data", Table, default=True)
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_NAME, Table)
+        selected_data = Output("选定的数据(Selected Data)",
+                               Table, default=True, replaces=['Selected Data'])
+        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
     buttons_area_orientation = Qt.Vertical
     settingsHandler = DomainContextHandler()
@@ -439,38 +442,38 @@ class OWBarPlot(OWWidget):
         gui.rubber(self.controlArea)
         self._selected_var_model = DomainModel(valid_types=ContinuousVariable)
         gui.comboBox(
-            box, self, "selected_var", label="Values:",
+            box, self, "selected_var", label="值:",
             model=self._selected_var_model, contentsLength=12, searchable=True,
             orientation=Qt.Horizontal, callback=self.__parameter_changed,
         )
 
         self._group_var_model = DomainModel(
-            placeholder="None", valid_types=DiscreteVariable
+            placeholder="无", valid_types=DiscreteVariable
         )
         gui.comboBox(
-            box, self, "group_var", label="Group by:",
+            box, self, "group_var", label="分组依据:",
             model=self._group_var_model, contentsLength=12, searchable=True,
             orientation=Qt.Horizontal, callback=self.__group_var_changed,
         )
 
         self._annot_var_model = DomainModel(
-            placeholder="None",
+            placeholder="无",
             valid_types=(DiscreteVariable, StringVariable)
         )
         self._annot_var_model.order = self._annot_var_model.order[:1] + \
                                       (self.enumeration,) + \
                                       self._annot_var_model.order[1:]
         gui.comboBox(
-            box, self, "annot_var", label="Annotations:",
+            box, self, "annot_var", label="注释:",
             model=self._annot_var_model, contentsLength=12, searchable=True,
             orientation=Qt.Horizontal, callback=self.__parameter_changed,
         )
 
         self._color_var_model = DomainModel(
-            placeholder="(Same color)", valid_types=DiscreteVariable
+            placeholder="(相同颜色)", valid_types=DiscreteVariable
         )
         gui.comboBox(
-            box, self, "color_var", label="Color:",
+            box, self, "color_var", label="颜色:",
             model=self._color_var_model,
             contentsLength=12, searchable=True, orientation=Qt.Horizontal,
             callback=self.__parameter_changed,

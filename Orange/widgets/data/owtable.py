@@ -180,7 +180,8 @@ class OWDataTable(OWWidget):
     description = "在电子表格中查看数据集。"
     icon = "icons/Table.svg"
     priority = 50
-    keywords = []
+    keywords = ['shujubiao', 'biao']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, multiple=True,

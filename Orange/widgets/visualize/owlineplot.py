@@ -596,6 +596,8 @@ class OWLinePlot(OWWidget):
     description = "数据画像的可视化（例如，时间序列）。"
     icon = "icons/LinePlot.svg"
     priority = 180
+    category = 'visualize'
+    keywords = ['shujuhuaxiang']
 
     buttons_area_orientation = Qt.Vertical
     enable_selection = Signal(bool)

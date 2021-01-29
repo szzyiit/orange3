@@ -87,7 +87,8 @@ class OWConfusionMatrix(widget.OWWidget):
     description = "显示根据分类器评估结果构造的混淆矩阵。"
     icon = "icons/ConfusionMatrix.svg"
     priority = 1001
-    keywords = []
+    keywords = ['hunxiaojuzhen', 'hunxiao', 'juzhen']
+    category = 'evaluate'
 
     class Inputs:
         evaluation_results = Input("评价结果(Evaluation Results)", Orange.evaluation.Results, replaces=['Evaluation Results'])
@@ -191,13 +192,13 @@ class OWConfusionMatrix(widget.OWWidget):
 
     def _init_table(self, nclasses):
         item = self._item(0, 2)
-        item.setData("Predicted", Qt.DisplayRole)
+        item.setData("预测的", Qt.DisplayRole)
         item.setTextAlignment(Qt.AlignCenter)
         item.setFlags(Qt.NoItemFlags)
 
         self._set_item(0, 2, item)
         item = self._item(2, 0)
-        item.setData("Actual", Qt.DisplayRole)
+        item.setData("实际的", Qt.DisplayRole)
         item.setTextAlignment(Qt.AlignHCenter | Qt.AlignBottom)
         item.setFlags(Qt.NoItemFlags)
         self.tableview.setItemDelegateForColumn(0, gui.VerticalItemDelegate())

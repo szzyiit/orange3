@@ -49,7 +49,8 @@ class OWPredictions(OWWidget):
     icon = "icons/Predictions.svg"
     priority = 200
     description = "显示输入数据集的模型预测。"
-    keywords = []
+    keywords = ['yuce', 'moxing']
+    category = 'evaluate'
 
     buttons_area_orientation = None
 

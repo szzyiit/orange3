@@ -58,6 +58,7 @@ class ValidationError(InputValidationError):
 class OWSilhouettePlot(widget.OWWidget):
     name = "轮廓图(Silhouette Plot)"
     description = "视觉评估聚类质量和聚类成员的程度。"
+    category = 'visualize'
 
     icon = "icons/SilhouettePlot.svg"
     priority = 300

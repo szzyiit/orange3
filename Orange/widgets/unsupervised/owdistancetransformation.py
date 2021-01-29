@@ -11,7 +11,8 @@ class OWDistanceTransformation(widget.OWWidget):
     name = "距离变换(Distance Transformation)"
     description = "根据所选标准变换距离。"
     icon = "icons/DistancesTransformation.svg"
-    keywords = []
+    keywords = ['julibianhuan', 'bianhuan']
+    category = 'unsupervised'
 
     class Inputs:
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])

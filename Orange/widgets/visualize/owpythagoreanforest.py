@@ -160,7 +160,8 @@ class OWPythagoreanForest(OWWidget):
     description = '毕达哥拉斯森林，用于将随机森林可视化。'
     icon = 'icons/PythagoreanForest.svg'
     settings_version = 2
-    keywords = ["fractal"]
+    keywords = ["fractal", 'bidagelasisenlin', 'gougusenlin']
+    category = 'visualize'
 
     priority = 1001
 

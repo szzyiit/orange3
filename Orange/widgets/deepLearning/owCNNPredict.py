@@ -24,6 +24,7 @@ class CNNPredict(OWWidget):
     description = "使用训练好的 MNIST 模型预测"
     # icon source: https://dryicons.com/icon/crystal-ball-icon-11458
     icon = "icons/predicts.svg"
+    keywords = ['yuce', 'juanji', 'shenjingwangluo', 'shenduxuexi']
 
     want_main_area = False
 

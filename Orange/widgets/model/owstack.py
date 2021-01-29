@@ -13,10 +13,12 @@ class OWStackedLearner(OWBaseLearner):
     description = "堆叠多个模型。"
     icon = "icons/Stacking.svg"
     priority = 100
+    category = 'model'
+    keywords = ['duidie']
 
     LEARNER = StackedFitter
 
-    learner_name = Setting("Stack")
+    learner_name = Setting("堆叠(Stacking)")
 
     class Inputs(OWBaseLearner.Inputs):
         learners = Input("学习器(Learners)", Learner, multiple=True, replaces=['Learners'])

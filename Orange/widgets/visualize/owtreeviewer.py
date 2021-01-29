@@ -158,8 +158,10 @@ class OWTreeGraph(OWTreeViewer2D):
 
     name = "查看树(Tree Viewer)"
     icon = "icons/TreeViewer.svg"
+    description = "分类树和回归树的可视化。"
     priority = 35
-    keywords = []
+    keywords = ['chakanshu']
+    category = 'visualize'
 
     class Inputs:
         # Had different input names before merging from

@@ -150,7 +150,8 @@ class OWSelectAttributes(widget.OWWidget):
     description = "从数据表选择列, 并将它们设为特征, 目标或者元属性."
     icon = "icons/SelectColumns.svg"
     priority = 100
-    keywords = ["filter", "attributes", "target", "variable"]
+    keywords = ["filter", "attributes", "target", "variable", 'xuanzelie', 'xuanze', 'lie', 'tezheng']
+    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])

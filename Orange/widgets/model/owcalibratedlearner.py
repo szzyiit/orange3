@@ -14,7 +14,8 @@ class OWCalibratedLearner(OWBaseLearner):
     description = "在其他学习器之外包裹概率校准和决策阈值优化功能"
     icon = "icons/CalibratedLearner.svg"
     priority = 20
-    keywords = ["calibration", "threshold"]
+    keywords = ["calibration", "threshold", 'jiaozhunqi', 'jiaodui']
+    category = 'model'
 
     LEARNER = CalibratedLearner
 

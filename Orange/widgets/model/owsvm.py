@@ -23,9 +23,10 @@ class OWSVM(OWBaseLearner):
         "Orange.widgets.regression.owsvmregression.OWSVMRegression",
     ]
     priority = 50
-    keywords = ["support vector machines"]
+    keywords = ["support vector machines", 'zhichixiangliangji']
 
     LEARNER = SVMLearner
+    category = 'model'
 
     class Outputs(OWBaseLearner.Outputs):
         support_vectors = Output("支持向量(Support vectors)", Table, explicit=True,
