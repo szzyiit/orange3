@@ -55,6 +55,7 @@ class ModelTrainTest(OWWidget):
     description = "训练深度学习模型"
     icon = "icons/train.png"
     keywords = ['xunlianheceshi', 'xunlianyuceshi', 'ceshi', 'moxing']
+    category = 'deeplearning'
 
     want_main_area = True
 

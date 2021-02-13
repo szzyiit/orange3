@@ -11,6 +11,7 @@ class WeatherReport(NLPMixin, BaiduAPI):
     description = "天气播报自动生成。"
     icon = "icons/rain_light.png"
     keywords = ['baidu', 'tianqi', 'bobao', 'yubao']
+    category = 'deeplearning'
 
     URL = "https://aip.baidubce.com/rest/2.0/nlp/v1/gen_article?charset=UTF-8&access_token="
     project_id = Setting('')

@@ -6,6 +6,7 @@ class MultiImageLabel(ImageMixin, TencentAPI):
     description = "识别一个图像的标签信息,对图像分类。"
     icon = "icons/multi.png"
     keywords = ['qq', 'tengxun', 'duobianqian', 'tuxiang', 'shibie']
+    category = 'deeplearning'
 
     URL = 'https://api.ai.qq.com/fcgi-bin/image/image_tag'
 

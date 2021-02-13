@@ -26,6 +26,7 @@ class ImageLoader(OWWidget):
     description = "为 MNIST 模型载入图片数据, 也可以载入其他图片. 图片会转为灰度图片"
     icon = "icons/upload.png"
     keywords = ['tupian', 'tuxiang', 'zairu', 'zairutupian', 'jiazai', 'jiazaitupian', 'daoru']
+    category = 'deeplearning'
 
     want_main_area = True
     batch_sizes = [4, 16, 64, 100, 200]
