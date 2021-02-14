@@ -20,7 +20,7 @@ class TestUtil(unittest.TestCase):
     def test_get_entry_point(self):
         # pylint: disable=import-outside-toplevel
         from Orange.canvas.__main__ import main as real_main
-        main = get_entry_point("Orange3", "gui_scripts", "orange-canvas")
+        main = get_entry_point("Orange3-zh", "gui_scripts", "orange-canvas")
         self.assertIs(main, real_main)
 
     def test_export_globals(self):

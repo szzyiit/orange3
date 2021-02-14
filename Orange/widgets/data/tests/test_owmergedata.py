@@ -780,7 +780,7 @@ class TestOWMergeData(WidgetTest):
         data = Table("iris")[::25]
         data_ed_dense = Table("titanic")[::300]
         data_ed_sparse = Table("titanic")[::300].to_sparse()
-        self.send_signal("数据(Data)", data)
+        self.send_signal("主数据(Data)", data)
 
         self.send_signal("附加数据(Extra Data)", data_ed_dense)
         output_dense = self.get_output("数据(Data)")

@@ -646,7 +646,7 @@ class OWCreateInstance(OWWidget):
         assert self.data
         assert len(data) == 1
 
-        var = DiscreteVariable("源头ID", values=(self.data.name, data.name))
+        var = DiscreteVariable("源ID", values=(self.data.name, data.name))
         data = Table.concatenate([self.data, data], axis=0)
         domain = Domain(data.domain.attributes, data.domain.class_vars,
                         data.domain.metas + (var,))

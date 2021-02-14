@@ -155,14 +155,13 @@ class OWVennDiagram(widget.OWWidget):
         box.layout().setSpacing(6)
         box.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
 
-<<<<<<< HEAD
         self.outputs_box = box = gui.vBox(self.buttonsArea,
                                           sizePolicy=(QSizePolicy.Preferred,
                                                       QSizePolicy.Preferred),
                                           stretch=0)
         gui.rubber(box)
         self.output_duplicates_cb = gui.checkBox(
-            box, self, "output_duplicates", "Output duplicates",
+            box, self, "output_duplicates", "输出重复值",
             callback=lambda: self.commit(),  # pylint: disable=unnecessary-lambda
             stateWhenDisabled=False,
             attribute=Qt.WA_LayoutUsesWidgetRect)
@@ -171,14 +170,6 @@ class OWVennDiagram(widget.OWWidget):
                              contentsMargins=(0, 0, 0, 0))
         gui.rubber(box)
         self._update_duplicates_cb()
-=======
-        self.outputs_box = box = gui.vBox(controls, "输出")
-        self.output_duplicates_cb = gui.checkBox(
-            box, self, "output_duplicates", "输出重复值",
-            callback=lambda: self.commit())  # pylint: disable=unnecessary-lambda
-        gui.auto_send(box, self, "autocommit", box=False)
-        self.output_duplicates_cb.setEnabled(bool(self.rowwise))
->>>>>>> add keywords for pinyin and help link
         self._queue = []
 
     def resizeEvent(self, event):

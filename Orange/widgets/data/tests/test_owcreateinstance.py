@@ -51,7 +51,7 @@ class TestOWCreateInstance(WidgetTest):
 
         self.assertEqual(output.domain.attributes, self.data.domain.attributes)
         self.assertEqual(output.domain.class_vars, self.data.domain.class_vars)
-        self.assertIn("Source ID", [m.name for m in output.domain.metas])
+        self.assertIn("源ID", [m.name for m in output.domain.metas])
         self.assertTupleEqual(output.domain.metas[0].values,
                               ("iris", "created"))
 
