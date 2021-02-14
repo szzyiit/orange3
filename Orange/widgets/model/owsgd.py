@@ -144,7 +144,7 @@ class OWSGD(OWBaseLearner):
             label='ε: ', controlWidth=80, alignment=Qt.AlignRight,
             callback=self.settings_changed)
         hbox.layout().addStretch()
-        grid.addWidget(QLabel("Classification: "), 0, 0)
+        grid.addWidget(QLabel("分类: "), 0, 0)
         grid.addWidget(self.cls_loss_function_combo, 0, 1)
         grid.addWidget(hbox, 1, 1)
 
@@ -160,7 +160,7 @@ class OWSGD(OWBaseLearner):
             label='ε: ', controlWidth=80, alignment=Qt.AlignRight,
             callback=self.settings_changed)
         hbox.layout().addStretch()
-        grid.addWidget(QLabel("Regression: "), 2, 0)
+        grid.addWidget(QLabel("回归: "), 2, 0)
         grid.addWidget(self.reg_loss_function_combo, 2, 1)
         grid.addWidget(hbox, 3, 1)
 
