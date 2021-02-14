@@ -1,5 +1,6 @@
 # pylint: disable=missing-docstring
 import warnings
+import unittest
 
 from sklearn.exceptions import ConvergenceWarning
 
@@ -41,3 +42,7 @@ class TestOWSGD(WidgetTest, WidgetLearnerTestMixin):
             ParameterMapping.from_attribute(self.widget, "eta0"),
             ParameterMapping.from_attribute(self.widget, "power_t"),
         ]
+
+
+if __name__ == "__main__":
+    unittest.main()

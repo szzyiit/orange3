@@ -71,27 +71,27 @@ class BaseEditor(QWidget, gui.OWComponent):
     def _add_main_layout(self):
         common_args = {"callback": self.settings_changed,
                        "alignment": Qt.AlignRight, "controlWidth": 80}
-        self.basic_box = gui.vBox(self._layout, "Basic Properties")
+        self.basic_box = gui.vBox(self._layout, "基本属性")
         gui.spin(
             self.basic_box, self, "n_estimators", 1, 10000,
-            label="Number of trees:", **common_args
+            label="树数量:", **common_args
         )
         gui.doubleSpin(
             self.basic_box, self, "learning_rate", 0, 1, 0.001,
-            label="Learning rate: ", **common_args
+            label="学习率: ", **common_args
         )
         gui.checkBox(
-            self.basic_box, self, "random_state", label="Replicable training",
+            self.basic_box, self, "random_state", label="可重复训练",
             callback=self.settings_changed, attribute=Qt.WA_LayoutUsesWidgetRect
         )
 
-        self.growth_box = gui.vBox(self._layout, "Growth Control")
+        self.growth_box = gui.vBox(self._layout, "生长控制")
         gui.spin(
             self.growth_box, self, "max_depth", 1, 50,
-            label="Limit depth of individual trees: ", **common_args
+            label="限制单个树深度: ", **common_args
         )
 
-        self.sub_box = gui.vBox(self._layout, "Subsampling")
+        self.sub_box = gui.vBox(self._layout, "下采样")
 
     def get_arguments(self) -> Dict:
         return {
@@ -131,7 +131,7 @@ class RegEditor(BaseEditor):
         # Basic properties
         box = self.basic_box
         gui.separator(box, height=1)
-        gui.widgetLabel(box, "Regularization:")
+        gui.widgetLabel(box, "正则化:")
         gui.hSlider(
             box, self, "lambda_index", minValue=0, createLabel=False,
             maxValue=len(self.LAMBDAS) - 1, callback=self._set_lambda_label,
@@ -171,13 +171,13 @@ class GBLearnerEditor(BaseEditor):
         gui.doubleSpin(
             self.sub_box, self, "subsample", 0.05, 1, 0.05,
             controlWidth=80, alignment=Qt.AlignRight,
-            label="Fraction of training instances: ",
+            label="训练实例的比例: ",
             callback=self.settings_changed
         )
         # Growth control
         gui.spin(
             self.growth_box, self, "min_samples_split", 2, 1000,
-            controlWidth=80, label="Do not split subsets smaller than: ",
+            controlWidth=80, label="不要分割小于...的子集: ",
             alignment=Qt.AlignRight, callback=self.settings_changed
         )
 
@@ -210,7 +210,7 @@ class CatGBLearnerEditor(RegEditor):
         gui.doubleSpin(
             self.sub_box, self, "colsample_bylevel", 0.05, 1, 0.05,
             controlWidth=80, alignment=Qt.AlignRight,
-            label="Fraction of features for each tree: ",
+            label="每棵树的特征比例: ",
             callback=self.settings_changed
         )
 
@@ -244,19 +244,19 @@ class XGBBaseEditor(RegEditor):
                        "alignment": Qt.AlignRight, "controlWidth": 80}
         gui.doubleSpin(
             self.sub_box, self, "subsample", 0.05, 1, 0.05,
-            label="Fraction of training instances: ", **common_args
+            label="训练实例的比例: ", **common_args
         )
         gui.doubleSpin(
             self.sub_box, self, "colsample_bytree", 0.05, 1, 0.05,
-            label="Fraction of features for each tree: ", **common_args
+            label="每棵树的特征比例: ", **common_args
         )
         gui.doubleSpin(
             self.sub_box, self, "colsample_bylevel", 0.05, 1, 0.05,
-            label="Fraction of features for each level: ", **common_args
+            label="每棵树的特征比例: ", **common_args
         )
         gui.doubleSpin(
             self.sub_box, self, "colsample_bynode", 0.05, 1, 0.05,
-            label="Fraction of features for each split: ", **common_args
+            label="每个分叉的特征比例: ", **common_args
         )
 
     def get_arguments(self) -> Dict:
@@ -285,12 +285,13 @@ class XGBRFLearnerEditor(XGBBaseEditor):
 
 
 class OWGradientBoosting(OWBaseLearner):
-    name = "Gradient Boosting"
-    description = "Predict using gradient boosting on decision trees."
+    name = "梯度提升(Gradient Boosting)"
+    description = "在决策树上使用梯度提升进行预测."
     icon = "icons/GradientBoosting.svg"
     priority = 45
     keywords = ["catboost", "gradient", "boost", "tree", "forest",
-                "xgb", "gb", "extreme"]
+                "xgb", "gb", "extreme", 'tisheng', 'tidutisheng']
+    category = 'model'
 
     LEARNER: Learner = GBLearner
     editor: BaseEditor = None
@@ -303,7 +304,7 @@ class OWGradientBoosting(OWBaseLearner):
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.vBox(self.controlArea, "Method")
+        box = gui.vBox(self.controlArea, "算法")
         gui.comboBox(
             box, self, "method_index", model=LearnerItemModel(self),
             callback=self.__method_changed
