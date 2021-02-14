@@ -32,7 +32,7 @@ class TestOWConcurrentWidget(WidgetTest, ProjectionWidgetTestMixin,
 
     def test_button_with_data(self):
         self.send_signal(self.widget.Inputs.data, self.data)
-        self.assertEqual(self.widget.run_button.text(), "停止")
+        self.assertEqual(self.widget.run_button.text(), "Stop")
         self.wait_until_finished()
         self.assertEqual(self.widget.run_button.text(), "开始")
 

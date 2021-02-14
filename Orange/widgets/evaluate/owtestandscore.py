@@ -105,12 +105,14 @@ class Try(abc.ABC):
         else:
             return Try.Success(rval)
 
+
 Try.register(Try.Success)
 Try.register(Try.Fail)
 
 
 def raise_(exc):
     raise exc
+
 
 Try.register = lambda cls: raise_(TypeError())
 
@@ -137,7 +139,6 @@ class OWTestAndScore(OWWidget):
     keywords = ['Cross Validation', 'CV', 'xunlianheceshi',
                 'xunlianyuceshi', 'ceshi', 'moxing']
     replaces = ["Orange.widgets.evaluate.owtestlearners.OWTestLearners"]
-    category = 'evaluate'
 
     class Inputs:
         train_data = Input("数据(Data)", Table, default=True, replaces=['Data'])
@@ -193,7 +194,8 @@ class OWTestAndScore(OWWidget):
 
     class Error(OWWidget.Error):
         test_data_empty = Msg("Test dataset is empty.")
-        class_required_test = Msg("Test data input requires a target variable.")
+        class_required_test = Msg(
+            "Test data input requires a target variable.")
         too_many_folds = Msg("Number of folds exceeds the data size")
         class_inconsistent = Msg("Test and train datasets "
                                  "have different target variables.")
@@ -551,7 +553,8 @@ class OWTestAndScore(OWWidget):
             ])
             kwargs = {"format": Qt.RichText}
         elif self.data and not self.test_data:
-            summary, details = len(self.data), format_summary_details(self.data)
+            summary, details = len(
+                self.data), format_summary_details(self.data)
         elif self.test_data and not self.data:
             summary = len(self.test_data)
             details = format_summary_details(self.test_data)
@@ -596,7 +599,7 @@ class OWTestAndScore(OWWidget):
         if self.data is not None:
             class_var = self.data.domain.class_var
             if self.data.domain.has_discrete_class and \
-                            self.class_selection != self.TARGET_AVERAGE:
+                    self.class_selection != self.TARGET_AVERAGE:
                 target_index = class_var.values.index(self.class_selection)
         else:
             class_var = None
@@ -612,7 +615,8 @@ class OWTestAndScore(OWWidget):
             head.setData(key, Qt.UserRole)
             results = slot.results
             if results is not None and results.success:
-                train = QStandardItem("{:.3f}".format(results.value.train_time))
+                train = QStandardItem(
+                    "{:.3f}".format(results.value.train_time))
                 train.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 train.setData(key, Qt.UserRole)
                 test = QStandardItem("{:.3f}".format(results.value.test_time))
@@ -858,7 +862,8 @@ class OWTestAndScore(OWWidget):
 
             # Predictions & Probabilities
             try:
-                predictions = combined.get_augmented_data(combined.learner_names)
+                predictions = combined.get_augmented_data(
+                    combined.learner_names)
             except MemoryError:
                 self.Error.memory_error()
 
@@ -1157,7 +1162,7 @@ def results_add_by_model(x, y):
         res.probabilities = np.vstack((x.probabilities, y.probabilities))
 
     if x.models is not None:
-        res.models = np.hstack((x.models, y.models))   
+        res.models = np.hstack((x.models, y.models))
     return res
 
 

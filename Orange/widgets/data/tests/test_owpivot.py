@@ -660,7 +660,7 @@ class TestPivot(unittest.TestCase):
         # Min
         pivot = Pivot(table, [Pivot.Min],
                       domain[0], domain[1], domain[2])
-        atts = (domain[0], Dv("Aggregate", ["Min"]),
+        atts = (domain[0], Dv("Aggregate", ["最小值"]),
                 Tv("c", have_date=1), Tv("d", have_date=1))
         X = np.array([[0, 0, 1e8, 1e9],
                       [1, 0, 2e8, np.nan]])
@@ -669,7 +669,7 @@ class TestPivot(unittest.TestCase):
         # Min, Max
         pivot = Pivot(table, [Pivot.Min, Pivot.Max],
                       domain[0], domain[1], domain[2])
-        atts = (domain[0], Dv("Aggregate", ["Min", "Max"]),
+        atts = (domain[0], Dv("Aggregate", ["最小值", "最大值"]),
                 Tv("c", have_date=1), Tv("d", have_date=1))
         X = np.array([[0, 0, 1e8, 1e9],
                       [0, 1, 1e8, 1e9],
@@ -680,7 +680,7 @@ class TestPivot(unittest.TestCase):
         # Count defined, Sum
         pivot = Pivot(table, [Pivot.Count_defined, Pivot.Sum],
                       domain[0], domain[1], domain[2])
-        atts = (domain[0], Dv("Aggregate", ["Count defined", "Sum"]),
+        atts = (domain[0], Dv("Aggregate", ["非缺失数目", "总和"]),
                 Cv("c"), Cv("d"))
         X = np.array([[0, 0, 1, 1],
                       [0, 1, 1e8, 1e9],
@@ -691,7 +691,7 @@ class TestPivot(unittest.TestCase):
         # Count defined, Max
         pivot = Pivot(table, [Pivot.Count_defined, Pivot.Max],
                       domain[0], domain[1], domain[2])
-        atts = (domain[0], Dv("Aggregate", ["Count defined", "Max"]),
+        atts = (domain[0], Dv("Aggregate", ["非缺失数目", "最大值"]),
                 Dv("c", ["1.0", "1973-03-03", "1976-05-03"]),
                 Dv("d", ["0.0", "1.0", "2001-09-09"]))
         X = np.array([[0, 0, 0, 1],

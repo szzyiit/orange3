@@ -464,7 +464,7 @@ class MosaicVizRankTests(WidgetTest):
                    [1, 4, 6], [1, 5, 7], [1, 6, 7]]
         table = Table("titanic")
         self.send_signal(self.widget.Inputs.data, table)
-        color_vars = ["(Pearson residuals)"] + [str(x) for x in table.domain.variables]
+        color_vars = ["(皮尔逊残差)"] + [str(x) for x in table.domain.variables]
         for i, cv in enumerate(color_vars):
             idx = self.widget.cb_attr_color.findText(cv)
             self.widget.cb_attr_color.setCurrentIndex(idx)
@@ -472,7 +472,7 @@ class MosaicVizRankTests(WidgetTest):
             simulate.combobox_activate_index(self.widget.controls.variable_color, idx, 0)
             discrete_data = self.widget.discrete_data
 
-            if color == "(Pearson residuals)":
+            if color == "(皮尔逊残差)":
                 self.assertIsNone(discrete_data.domain.class_var)
             else:
                 self.assertEqual(color, str(discrete_data.domain.class_var))

@@ -527,7 +527,7 @@ class TestOWTestAndScore(WidgetTest):
     def test_comparison_bad_scores(self):
         w = self.widget
         self._set_three_majorities()
-        self._set_comparison_score("分类准确率(CA)")
+        self._set_comparison_score("分类准确率")
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
 
         score_calls = -1
