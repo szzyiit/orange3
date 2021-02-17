@@ -37,8 +37,8 @@ except ImportError:
 
 NAME = 'Orange3-zh'
 
-VERSION = '3.28.0'
-ISRELEASED = False
+VERSION = '3.27.3'
+ISRELEASED = True
 # full version identifier including a git revision identifier for development
 # build/releases (this is filled/updated in `write_version_py`)
 FULLVERSION = VERSION
@@ -49,7 +49,7 @@ LONG_DESCRIPTION = open(README_FILE).read()
 LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'info@biolab.si'
-URL = 'chengxianzn.one'
+URL = 'https://chengxianzn.one/'
 LICENSE = 'GPLv3+'
 
 KEYWORDS = [
@@ -195,7 +195,7 @@ PACKAGE_DATA = {
                                   "*.txt", "*.tab"],
     "Orange.widgets.evaluate": ["icons/*.svg", 'icons/*png'],
     "Orange.widgets.model": ["icons/*.svg"],
-    "Orange.widgets.visualize": ["icons/*.svg"],
+    "Orange.widgets.visualize": ["icons/*.svg", 'utils/_highcharts/*'],
     "Orange.widgets.unsupervised": ["icons/*.svg"],
     "Orange.widgets.deepLearning": ['icons/*.png',
                                     'playground/*'],

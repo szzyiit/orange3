@@ -72,7 +72,7 @@ APPDIR=${1:?"Target APPDIR argument is missing"}
 PYVER=${PYTHON_VERSION%.*}  # Major.Minor
 
 if [[ ${#PIP_REQ_ARGS[@]} -eq 0 ]]; then
-    PIP_REQ_ARGS+=( Orange3-zh==3.24.2 'PyQt5~=5.13.0' 'PyQtWebEngine~=5.13.0' )
+    PIP_REQ_ARGS+=( Orange3-zh==3.27.3 'PyQt5~=5.13.0' 'PyQtWebEngine~=5.13.0' )
 fi
 
 mkdir -p "${APPDIR}"/Contents/MacOS
