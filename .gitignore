@@ -57,3 +57,4 @@ orange-env
 
 Orange/widgets/binaries/*
 Orange/datasets/recommendation
+*owImageConverter.py
