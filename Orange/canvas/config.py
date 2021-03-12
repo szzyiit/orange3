@@ -198,7 +198,7 @@ class Config(config.Config):
         #: Submit a bug report action in the Help menu
         "Bug Report": "https://github.com/biolab/orange3/issues",
         #: A url quick tour/getting started url
-        "Quick Start": "https://chengxianzn.one/tutorials/getting-started/",
+        "Quick Start": "https://chengxianzn.one/start/",
         #: The 'full' documentation, should be something like current /docs/
         #: but specific for 'Visual Programing' only
         "Documentation": "https://chengxianzn.one/docs/",

@@ -139,6 +139,8 @@ class OWTestAndScore(OWWidget):
     keywords = ['Cross Validation', 'CV', 'xunlianheceshi',
                 'xunlianyuceshi', 'ceshi', 'moxing']
     replaces = ["Orange.widgets.evaluate.owtestlearners.OWTestLearners"]
+    category = 'evaluate'
+
 
     class Inputs:
         train_data = Input("数据(Data)", Table, default=True, replaces=['Data'])

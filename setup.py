@@ -37,7 +37,7 @@ except ImportError:
 
 NAME = 'Orange3-zh'
 
-VERSION = '3.27.3'
+VERSION = '3.27.4'
 ISRELEASED = True
 # full version identifier including a git revision identifier for development
 # build/releases (this is filled/updated in `write_version_py`)
@@ -195,7 +195,7 @@ PACKAGE_DATA = {
                                   "*.txt", "*.tab"],
     "Orange.widgets.evaluate": ["icons/*.svg", 'icons/*png'],
     "Orange.widgets.model": ["icons/*.svg"],
-    "Orange.widgets.visualize": ["icons/*.svg", 'utils/_highcharts/*'],
+    "Orange.widgets.visualize": ["icons/*.svg", 'utils/highcharts/_highcharts/*'],
     "Orange.widgets.unsupervised": ["icons/*.svg"],
     "Orange.widgets.deepLearning": ['icons/*.png',
                                     'playground/*'],
