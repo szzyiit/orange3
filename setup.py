@@ -201,7 +201,7 @@ PACKAGE_DATA = {
                                   "*.txt", "*.tab"],
     "Orange.widgets.evaluate": ["icons/*.svg", 'icons/*png'],
     "Orange.widgets.model": ["icons/*.svg"],
-    "Orange.widgets.visualize": ["icons/*.svg", 'utils/_highcharts/*'],
+    "Orange.widgets.visualize": ["icons/*.svg", 'utils/highcharts/_highcharts/*'],
     "Orange.widgets.unsupervised": ["icons/*.svg"],
     "Orange.widgets.deepLearning": ['icons/*.png',
                                     'playground/*'],
