@@ -210,7 +210,7 @@ class CatGBLearnerEditor(RegEditor):
         gui.doubleSpin(
             self.sub_box, self, "colsample_bylevel", 0.05, 1, 0.05,
             controlWidth=80, alignment=Qt.AlignRight,
-            label="每棵树的特征比例: ",
+            label="每层的特征比例: ",
             callback=self.settings_changed
         )
 
@@ -252,7 +252,7 @@ class XGBBaseEditor(RegEditor):
         )
         gui.doubleSpin(
             self.sub_box, self, "colsample_bylevel", 0.05, 1, 0.05,
-            label="每棵树的特征比例: ", **common_args
+            label="每层的特征比例: ", **common_args
         )
         gui.doubleSpin(
             self.sub_box, self, "colsample_bynode", 0.05, 1, 0.05,

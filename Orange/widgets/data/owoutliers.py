@@ -123,7 +123,7 @@ class CovarianceEditor(ParametersEditor):
 
 class LocalOutlierFactorEditor(ParametersEditor):
     METRICS = ("euclidean", "manhattan", "cosine", "jaccard",
-               "hamming", "minkowski")
+               "hamming", "minkowski", 'mahalanobis')
 
     n_neighbors = Setting(20)
     cont = Setting(10)
