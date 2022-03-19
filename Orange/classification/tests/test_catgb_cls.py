@@ -2,16 +2,12 @@ import unittest
 
 import numpy as np
 
-try:
-    from Orange.classification import CatGBClassifier
-except ImportError:
-    CatGBClassifier = None
+from Orange.classification import CatGBClassifier
 from Orange.data import Table
 from Orange.evaluation import CrossValidation, CA
 from Orange.preprocess.score import Scorer
 
 
-@unittest.skipIf(CatGBClassifier is None, "Missing 'catboost' package")
 class TestCatGBClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

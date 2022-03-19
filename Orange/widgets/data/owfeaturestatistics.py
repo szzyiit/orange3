@@ -15,7 +15,7 @@ import numpy as np
 import scipy.stats as ss
 import scipy.sparse as sp
 from AnyQt.QtCore import Qt, QSize, QRectF, QModelIndex, pyqtSlot, \
-    QItemSelection, QItemSelectionRange, QItemSelectionModel
+    QRegExp, QItemSelection, QItemSelectionRange, QItemSelectionModel
 from AnyQt.QtGui import QPainter, QColor
 from AnyQt.QtWidgets import QStyledItemDelegate, QGraphicsScene, QTableView, \
     QHeaderView, QStyle, QStyleOptionViewItem
@@ -23,7 +23,6 @@ from AnyQt.QtWidgets import QStyledItemDelegate, QGraphicsScene, QTableView, \
 import Orange.statistics.util as ut
 from Orange.data import Table, StringVariable, DiscreteVariable, \
     ContinuousVariable, TimeVariable, Domain, Variable
-from Orange.util import utc_from_timestamp
 from Orange.widgets import widget, gui
 from Orange.widgets.data.utils.histogram import Histogram
 from Orange.widgets.settings import Setting, ContextSetting, \
@@ -31,6 +30,7 @@ from Orange.widgets.settings import Setting, ContextSetting, \
 from Orange.widgets.utils.itemmodels import DomainModel, AbstractSortTableModel
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 
 
 def _categorical_entropy(x):
@@ -69,8 +69,8 @@ def format_time_diff(start, end, round_up_after=2):
     str
 
     """
-    start = utc_from_timestamp(start)
-    end = utc_from_timestamp(end)
+    start = datetime.datetime.fromtimestamp(start)
+    end = datetime.datetime.fromtimestamp(end)
     diff = abs(end - start)  # type: datetime.timedelta
 
     # Get the different resolutions
@@ -110,17 +110,15 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
     HIDDEN_VAR_TYPES = (StringVariable,)
 
     class Columns(IntEnum):
-        ICON, NAME, DISTRIBUTION, CENTER, MEDIAN, DISPERSION, MIN, MAX, \
-        MISSING = range(9)
+        ICON, NAME, DISTRIBUTION, CENTER, DISPERSION, MIN, MAX, MISSING = range(8)
 
         @property
         def name(self):
             return {self.ICON: '',
                     self.NAME: '名称',
                     self.DISTRIBUTION: '分布',
-                    self.CENTER: '平均',
-                    self.MEDIAN: '中位数',
-                    self.DISPERSION: '分散',
+                    self.CENTER: '集中趋势',
+                    self.DISPERSION: '离散',
                     self.MIN: '最小.',
                     self.MAX: '最大.',
                     self.MISSING: '缺失',
@@ -159,7 +157,7 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
 
         no_data = np.array([])
         self._variable_types = self._variable_names = no_data
-        self._min = self._max = self._center = self._median = no_data
+        self._min = self._max = self._center = no_data
         self._dispersion = no_data
         self._missing = no_data
         # Clear model initially to set default values
@@ -277,16 +275,9 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
 
         self._center = self.__compute_stat(
             matrices,
-            discrete_f=None,
+            discrete_f=lambda x: __mode(x, axis=0),
             continuous_f=lambda x: ut.nanmean(x, axis=0),
             time_f=lambda x: ut.nanmean(x, axis=0),
-        )
-
-        self._median = self.__compute_stat(
-            matrices,
-            discrete_f=lambda x: __mode(x, axis=0),
-            continuous_f=lambda x: ut.nanmedian(x, axis=0),
-            time_f=lambda x: ut.nanmedian(x, axis=0),
         )
 
     def get_statistics_matrix(self, variables=None, return_labels=False):
@@ -320,16 +311,14 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
             indices = ...
 
         matrix = np.vstack((
-            self._center[indices], self._median[indices],
-            self._dispersion[indices],
+            self._center[indices], self._dispersion[indices],
             self._min[indices], self._max[indices], self._missing[indices],
         )).T
 
         # Return string labels for the returned matrix columns e.g. 'Mean',
         # 'Dispersion' if requested
         if return_labels:
-            labels = [self.Columns.CENTER.name, self.Columns.MEDIAN.name,
-                      self.Columns.DISPERSION.name,
+            labels = [self.Columns.CENTER.name, self.Columns.DISPERSION.name,
                       self.Columns.MIN.name, self.Columns.MAX.name,
                       self.Columns.MISSING.name]
             return labels, matrix
@@ -386,17 +375,14 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
         to group those variable types together.
         """
         # Prepare indices for variable types so we can group them together
-        order = [ContinuousVariable, TimeVariable,
-                 DiscreteVariable, StringVariable]
+        order = [DiscreteVariable, ContinuousVariable, TimeVariable, StringVariable]
         mapping = {var: idx for idx, var in enumerate(order)}
         vmapping = np.vectorize(mapping.__getitem__)
         var_types_indices = vmapping(self._variable_types)
 
         # Store the variable name sorted indices so we can pass a default
         # order when sorting by multiple keys
-        # Double argsort is "inverse" argsort:
-        # data will be *sorted* by these indices
-        var_name_indices = np.argsort(np.argsort(self._variable_names))
+        var_name_indices = np.argsort(self._variable_names)
 
         # Prepare vartype indices so ready when needed
         disc_idx, _, time_idx, str_idx = self._attr_indices(self.variables)
@@ -417,13 +403,6 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
         elif column == self.Columns.CENTER:
             # Sorting discrete or string values by mean makes no sense
             vals = np.array(self._center)
-            vals[disc_idx] = var_name_indices[disc_idx]
-            vals[str_idx] = var_name_indices[str_idx]
-            return np.vstack((var_types_indices, np.zeros_like(vals), vals)).T
-        # Sort by: (type, median)
-        elif column == self.Columns.MEDIAN:
-            # Sorting discrete or string values by median makes no sense
-            vals = np.array(self._median)
             vals[disc_idx] = var_name_indices[disc_idx]
             vals[str_idx] = var_name_indices[str_idx]
             return np.vstack((var_types_indices, np.zeros_like(vals), vals)).T
@@ -464,21 +443,12 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
 
     def _argsortData(self, data, order):
         if data.ndim == 1:
+            indices = np.argsort(data, kind='mergesort')
+            if order == Qt.DescendingOrder:
+                indices = indices[::-1]
+            # Always sort NaNs last
             if np.issubdtype(data.dtype, np.number):
-                if order == Qt.DescendingOrder:
-                    data = -data
-                indices = np.argsort(data, kind='stable')
-                # Always sort NaNs last
-                if np.issubdtype(data.dtype, np.number):
-                    indices = np.roll(indices, -np.isnan(data).sum())
-            else:
-                # When not sorting by numbers, we can't do data = -data, but
-                # use indices = indices[::-1] instead. This is not stable, but
-                # doesn't matter because we use this only for variable names
-                # which are guaranteed to be unique
-                indices = np.argsort(data)
-                if order == Qt.DescendingOrder:
-                    indices = indices[::-1]
+                indices = np.roll(indices, -np.isnan(data).sum())
         else:
             assert np.issubdtype(data.dtype, np.number), \
                 'We do not deal with non numeric values in sorting by ' \
@@ -568,8 +538,6 @@ class FeatureStatisticsTableModel(AbstractSortTableModel):
                     return self.__distributions_cache[row]
             elif column == self.Columns.CENTER:
                 return render_value(self._center[row])
-            elif column == self.Columns.MEDIAN:
-                return render_value(self._median[row])
             elif column == self.Columns.DISPERSION:
                 if isinstance(attribute, TimeVariable):
                     return format_time_diff(self._min[row], self._max[row])
@@ -744,7 +712,8 @@ class OWFeatureStatistics(widget.OWWidget):
         reduced_data = Output('选中的数据(Reduced Data)', Table, default=True, replaces=['Reduced Data'])
         statistics = Output('统计(Statistics)', Table, replaces=['Statistics'])
 
-    want_main_area = False
+    want_control_area = False
+    buttons_area_orientation = Qt.Vertical
 
     settingsHandler = DomainContextHandler()
     settings_version = 2
@@ -753,7 +722,7 @@ class OWFeatureStatistics(widget.OWWidget):
     color_var = ContextSetting(None)  # type: Optional[Variable]
     # filter_string = ContextSetting('')
 
-    sorting = Setting((0, Qt.AscendingOrder))
+    sorting = Setting((0, Qt.DescendingOrder))
     selected_vars = ContextSetting([], schema_only=True)
 
     def __init__(self):
@@ -761,31 +730,59 @@ class OWFeatureStatistics(widget.OWWidget):
 
         self.data = None  # type: Optional[Table]
 
-        # Main area
-        self.model = FeatureStatisticsTableModel(parent=self)
-        self.table_view = FeatureStatisticsTableView(self.model, parent=self)
-        self.table_view.selectionModel().selectionChanged.connect(self.on_select)
-        self.table_view.horizontalHeader().sectionClicked.connect(self.on_header_click)
+        # TODO: Implement filtering on the model
+        # filter_box = gui.vBox(self.controlArea, 'Filter')
+        # self.filter_text = gui.lineEdit(
+        #     filter_box, self, value='filter_string',
+        #     placeholderText='Filter variables by name',
+        #     callback=self._filter_table_variables, callbackOnType=True,
+        # )
+        # shortcut = QShortcut(QKeySequence('Ctrl+f'), self, self.filter_text.setFocus)
+        # shortcut.setWhatsThis('Filter variables by name')
 
-        self.controlArea.layout().addWidget(self.table_view)
+        box = gui.hBox(None, box=False)
+        box.setContentsMargins(0, 0, 0, 0)
 
         self.color_var_model = DomainModel(
             valid_types=(ContinuousVariable, DiscreteVariable),
             placeholder='无',
         )
         self.cb_color_var = gui.comboBox(
-            self.buttonsArea, master=self, value='color_var', model=self.color_var_model,
+            box, master=self, value='color_var', model=self.color_var_model,
             label='颜色:', orientation=Qt.Horizontal, contentsLength=13,
             searchable=True
         )
         self.cb_color_var.activated.connect(self.__color_var_changed)
 
-        gui.rubber(self.buttonsArea)
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        gui.rubber(box)
+        gui.auto_send(box, self, "auto_commit", box=None)
+        self.mainArea.layout().addWidget(box)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
+
+        # Main area
+        self.model = FeatureStatisticsTableModel(parent=self)
+        self.table_view = FeatureStatisticsTableView(self.model, parent=self)
+        self.table_view.selectionModel().selectionChanged.connect(self.on_select)
+        self.table_view.horizontalHeader().sectionClicked.connect(self.on_header_click)
+
+        self.mainArea.layout().addWidget(self.table_view)
 
     @staticmethod
     def sizeHint():
         return QSize(1050, 500)
+
+    def _filter_table_variables(self):
+        regex = QRegExp(self.filter_string)
+        # If the user explicitly types different cases, we assume they know
+        # what they are searching for and account for letter case in filter
+        different_case = (
+            any(c.islower() for c in self.filter_string) and
+            any(c.isupper() for c in self.filter_string)
+        )
+        if not different_case:
+            regex.setCaseSensitivity(Qt.CaseInsensitive)
 
     @Inputs.data
     def set_data(self, data):
@@ -800,11 +797,14 @@ class OWFeatureStatistics(widget.OWWidget):
         self.data = data
 
         if data is not None:
+            self.info.set_input_summary(len(data),
+                                        format_summary_details(data))
             self.color_var_model.set_domain(data.domain)
             self.color_var = None
             if self.data.domain.class_vars:
                 self.color_var = self.data.domain.class_vars[0]
         else:
+            self.info.set_input_summary(self.info.NoInput)
             self.color_var_model.set_domain(None)
             self.color_var = None
         self.model.set_data(data)
@@ -812,6 +812,7 @@ class OWFeatureStatistics(widget.OWWidget):
         self.openContext(self.data)
         self.__restore_selection()
         self.__restore_sorting()
+        # self._filter_table_variables()
         self.__color_var_changed()
 
         self.commit()
@@ -858,12 +859,15 @@ class OWFeatureStatistics(widget.OWWidget):
 
     def commit(self):
         if not self.selected_vars:
+            self.info.set_output_summary(self.info.NoOutput)
             self.Outputs.reduced_data.send(None)
             self.Outputs.statistics.send(None)
             return
 
         # Send a table with only selected columns to output
         variables = self.selected_vars
+        self.info.set_output_summary(len(self.data[:, variables]),
+                                     format_summary_details(self.data[:, variables]))
         self.Outputs.reduced_data.send(self.data[:, variables])
 
         # Send the statistics of the selected variables to ouput

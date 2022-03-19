@@ -3,13 +3,13 @@ import codecs
 
 from typing import List, Iterable
 
-from AnyQt.QtCore import Qt, QModelIndex, QAbstractItemModel, QSettings
-from AnyQt.QtGui import QStandardItemModel, QStandardItem
-from AnyQt.QtWidgets import (
+from PyQt5.QtCore import Qt, QModelIndex, QAbstractItemModel, QSettings
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import (
     QVBoxLayout, QWidget, QLabel, QListView, QDialogButtonBox, QSizePolicy,
     QStyle, QStyleOption,
 )
-from AnyQt.QtCore import pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSlot as Slot
 
 
 DEFAULT_ENCODINGS = [
@@ -361,7 +361,7 @@ def encodings_model():
 
 
 def main(args=sys.argv):
-    from AnyQt.QtWidgets import QApplication
+    from PyQt5.QtWidgets import QApplication
     app = QApplication(args)
     w = SelectEncodingsWidget(
         headingText="Select encodings visible in text encoding menus"

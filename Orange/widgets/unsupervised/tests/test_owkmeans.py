@@ -3,8 +3,6 @@ import unittest
 from unittest.mock import patch, Mock
 
 import numpy as np
-import scipy.sparse as sp
-
 from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QRadioButton
 from sklearn.metrics import silhouette_score
@@ -14,6 +12,7 @@ from Orange.data import Table, Domain
 from Orange.widgets import gui
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.unsupervised.owkmeans import OWKMeans, ClusterTableModel
+from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestClusterTableModel(unittest.TestCase):
@@ -335,44 +334,6 @@ class TestOWKMeans(WidgetTest):
         widget.update_results()
         self.assertEqual(widget.selected_row(), None)
 
-    @patch("Orange.widgets.unsupervised.owkmeans.Normalize")
-    def test_normalize_sparse(self, normalize):
-        normalization = normalize.return_value = Mock(return_value=self.data)
-        widget = self.widget
-        widget.normalize = True
-        norm_check = widget.controls.normalize
-
-        x = sp.csr_matrix(np.random.randint(0, 2, (5, 10)))
-        data = Table.from_numpy(None, x)
-
-        self.send_signal(widget.Inputs.data, data)
-        self.assertTrue(widget.Warning.no_sparse_normalization.is_shown())
-        self.assertFalse(norm_check.isEnabled())
-        normalization.assert_not_called()
-
-        self.send_signal(widget.Inputs.data, None)
-        self.assertFalse(widget.Warning.no_sparse_normalization.is_shown())
-        self.assertTrue(norm_check.isEnabled())
-        normalization.assert_not_called()
-
-        self.send_signal(widget.Inputs.data, data)
-        self.assertTrue(widget.Warning.no_sparse_normalization.is_shown())
-        self.assertFalse(norm_check.isEnabled())
-        normalization.assert_not_called()
-
-        self.send_signal(widget.Inputs.data, self.data)
-        self.assertFalse(widget.Warning.no_sparse_normalization.is_shown())
-        self.assertTrue(norm_check.isEnabled())
-        normalization.assert_called()
-        normalization.reset_mock()
-
-        widget.controls.normalize.click()
-
-        self.send_signal(widget.Inputs.data, data)
-        self.assertFalse(widget.Warning.no_sparse_normalization.is_shown())
-        self.assertFalse(norm_check.isEnabled())
-        normalization.assert_not_called()
-
     def test_report(self):
         widget = self.widget
         widget.k = 4
@@ -563,6 +524,26 @@ class TestOWKMeans(WidgetTest):
         self.wait_until_finished(widget=w)
         self.assertEqual(w.send_data.call_count, 2)
         self.assertEqual(self.widget.selected_row(), w.selected_row())
+
+    def test_summary(self):
+        """Check if the status bar updates"""
+        info = self.widget.info
+        no_input, no_output = "No data on input", "No data on output"
+
+        self.send_signal(self.widget.Inputs.data, self.data)
+        summary, details = f"{len(self.data)}", format_summary_details(self.data)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        output = self.get_output(self.widget.Outputs.annotated_data)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 
 if __name__ == "__main__":

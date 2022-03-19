@@ -10,7 +10,7 @@ from AnyQt.QtWidgets import (
 from orangewidget.utils.combobox import ComboBoxSearch
 
 import Orange
-from Orange.data import StringVariable, ContinuousVariable, Variable, Domain
+from Orange.data import StringVariable, ContinuousVariable, Variable
 from Orange.data.util import hstack, get_unique_names_duplicates
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting, ContextHandler, ContextSetting
@@ -18,6 +18,8 @@ from Orange.widgets.utils import vartype
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_multiple_summaries, \
+    format_summary_details
 from Orange.widgets.widget import Input, Output, Msg
 
 INSTANCEID = "实例 ID"
@@ -205,8 +207,6 @@ class MergeDataContextHandler(ContextHandler):
     def _encode_domain(self, domain):
         if domain is None:
             return {}
-        if not isinstance(domain, Domain):
-            domain = domain.domain
         all_vars = chain(domain.variables, domain.metas)
         return dict(self.encode_variables(all_vars))
 
@@ -315,10 +315,14 @@ class OWMergeData(widget.OWWidget):
         self.model = DomainModelWithTooltips(content)
         self.extra_model = DomainModelWithTooltips(content)
 
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
+
         grp = gui.radioButtons(
             self.controlArea, self, "merging", box="合并",
             btnLabels=self.OptionNames, tooltips=self.OptionDescriptions,
             callback=self.change_merging)
+        grp.layout().setSpacing(8)
 
         self.attr_boxes = ConditionBox(
             self, self.model, self.extra_model, "", "匹配")
@@ -326,7 +330,7 @@ class OWMergeData(widget.OWWidget):
         box = gui.vBox(self.controlArea, box="行匹配")
         box.layout().addWidget(self.attr_boxes)
 
-        gui.auto_apply(self.buttonsArea, self)
+        gui.auto_apply(self.controlArea, self, box=False)
         # connect after wrapping self.commit with gui.auto_commit!
         self.attr_boxes.vars_changed.connect(self.commit)
         self.attr_boxes.vars_changed.connect(self.store_combo_state)
@@ -339,13 +343,13 @@ class OWMergeData(widget.OWWidget):
     @check_sql_input
     def set_data(self, data):
         self.data = data
-        self.model.set_domain(data.domain if data else None)
+        self.model.set_domain(data and data.domain)
 
     @Inputs.extra_data
     @check_sql_input
     def set_extra_data(self, data):
         self.extra_data = data
-        self.extra_model.set_domain(data.domain if data else None)
+        self.extra_model.set_domain(data and data.domain)
 
     def store_combo_state(self):
         self.attr_pairs = self.attr_boxes.current_state()
@@ -356,6 +360,20 @@ class OWMergeData(widget.OWWidget):
         self.openContext(self.data and self.data.domain,
                          self.extra_data and self.extra_data.domain)
         self.attr_boxes.set_state(self.attr_pairs)
+
+        summary, details, kwargs = self.info.NoInput, "", {}
+        if self.data or self.extra_data:
+            n_data = len(self.data) if self.data else 0
+            n_extra_data = len(self.extra_data) if self.extra_data else 0
+            summary = f"{self.info.format_number(n_data)}, " \
+                      f"{self.info.format_number(n_extra_data)}"
+            kwargs = {"format": Qt.RichText}
+            details = format_multiple_summaries([
+                ("Data", self.data),
+                ("Extra data", self.extra_data)
+            ])
+        self.info.set_input_summary(summary, details, **kwargs)
+
         self.unconditional_commit()
 
     def _find_best_match(self):
@@ -380,6 +398,9 @@ class OWMergeData(widget.OWWidget):
         self.clear_messages()
         merged = self.merge() if self.data and self.extra_data else None
         self.Outputs.data.send(merged)
+        details = format_summary_details(merged) if merged else ""
+        summary = len(merged) if merged else self.info.NoOutput
+        self.info.set_output_summary(summary, details)
 
     def send_report(self):
         # pylint: disable=invalid-sequence-index

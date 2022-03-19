@@ -14,7 +14,6 @@ from AnyQt.QtWidgets import (
     QComboBox, QSpinBox, QDoubleSpinBox, QSlider
 )
 
-from orangewidget.widget import StateInfo
 from orangewidget.tests.base import (
     GuiTest, WidgetTest as WidgetTestBase, DummySignalManager, DEFAULT_TIMEOUT
 )
@@ -380,7 +379,6 @@ class WidgetLearnerTestMixin:
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         model = self.get_output(self.widget.Outputs.model)
-        self.assertIsNotNone(model)
         pickle.dumps(model)
 
     @staticmethod
@@ -512,11 +510,10 @@ class WidgetOutputsTestMixin:
     _compare_selected_annotated_domains.
     """
 
-    def init(self, same_table_attributes=True, output_all_on_no_selection=False):
+    def init(self, same_table_attributes=True):
         self.data = Table("iris")
         self.same_input_output_domain = True
         self.same_table_attributes = same_table_attributes
-        self.output_all_on_no_selection = output_all_on_no_selection
 
     def test_outputs(self, timeout=DEFAULT_TIMEOUT):
         self.send_signal(self.signal_name, self.signal_data)
@@ -524,11 +521,7 @@ class WidgetOutputsTestMixin:
         self.wait_until_finished(timeout=timeout)
 
         # check selected data output
-        output = self.get_output("选定的数据(Selected Data)")
-        if self.output_all_on_no_selection:
-            self.assertEqual(output, self.signal_data)
-        else:
-            self.assertIsNone(output)
+        self.assertIsNone(self.get_output("选定的数据(Selected Data)"))
 
         # check annotated data output
         feature_name = ANNOTATED_DATA_FEATURE_NAME
@@ -773,6 +766,39 @@ class ProjectionWidgetTestMixin:
         self.send_signal(self.widget.Inputs.data, table)
         self.wait_until_finished(timeout=timeout)
         self.send_signal(self.widget.Inputs.data, table)
+
+    def test_in_out_summary(self, timeout=DEFAULT_TIMEOUT):
+        info = self.widget.info
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertIn(info._StateInfo__input_summary.details,
+                      ["", "No data on input"])
+        self.assertIn(info._StateInfo__output_summary.details,
+                      ["", "No data on output"])
+
+        self.send_signal(self.widget.Inputs.data, self.data)
+        self.assertTrue(
+            self.signal_manager.wait_for_finished(self.widget, timeout),
+            f"Did not finish in the specified {timeout}ms timeout"
+        )
+        ind = self._select_data()
+        self.assertEqual(info._StateInfo__input_summary.brief,
+                         str(len(self.data)))
+        self.assertEqual(info._StateInfo__output_summary.brief, str(len(ind)))
+        self.assertGreater(info._StateInfo__input_summary.details, "")
+        self.assertGreater(info._StateInfo__output_summary.details, "")
+        self.assertNotIn(info._StateInfo__input_summary.details,
+                         ["", "No data on input"])
+        self.assertNotIn(info._StateInfo__output_summary.details,
+                         ["", "No data on output"])
+
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertIn(info._StateInfo__input_summary.details,
+                      ["", "No data on input"])
+        self.assertIn(info._StateInfo__output_summary.details,
+                      ["", "No data on output"])
 
     def test_visual_settings(self, timeout=DEFAULT_TIMEOUT):
         graph = self.widget.graph

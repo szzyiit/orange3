@@ -40,6 +40,7 @@ from Orange.widgets.visualize.utils.heatmap import HeatmapGridWidget, \
     ColorMap, CategoricalColorMap, GradientColorMap
 from Orange.widgets.utils.colorgradientselection import ColorGradientSelection
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 
 
 __all__ = []
@@ -190,6 +191,8 @@ class OWHeatMap(widget.OWWidget):
 
     graph_name = "scene"
 
+    left_side_scrolling = True
+
     class Information(widget.OWWidget.Information):
         sampled = Msg("Data has been sampled")
         discrete_ignored = Msg("{} categorical feature{} ignored")
@@ -245,6 +248,9 @@ class OWHeatMap(widget.OWWidget):
         self.parts: Optional[Parts] = None
         self.__rows_cache = {}
         self.__columns_cache = {}
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         # GUI definition
         colorbox = gui.vBox(self.controlArea, "颜色")
@@ -350,7 +356,7 @@ class OWHeatMap(widget.OWWidget):
             parent=self,
         )
         self.col_split_cb = cb = ComboBoxSearch(
-            sizeAdjustPolicy=ComboBox.AdjustToMinimumContentsLengthWithIcon,
+            sizeAdjustPolicy=ComboBox.AdjustToMinimumContentsLength,
             minimumContentsLength=14,
             toolTip="Split the heatmap horizontally by column annotation"
         )
@@ -370,8 +376,7 @@ class OWHeatMap(widget.OWWidget):
 
         gui.checkBox(box, self, 'averages', '带平均线的条纹',
                      callback=self.update_averages_stripe)
-        gui.separator(box)
-        annotbox = QGroupBox("行注释")
+        annotbox = QGroupBox("行注释", flat=True)
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
@@ -381,7 +386,7 @@ class OWHeatMap(widget.OWWidget):
         self.annotation_model = DomainModel(placeholder="(无)")
         self.annotation_text_cb = ComboBoxSearch(
             minimumContentsLength=12,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
         )
         self.annotation_text_cb.setModel(self.annotation_model)
         self.annotation_text_cb.activated.connect(self.set_annotation_var)
@@ -395,7 +400,7 @@ class OWHeatMap(widget.OWWidget):
             parent=self,
         )
         self.row_side_color_cb = ComboBoxSearch(
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
             minimumContentsLength=12
         )
         self.row_side_color_cb.setModel(self.row_side_color_model)
@@ -404,11 +409,7 @@ class OWHeatMap(widget.OWWidget):
         form.addRow("文本", self.annotation_text_cb)
         form.addRow("颜色", self.row_side_color_cb)
         box.layout().addWidget(annotbox)
-<<<<<<< HEAD
-        annotbox = QGroupBox("Column annotations")
-=======
         annotbox = QGroupBox("列注释", flat=True)
->>>>>>> chinese translation of all widgets
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
@@ -421,7 +422,7 @@ class OWHeatMap(widget.OWWidget):
             parent=self
         )
         self.col_side_color_cb = cb = ComboBoxSearch(
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
             minimumContentsLength=12
         )
         self.col_side_color_cb.setModel(self.col_side_color_model)
@@ -437,13 +438,8 @@ class OWHeatMap(widget.OWWidget):
             callback=self.update_column_annotations)
         cb.setModel(create_list_model(ColumnLabelsPosData, parent=self))
         cb.setCurrentIndex(self.column_label_pos)
-<<<<<<< HEAD
-        form.addRow("Position", cb)
-        form.addRow("Color", self.col_side_color_cb)
-=======
         form.addRow("颜色", self.col_side_color_cb)
         form.addRow("标签位置", cb)
->>>>>>> chinese translation of all widgets
         box.layout().addWidget(annotbox)
 
         gui.checkBox(self.controlArea, self, "keep_aspect",
@@ -451,8 +447,7 @@ class OWHeatMap(widget.OWWidget):
                      callback=self.__aspect_mode_changed)
 
         gui.rubber(self.controlArea)
-
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        gui.auto_send(self.controlArea, self, "auto_commit")
 
         # Scene with heatmap
         class HeatmapScene(QGraphicsScene):
@@ -583,6 +578,7 @@ class OWHeatMap(widget.OWWidget):
         self.closeContext()
         self.clear()
         self.clear_messages()
+        self._set_input_summary(data)
 
         if isinstance(data, SqlTable):
             if data.approx_len() < 4000:
@@ -673,12 +669,17 @@ class OWHeatMap(widget.OWWidget):
 
         self.update_heatmaps()
         if data is not None and self.__pending_selection is not None:
-            if self.scene.widget is not None:
-                self.scene.widget.selectRows(self.__pending_selection)
+            assert self.scene.widget is not None
+            self.scene.widget.selectRows(self.__pending_selection)
             self.selected_rows = self.__pending_selection
             self.__pending_selection = None
 
         self.unconditional_commit()
+
+    def _set_input_summary(self, data):
+        summary = len(data) if data else self.info.NoInput
+        details = format_summary_details(data) if data else ""
+        self.info.set_input_summary(summary, details)
 
     def __on_split_rows_activated(self):
         self.set_split_variable(self.row_split_cb.currentData(Qt.EditRole))
@@ -1236,6 +1237,9 @@ class OWHeatMap(widget.OWWidget):
 
             data = self.input_data[indices]
 
+        summary = len(data) if data else self.info.NoOutput
+        details = format_summary_details(data) if data else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(data)
         self.Outputs.annotated_data.send(create_annotated_table(self.input_data, indices))
 

@@ -8,6 +8,7 @@ from Orange.evaluation.testing import CrossValidation, TestOnTrainingData, \
     ShuffleSplit, Results
 from Orange.widgets.evaluate.owconfusionmatrix import OWConfusionMatrix
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.tests.utils import possible_duplicate_table
 
 
@@ -117,6 +118,23 @@ class TestOWConfusionMatrix(WidgetTest, WidgetOutputsTestMixin):
         """
         self.widget.append_predictions = False
         self.send_signal(self.widget.Inputs.evaluation_results, self.results_1_iris)
+
+    def test_summary(self):
+        """Check if the status bar updates"""
+        info = self.widget.info
+        no_output = "No data on output"
+
+        self.send_signal(self.widget.Inputs.evaluation_results, self.results_1_iris)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
+        self._select_data()
+        output = self.get_output(self.widget.Outputs.selected_data)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+        self.send_signal(self.widget.Inputs.evaluation_results, None)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_unique_output_domain(self):
         bayes = NaiveBayesLearner()

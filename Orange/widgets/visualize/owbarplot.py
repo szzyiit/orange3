@@ -24,6 +24,7 @@ from Orange.widgets.utils import instance_tooltip
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.plot import OWPlotGUI, SELECT, PANNING, ZOOMING
 from Orange.widgets.utils.sql import check_sql_input
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
 from Orange.widgets.visualize.utils.customizableplot import Updater, \
     CommonParameterSetter
@@ -67,8 +68,7 @@ class BarPlotViewBox(pg.ViewBox):
 class ParameterSetter(CommonParameterSetter):
     GRID_LABEL, SHOW_GRID_LABEL = "Gridlines", "Show"
     DEFAULT_ALPHA_GRID, DEFAULT_SHOW_GRID = 80, True
-    BOTTOM_AXIS_LABEL, GROUP_AXIS_LABEL = "Bottom axis", "Group axis"
-    IS_VERTICAL_LABEL = "Vertical ticks"
+    BOTTOM_AXIS_LABEL, IS_VERTICAL_LABEL = "Bottom axis", "Vertical tick text"
 
     def __init__(self, master):
         self.grid_settings: Dict = None
@@ -101,9 +101,6 @@ class ParameterSetter(CommonParameterSetter):
                 self.BOTTOM_AXIS_LABEL: {
                     self.IS_VERTICAL_LABEL: (None, True),
                 },
-                self.GROUP_AXIS_LABEL: {
-                    self.IS_VERTICAL_LABEL: (None, False),
-                },
             },
         }
 
@@ -116,14 +113,9 @@ class ParameterSetter(CommonParameterSetter):
             axis = self.master.getAxis("bottom")
             axis.setRotateTicks(settings[self.IS_VERTICAL_LABEL])
 
-        def update_group_axis(**settings):
-            axis = self.master.group_axis
-            axis.setRotateTicks(settings[self.IS_VERTICAL_LABEL])
-
         self._setters[self.PLOT_BOX] = {
             self.GRID_LABEL: update_grid,
             self.BOTTOM_AXIS_LABEL: update_bottom_axis,
-            self.GROUP_AXIS_LABEL: update_group_axis,
         }
 
     @property
@@ -140,17 +132,18 @@ class ParameterSetter(CommonParameterSetter):
         return self.master.legend.items
 
 
-class BarPlotGraph(pg.PlotWidget):
+class BarPlotGraph(gui.OWComponent, pg.PlotWidget):
     selection_changed = Signal(list)
-    bar_width = 0.7
+    bar_width = 0.8
 
     def __init__(self, master, parent=None):
+        gui.OWComponent.__init__(self, master)
         self.selection = []
         self.master: OWBarPlot = master
         self.state: int = SELECT
         self.bar_item: pg.BarGraphItem = None
-        super().__init__(
-            parent=parent,
+        pg.PlotWidget.__init__(
+            self, parent=parent,
             viewBox=BarPlotViewBox(self),
             background="w", enableMenu=False,
             axisItems={"bottom": AxisItem(orientation="bottom",
@@ -162,12 +155,6 @@ class BarPlotGraph(pg.PlotWidget):
         self.getPlotItem().buttonsHidden = True
         self.getPlotItem().setContentsMargins(10, 0, 0, 10)
         self.getViewBox().setMouseMode(pg.ViewBox.PanMode)
-
-        self.group_axis = AxisItem("bottom")
-        self.group_axis.hide()
-        self.group_axis.linkToView(self.getViewBox())
-        self.getPlotItem().layout.addItem(self.group_axis, 4, 1)
-
         self.legend = self._create_legend()
 
         self.tooltip_delegate = HelpEventDelegate(self.help_event)
@@ -202,7 +189,6 @@ class BarPlotGraph(pg.PlotWidget):
         self.clear()
         self.update_bars()
         self.update_axes()
-        self.update_group_lines()
         self.update_legend()
         self.reset_view()
 
@@ -230,31 +216,13 @@ class BarPlotGraph(pg.PlotWidget):
         if self.bar_item is not None:
             self.showAxis("left")
             self.showAxis("bottom")
-            self.group_axis.show()
-
-            vals_label, group_label, annot_label = self.master.get_axes()
-            self.setLabel(axis="left", text=vals_label)
-            self.setLabel(axis="bottom", text=annot_label)
-            self.group_axis.setLabel(group_label)
-
+            self.setLabel(axis="left", text=self.master.get_axes()[0])
+            self.setLabel(axis="bottom", text=self.master.get_axes()[1])
             ticks = [list(enumerate(self.master.get_labels()))]
             self.getAxis('bottom').setTicks(ticks)
-
-            labels = np.array(self.master.get_group_labels())
-            _, indices, counts = \
-                np.unique(labels, return_index=True, return_counts=True)
-            ticks = [[(i + (c - 1) / 2, labels[i]) for i, c in
-                      zip(indices, counts)]]
-            self.group_axis.setTicks(ticks)
-
-            if not group_label:
-                self.group_axis.hide()
-            elif not annot_label:
-                self.hideAxis("bottom")
         else:
             self.hideAxis("left")
             self.hideAxis("bottom")
-            self.group_axis.hide()
 
     def reset_view(self):
         if self.bar_item is None:
@@ -279,20 +247,6 @@ class BarPlotGraph(pg.PlotWidget):
 
     def reset_button_clicked(self):
         self.reset_view()
-
-    def update_group_lines(self):
-        if self.bar_item is None:
-            return
-
-        labels = np.array(self.master.get_group_labels())
-        if labels is None or len(labels) == 0:
-            return
-
-        _, indices = np.unique(labels, return_index=True)
-        offset = self.bar_width / 2 + (1 - self.bar_width) / 2
-        for index in sorted(indices)[1:]:
-            line = pg.InfiniteLine(pos=index - offset, angle=90)
-            self.addItem(line)
 
     def select_by_rectangle(self, rect: QRectF):
         if self.bar_item is None:
@@ -383,7 +337,6 @@ class OWBarPlot(OWWidget):
                                Table, default=True, replaces=['Selected Data'])
         annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
 
-    buttons_area_orientation = Qt.Vertical
     settingsHandler = DomainContextHandler()
     selected_var = ContextSetting(None)
     group_var = ContextSetting(None)
@@ -439,7 +392,6 @@ class OWBarPlot(OWWidget):
 
     def _add_controls(self):
         box = gui.vBox(self.controlArea, True)
-        gui.rubber(self.controlArea)
         self._selected_var_model = DomainModel(valid_types=ContinuousVariable)
         gui.comboBox(
             box, self, "selected_var", label="值:",
@@ -480,9 +432,13 @@ class OWBarPlot(OWWidget):
         )
 
         plot_gui = OWPlotGUI(self)
-        plot_gui.box_zoom_select(self.buttonsArea)
+        plot_gui.box_zoom_select(self.controlArea)
 
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        gui.rubber(self.controlArea)
+        gui.auto_send(self.controlArea, self, "auto_commit")
+
+        self._set_input_summary(None)
+        self._set_output_summary(None)
 
     def __parameter_changed(self):
         self.graph.reset_graph()
@@ -518,6 +474,7 @@ class OWBarPlot(OWWidget):
         self.closeContext()
         self.clear()
         self.orig_data = self.data = data
+        self._set_input_summary(data)
         self.check_data()
         self.init_attr_values()
         self.openContext(self.data)
@@ -580,15 +537,6 @@ class OWBarPlot(OWWidget):
             return [self.annot_var.str_val(row[self.annot_var])
                     for row in self.grouped_data]
 
-    def get_group_labels(self) -> Optional[List]:
-        if not self.data:
-            return None
-        elif not self.group_var:
-            return []
-        else:
-            return [self.group_var.str_val(row[self.group_var])
-                    for row in self.grouped_data]
-
     def get_legend_data(self) -> List:
         if not self.data or not self.color_var:
             return []
@@ -633,12 +581,10 @@ class OWBarPlot(OWWidget):
             text = "<b>{}</b><br/><br/>{}".format(text, others)
         return text
 
-    def get_axes(self) -> Optional[Tuple[str, str, str]]:
+    def get_axes(self) -> Optional[Tuple[str, str]]:
         if not self.data:
             return None
-        return (self.selected_var.name,
-                self.group_var.name if self.group_var else "",
-                self.annot_var if self.annot_var else "")
+        return self.selected_var.name, self.annot_var if self.annot_var else ""
 
     def setup_plot(self):
         self.graph.reset_graph()
@@ -656,6 +602,7 @@ class OWBarPlot(OWWidget):
         if self.data is not None and bool(self.selection):
             selected = self.data[self.selection]
         annotated = create_annotated_table(self.orig_data, self.selection)
+        self._set_output_summary(selected)
         self.Outputs.selected_data.send(selected)
         self.Outputs.annotated_data.send(annotated)
 
@@ -667,6 +614,19 @@ class OWBarPlot(OWWidget):
     @staticmethod
     def clear_cache():
         OWBarPlot.grouped_indices.fget.cache_clear()
+
+    def _set_input_summary(self, data: Optional[Table]):
+        self._set_summary(data, self.info.NoInput, self.info.set_input_summary)
+
+    def _set_output_summary(self, data: Optional[Table]):
+        self._set_summary(data, self.info.NoOutput,
+                          self.info.set_output_summary)
+
+    @staticmethod
+    def _set_summary(data, empty, setter):
+        summary = len(data) if data else empty
+        details = format_summary_details(data) if data else ""
+        setter(summary, details)
 
     def send_report(self):
         if self.data is None:

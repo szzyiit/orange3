@@ -155,9 +155,6 @@ def assure_column_sparse(a):
 
 
 def assure_column_dense(a):
-    # quick check and exit for the most common case
-    if isinstance(a, np.ndarray) and len(a.shape) == 1:
-        return a
     a = assure_array_dense(a)
     # column assignments must be (n, )
     return a.reshape(-1)
@@ -268,19 +265,3 @@ def get_unique_names_domain(attributes, class_vars=(), metas=()):
                                  for old, new in zip(all_names, unique_names)
                                  if new != old))
     return (attributes, class_vars, metas), renamed
-
-
-def sanitized_name(name: str) -> str:
-    """
-    Replace non-alphanumeric characters and leading zero with `_`.
-
-    Args:
-        name (str): proposed name
-
-    Returns:
-        name (str): new name
-    """
-    sanitized = re.sub(r"\W", "_", name)
-    if sanitized[0].isdigit():
-        sanitized = "_" + sanitized
-    return sanitized

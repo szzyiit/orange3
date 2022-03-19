@@ -18,7 +18,7 @@ __all__ = ["Continuize", "Discretize", "Impute", "RemoveNaNRows",
            "SklImpute", "Normalize", "Randomize", "Preprocess",
            "RemoveConstant", "RemoveNaNClasses", "RemoveNaNColumns",
            "ProjectPCA", "ProjectCUR", "Scale", "RemoveSparse",
-           "AdaptiveNormalize", "PreprocessorList"]
+           "AdaptiveNormalize"]
 
 
 class Preprocess(Reprable):

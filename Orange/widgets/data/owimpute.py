@@ -26,6 +26,7 @@ from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils import concurrent as qconcurrent
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.spinbox import DoubleSpinBox
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 from Orange.classification import SimpleTreeLearner
@@ -175,9 +176,12 @@ class OWImpute(OWWidget):
         self.executor = qconcurrent.ThreadExecutor(self)
         self.__task = None
 
-        main_layout = self.controlArea.layout()
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        self.controlArea.layout().addLayout(main_layout)
 
-        box = gui.vBox(self.controlArea, "默认方法")
+        box = gui.vBox(None, "默认方法")
+        main_layout.addWidget(box)
 
         box_layout = QGridLayout()
         box_layout.setSpacing(8)
@@ -241,8 +245,12 @@ class OWImpute(OWWidget):
 
         self.default_button_group = button_group
 
-        box = gui.hBox(self.controlArea, self.tr("设置单个属性"),
-                       flat=False)
+        box = QGroupBox(title=self.tr("设置单个属性"),
+                        flat=False)
+        main_layout.addWidget(box)
+
+        horizontal_layout = QHBoxLayout(box)
+        main_layout.addWidget(box)
 
         self.varview = ListViewSearch(
             selectionMode=QListView.ExtendedSelection,
@@ -256,7 +264,7 @@ class OWImpute(OWWidget):
         )
         self.selection = self.varview.selectionModel()
 
-        box.layout().addWidget(self.varview)
+        horizontal_layout.addWidget(self.varview)
         vertical_layout = QVBoxLayout(margin=0)
 
         self.methods_container = QWidget(enabled=False)
@@ -272,7 +280,7 @@ class OWImpute(OWWidget):
 
         self.value_combo = QComboBox(
             minimumContentsLength=8,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
             activated=self._on_value_selected
             )
         self.value_double = DoubleSpinBox(
@@ -297,11 +305,16 @@ class OWImpute(OWWidget):
         vertical_layout.addStretch(2)
         vertical_layout.addWidget(self.reset_button)
 
-        box.layout().addLayout(vertical_layout)
+        horizontal_layout.addLayout(vertical_layout)
 
         self.variable_button_group = button_group
 
-        gui.auto_apply(self.buttonsArea, self, "autocommit")
+        box = gui.auto_apply(self.controlArea, self, "autocommit")
+        box.button.setFixedWidth(180)
+        box.layout().insertStretch(0)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
     def create_imputer(self, method, *args):
         # type: (Method, ...) -> impute.BaseImputeMethod
@@ -368,6 +381,9 @@ class OWImpute(OWWidget):
             # restore per variable imputation state
             self._restore_state(self._variable_imputation_state)
         self.reset_button.setEnabled(len(self.varmodel) > 0)
+        summary = len(data) if data else self.info.NoInput
+        details = format_summary_details(data) if data else ""
+        self.info.set_input_summary(summary, details)
 
         self.update_varview()
         self.unconditional_commit()
@@ -412,6 +428,9 @@ class OWImpute(OWWidget):
         self.warning()
         self.Error.imputation_failed.clear()
         self.Error.model_based_imputer_sparse.clear()
+        summary = len(self.data) if self.data else self.info.NoOutput
+        detail = format_summary_details(self.data) if self.data else ""
+        self.info.set_output_summary(summary, detail)
 
         if not self.data or not self.varmodel.rowCount():
             self.Outputs.data.send(self.data)
@@ -521,6 +540,9 @@ class OWImpute(OWWidget):
 
         self.Outputs.data.send(data)
         self.modified = False
+        summary = len(data) if data else self.info.NoOutput
+        details = format_summary_details(data) if data else ""
+        self.info.set_output_summary(summary, details)
 
     @Slot(int, int)
     def __progress_changed(self, n, d):

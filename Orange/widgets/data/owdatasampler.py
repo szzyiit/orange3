@@ -11,6 +11,7 @@ from Orange.widgets.settings import Setting
 from Orange.data import Table
 from Orange.data.sql.table import SqlTable
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg, OWWidget, Input, Output
 from Orange.util import Reprable
 
@@ -85,6 +86,9 @@ class OWDataSampler(OWWidget):
         self.indices = None
         self.sampled_instances = self.remaining_instances = None
 
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoInput)
+
         self.sampling_box = gui.vBox(self.controlArea, "采样类型")
         sampling = gui.radioButtons(self.sampling_box, self, "sampling_type",
                                     callback=self.sampling_type_changed)
@@ -100,7 +104,8 @@ class OWDataSampler(OWWidget):
             gui.indentedBox(sampling), self,
             "sampleSizePercentage",
             minValue=0, maxValue=100, ticks=10, labelFormat="%d %%",
-            callback=set_sampling_type(self.FixedProportion))
+            callback=set_sampling_type(self.FixedProportion),
+            addSpace=12)
 
         gui.appendRadioButton(sampling, "固定样本量(Fixed sample size)")
         ibox = gui.indentedBox(sampling)
@@ -110,15 +115,16 @@ class OWDataSampler(OWWidget):
             callback=set_sampling_type(self.FixedSize),
             controlWidth=90)
         gui.checkBox(
-            ibox, self, "replacement", "放回抽样",
-            callback=set_sampling_type(self.FixedSize))
+            ibox, self, "replacement", "放回抽样(Sample with replacement)",
+            callback=set_sampling_type(self.FixedSize),
+            addSpace=12)
 
         gui.appendRadioButton(sampling, "交叉验证(Cross validation)")
         form = QFormLayout(
             formAlignment=Qt.AlignLeft | Qt.AlignTop,
             labelAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow)
-        ibox = gui.indentedBox(sampling, orientation=form)
+        ibox = gui.indentedBox(sampling, addSpace=True, orientation=form)
         form.addRow("子集数量:",
                     gui.spin(
                         ibox, self, "number_of_folds", 2, 100,
@@ -148,7 +154,7 @@ class OWDataSampler(OWWidget):
         spin.setSuffix(" %")
         self.sql_box.setVisible(False)
 
-        self.options_box = gui.vBox(self.controlArea, "选项", addSpaceBefore=False)
+        self.options_box = gui.vBox(self.controlArea, "选项")
         self.cb_seed = gui.checkBox(
             self.options_box, self, "use_seed",
             "可复制(确定性)抽样 Replicable (deterministic) sampling",
@@ -190,11 +196,14 @@ class OWDataSampler(OWWidget):
             self.cb_seed.setVisible(not sql)
             self.cb_stratify.setVisible(not sql)
             self.cb_sql_dl.setVisible(sql)
+            self.info.set_input_summary(dataset.approx_len(),
+                                        format_summary_details(dataset))
 
             if not sql:
                 self._update_sample_max_size()
                 self.updateindices()
         else:
+            self.info.set_input_summary(self.info.NoInput)
             self.indices = None
             self.clear_messages()
         self.commit()
@@ -240,6 +249,10 @@ class OWDataSampler(OWWidget):
             other = self.data[remaining]
             self.sampled_instances = len(sample)
             self.remaining_instances = len(other)
+
+        summary = sample.approx_len() if sample else self.info.NoOutput
+        details = format_summary_details(sample) if sample else ""
+        self.info.set_output_summary(summary, details)
 
         self.Outputs.data_sample.send(sample)
         self.Outputs.remaining_data.send(other)

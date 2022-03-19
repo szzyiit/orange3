@@ -35,6 +35,7 @@ from Orange.widgets.utils.graphicstextlist import TextListWidget
 from Orange.widgets.utils.graphicslayoutitem import SimpleLayoutItem
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg, Input, Output
 
 
@@ -98,6 +99,7 @@ class OWSilhouettePlot(widget.OWWidget):
                  ("余弦", Orange.distance.Cosine)]
 
     graph_name = "scene"
+    buttons_area_orientation = Qt.Vertical
 
     class Error(widget.OWWidget.Error):
         need_two_clusters = Msg("Need at least two non-empty clusters")
@@ -132,6 +134,9 @@ class OWSilhouettePlot(widget.OWWidget):
         self._silhouette = None  # type: Optional[np.ndarray]
         self._silplot = None     # type: Optional[SilhouettePlot]
 
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
+
         controllayout = self.controlArea.layout()
         assert isinstance(controllayout, QVBoxLayout)
         self._distances_gui_box = distbox = gui.widgetBox(
@@ -145,7 +150,7 @@ class OWSilhouettePlot(widget.OWWidget):
 
         box = gui.vBox(self.controlArea, "聚类标签")
         self.cluster_var_cb = gui.comboBox(
-            box, self, "cluster_var_idx", contentsLength=14,
+            box, self, "cluster_var_idx", contentsLength=14, addSpace=4,
             searchable=True, callback=self._invalidate_scores
         )
         gui.checkBox(
@@ -158,7 +163,7 @@ class OWSilhouettePlot(widget.OWWidget):
         gui.widgetLabel(box, "条宽度:")
         gui.hSlider(
             box, self, "bar_size", minValue=1, maxValue=10, step=1,
-            callback=self._update_bar_size)
+            callback=self._update_bar_size, addSpace=6)
         gui.widgetLabel(box, "注释:")
         self.annotation_cb = gui.comboBox(
             box, self, "annotation_var_idx", contentsLength=14,
@@ -174,7 +179,6 @@ class OWSilhouettePlot(widget.OWWidget):
 
         gui.rubber(self.controlArea)
 
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
         box = gui.vBox(self.buttonsArea, box=True)
         gui.auto_send(box, self, "auto_commit", box=False)
         # Ensure that the controlArea is not narrower than buttonsArea
@@ -237,6 +241,9 @@ class OWSilhouettePlot(widget.OWWidget):
             self.data = data
 
     def handleNewSignals(self):
+        summary = len(self.data) if self.data else self.info.NoInput
+        details = format_summary_details(self.data) if self.data else ""
+        self.info.set_input_summary(summary, details)
         if not self._is_empty():
             self._update()
             self._replot()
@@ -495,7 +502,7 @@ class OWSilhouettePlot(widget.OWWidget):
                 scores = self._silhouette
 
             var = self.cluster_var_model[self.cluster_var_idx]
-
+            
             domain = self.data.domain
             proposed = "Silhouette ({})".format(escape(var.name))
             names = [var.name for var in itertools.chain(domain.attributes,
@@ -517,6 +524,9 @@ class OWSilhouettePlot(widget.OWWidget):
                 selected[:, silhouette_var] = np.c_[scores[selectedmask]]
             data[:, silhouette_var] = np.c_[scores]
 
+        summary = len(selected) if selected else self.info.NoOutput
+        details = format_summary_details(selected) if selected else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(selected)
         self.Outputs.annotated_data.send(create_annotated_table(data, indices))
 

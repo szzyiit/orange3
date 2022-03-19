@@ -8,7 +8,7 @@ import weakref
 from functools import reduce
 from unittest.mock import patch
 
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING
 
 from AnyQt.QtWidgets import (
     QPlainTextEdit, QListView, QSizePolicy, QMenu, QSplitter, QLineEdit,
@@ -19,12 +19,7 @@ from AnyQt.QtGui import (
     QColor, QBrush, QPalette, QFont, QTextDocument,
     QSyntaxHighlighter, QTextCharFormat, QTextCursor, QKeySequence,
 )
-from AnyQt.QtCore import (
-    Qt, QRegularExpression, QByteArray, QItemSelectionModel, QSize,
-    QMimeDatabase
-)
-
-from orangewidget.workflow.drophandler import SingleFileDropHandler
+from AnyQt.QtCore import Qt, QRegExp, QByteArray, QItemSelectionModel, QSize
 
 from Orange.data import Table
 from Orange.base import Learner, Model
@@ -40,18 +35,6 @@ if TYPE_CHECKING:
 
 __all__ = ["OWPythonScript"]
 
-
-DEFAULT_SCRIPT = """import numpy as np
-from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
-
-domain = Domain([ContinuousVariable("age"),
-                 ContinuousVariable("height"),
-                 DiscreteVariable("gender", values=("M", "F"))])
-arr = np.array([
-  [25, 186, 0],
-  [30, 164, 1]])
-out_data = Table.from_numpy(domain, arr)
-"""
 
 def text_format(foreground=Qt.black, weight=QFont.Normal):
     fmt = QTextCharFormat()
@@ -80,37 +63,34 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
 
         self.keywords = list(keyword.kwlist)
 
-        self.rules = [(QRegularExpression(r"\b%s\b" % kwd), self.keywordFormat)
+        self.rules = [(QRegExp(r"\b%s\b" % kwd), self.keywordFormat)
                       for kwd in self.keywords] + \
-                     [(QRegularExpression(r"\bdef\s+([A-Za-z_]+[A-Za-z0-9_]+)\s*\("),
+                     [(QRegExp(r"\bdef\s+([A-Za-z_]+[A-Za-z0-9_]+)\s*\("),
                        self.defFormat),
-                      (QRegularExpression(r"\bclass\s+([A-Za-z_]+[A-Za-z0-9_]+)\s*\("),
+                      (QRegExp(r"\bclass\s+([A-Za-z_]+[A-Za-z0-9_]+)\s*\("),
                        self.defFormat),
-                      (QRegularExpression(r"'.*'"), self.stringFormat),
-                      (QRegularExpression(r'".*"'), self.stringFormat),
-                      (QRegularExpression(r"#.*"), self.commentFormat),
-                      (QRegularExpression(r"@[A-Za-z_]+[A-Za-z0-9_]+"),
+                      (QRegExp(r"'.*'"), self.stringFormat),
+                      (QRegExp(r'".*"'), self.stringFormat),
+                      (QRegExp(r"#.*"), self.commentFormat),
+                      (QRegExp(r"@[A-Za-z_]+[A-Za-z0-9_]+"),
                        self.decoratorFormat)]
 
-        self.multilineStart = QRegularExpression(r"(''')|" + r'(""")')
-        self.multilineEnd = QRegularExpression(r"(''')|" + r'(""")')
+        self.multilineStart = QRegExp(r"(''')|" + r'(""")')
+        self.multilineEnd = QRegExp(r"(''')|" + r'(""")')
 
         super().__init__(parent)
 
     def highlightBlock(self, text):
         for pattern, fmt in self.rules:
-            exp = QRegularExpression(pattern)
-            match = exp.match(text)
-            index = match.capturedStart()
+            exp = QRegExp(pattern)
+            index = exp.indexIn(text)
             while index >= 0:
-                if match.capturedStart(1) > 0:
-                    self.setFormat(match.capturedStart(1),
-                                   match.capturedLength(1), fmt)
+                length = exp.matchedLength()
+                if exp.captureCount() > 0:
+                    self.setFormat(exp.pos(1), len(str(exp.cap(1))), fmt)
                 else:
-                    self.setFormat(match.capturedStart(0),
-                                   match.capturedLength(0), fmt)
-                match = exp.match(text, index + match.capturedLength())
-                index = match.capturedStart()
+                    self.setFormat(exp.pos(0), len(str(exp.cap(0))), fmt)
+                index = exp.indexIn(text, index + length)
 
         # Multi line strings
         start = self.multilineStart
@@ -119,19 +99,18 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
         self.setCurrentBlockState(0)
         startIndex, skip = 0, 0
         if self.previousBlockState() != 1:
-            startIndex, skip = start.match(text).capturedStart(), 3
+            startIndex, skip = start.indexIn(text), 3
         while startIndex >= 0:
-            endIndex = end.match(text, startIndex + skip).capturedStart()
+            endIndex = end.indexIn(text, startIndex + skip)
             if endIndex == -1:
                 self.setCurrentBlockState(1)
                 commentLen = len(text) - startIndex
             else:
                 commentLen = endIndex - startIndex + 3
             self.setFormat(startIndex, commentLen, self.stringFormat)
-            startIndex, skip = (
-                start.match(text, startIndex + commentLen + 3).capturedStart(),
-                3
-            )
+            startIndex, skip = (start.indexIn(text,
+                                              startIndex + commentLen + 3),
+                                3)
 
 
 class PythonScriptEditor(QPlainTextEdit):
@@ -445,8 +424,8 @@ class OWPythonScript(OWWidget):
 
     settings_version = 2
     scriptLibrary: 'List[_ScriptData]' = Setting([{
-        "name": "Table from numpy",
-        "script": DEFAULT_SCRIPT,
+        "name": "Hello world",
+        "script": "print('Hello world')\n",
         "filename": None
     }])
     currentScriptIndex = Setting(0)
@@ -547,7 +526,7 @@ class OWPythonScript(OWWidget):
 
         self.controlBox.layout().addWidget(w)
 
-        self.execute_button = gui.button(self.buttonsArea, self, '运行', callback=self.commit)
+        self.execute_button = gui.button(self.controlArea, self, '运行', callback=self.commit)
 
         run = QAction("Run script", self, triggered=self.commit,
                       shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_R))
@@ -559,11 +538,13 @@ class OWPythonScript(OWWidget):
         self.defaultFont = defaultFont = \
             "Monaco" if sys.platform == "darwin" else "Courier"
 
-        self.textBox = gui.vBox(self.splitCanvas, 'python 脚本')
+        self.textBox = gui.vBox(self, 'python 脚本')
+        self.splitCanvas.addWidget(self.textBox)
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
 
         self.textBox.setAlignment(Qt.AlignVCenter)
+        self.text.setTabStopWidth(4)
 
         self.text.modificationChanged[bool].connect(self.onModificationChanged)
 
@@ -573,11 +554,13 @@ class OWPythonScript(OWWidget):
         action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
         action.triggered.connect(self.saveScript)
 
-        self.consoleBox = gui.vBox(self.splitCanvas, '控制台')
+        self.consoleBox = gui.vBox(self, '控制台')
+        self.splitCanvas.addWidget(self.consoleBox)
         self.console = PythonConsole({}, self)
         self.consoleBox.layout().addWidget(self.console)
         self.console.document().setDefaultFont(QFont(defaultFont))
         self.consoleBox.setAlignment(Qt.AlignBottom)
+        self.console.setTabStopWidth(4)
         self.splitCanvas.setSizes([2, 1])
         self.setAcceptDrops(True)
         self.controlArea.layout().addStretch(10)
@@ -802,33 +785,6 @@ class OWPythonScript(OWWidget):
             library = [dict(name=s.name, script=s.script, filename=s.filename)
                        for s in scripts]  # type: List[_ScriptData]
             settings["scriptLibrary"] = library
-
-
-class OWPythonScriptDropHandler(SingleFileDropHandler):
-    WIDGET = OWPythonScript
-
-    def canDropFile(self, path: str) -> bool:
-        md = QMimeDatabase()
-        mt = md.mimeTypeForFile(path)
-        return mt.inherits("text/x-python")
-
-    def parametersFromFile(self, path: str) -> Dict[str, Any]:
-        with open(path, "rt") as f:
-            content = f.read()
-
-        item: '_ScriptData' = {
-            "name": os.path.basename(path),
-            "script": content,
-            "filename": path,
-        }
-        params = {
-            "__version__": OWPythonScript.settings_version,
-            "scriptLibrary": [
-                item,
-            ],
-            "scriptText": content
-        }
-        return params
 
 
 if __name__ == "__main__":  # pragma: no cover

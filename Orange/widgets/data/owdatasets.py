@@ -28,6 +28,7 @@ from Orange.misc.environ import data_dir
 from Orange.widgets import settings, gui
 from Orange.widgets.utils.signals import Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Msg
 
 
@@ -242,6 +243,8 @@ class OWDataSets(OWWidget):
         self.splitter.addWidget(self.view)
         self.splitter.addWidget(box)
 
+        self.info.set_output_summary(self.info.NoOutput)
+
         self.splitter.setSizes([300, 200])
         self.splitter.splitterMoved.connect(
             lambda:
@@ -251,7 +254,7 @@ class OWDataSets(OWWidget):
 
         proxy = QSortFilterProxyModel()
         proxy.setFilterKeyColumn(-1)
-        proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        proxy.setFilterCaseSensitivity(False)
         self.view.setModel(proxy)
 
         if self.splitter_state:
@@ -375,13 +378,10 @@ class OWDataSets(OWWidget):
             self.__on_selection
         )
 
-        scw = self.view.setColumnWidth
-        width = self.view.fontMetrics().width
         self.view.resizeColumnToContents(0)
-        scw(self.Header.title, width("X" * 37))
-        scw(self.Header.size, 20 + max(width("888 bytes "), width("9999.9 MB ")))
-        scw(self.Header.instances, 20 + width("100000000"))
-        scw(self.Header.variables, 20 + width("1000000"))
+        self.view.setColumnWidth(
+            1, min(self.view.sizeHintForColumn(1),
+                   self.view.fontMetrics().width("X" * 37)))
 
         header = self.view.header()
         header.restoreState(self.header_state)
@@ -548,9 +548,12 @@ class OWDataSets(OWWidget):
     def load_and_output(self, path):
         if path is None:
             self.Outputs.data.send(None)
+            self.info.set_output_summary(self.info.NoOutput)
         else:
             data = self.load_data(path)
             self.Outputs.data.send(data)
+            self.info.set_output_summary(len(data),
+                                         format_summary_details(data))
 
         self.current_output = path
         self.__update_cached_state()

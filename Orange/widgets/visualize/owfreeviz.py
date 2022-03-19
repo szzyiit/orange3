@@ -140,16 +140,14 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     graph = settings.SettingProvider(OWFreeVizGraph)
 
     class Error(OWAnchorProjectionWidget.Error):
-        no_class_var = widget.Msg("Data must have a target variable.")
-        multiple_class_vars = widget.Msg(
-            "Data must have a single target variable.")
+        no_class_var = widget.Msg("Data has no target variable")
         not_enough_class_vars = widget.Msg(
-            "Target variable must have at least two unique values.")
+            "Target variable is not at least binary")
         features_exceeds_instances = widget.Msg(
             "Number of features exceeds the number of instances.")
         too_many_data_instances = widget.Msg("Data is too large.")
         constant_data = widget.Msg("All data columns are constant.")
-        not_enough_features = widget.Msg("At least two features are required.")
+        not_enough_features = widget.Msg("At least two features are required")
 
     class Warning(OWAnchorProjectionWidget.Warning):
         removed_features = widget.Msg("Categorical features with more than"
@@ -169,7 +167,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         )
 
     def __add_controls_start_box(self):
-        box = gui.vBox(self.controlArea, box="Optimize", spacing=0)
+        box = gui.vBox(self.controlArea, box=True)
         gui.comboBox(
             box, self, "initialization", label="初始化:",
             items=InitType.items(), orientation=Qt.Horizontal,
@@ -260,12 +258,10 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
 
         super().check_data()
         if self.data is not None:
-            class_vars, domain = self.data.domain.class_vars, self.data.domain
-            if not class_vars:
+            class_var, domain = self.data.domain.class_var, self.data.domain
+            if class_var is None:
                 error(self.Error.no_class_var)
-            elif len(class_vars) > 1:
-                error(self.Error.multiple_class_vars)
-            elif class_vars[0].is_discrete and len(np.unique(self.data.Y)) < 2:
+            elif class_var.is_discrete and len(np.unique(self.data.Y)) < 2:
                 error(self.Error.not_enough_class_vars)
             elif len(self.data.domain.attributes) < 2:
                 error(self.Error.not_enough_features)

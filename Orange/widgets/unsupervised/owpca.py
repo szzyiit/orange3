@@ -66,21 +66,21 @@ class OWPCA(widget.OWWidget):
         self._init_projector()
 
         # Components Selection
+        box = gui.vBox(self.controlArea, "成分选择")
         form = QFormLayout()
-        box = gui.widgetBox(self.controlArea, "Components Selection",
-                            orientation=form)
+        box.layout().addLayout(form)
 
         self.components_spin = gui.spin(
             box, self, "ncomponents", 1, MAX_COMPONENTS,
             callback=self._update_selection_component_spin,
-            keyboardTracking=False, addToLayout=False
+            keyboardTracking=False
         )
         self.components_spin.setSpecialValueText("All")
 
         self.variance_spin = gui.spin(
             box, self, "variance_covered", 1, 100,
             callback=self._update_selection_variance_spin,
-            keyboardTracking=False, addToLayout=False
+            keyboardTracking=False
         )
         self.variance_spin.setSuffix("%")
 
@@ -91,8 +91,7 @@ class OWPCA(widget.OWWidget):
         self.options_box = gui.vBox(self.controlArea, "选项")
         self.normalize_box = gui.checkBox(
             self.options_box, self, "normalize",
-            "归一化数据", callback=self._update_normalize,
-            attribute=Qt.WA_LayoutUsesWidgetRect
+            "归一化数据", callback=self._update_normalize
         )
 
         self.maxp_spin = gui.spin(
@@ -101,9 +100,9 @@ class OWPCA(widget.OWWidget):
             keyboardTracking=False
         )
 
-        gui.rubber(self.controlArea)
+        self.controlArea.layout().addStretch()
 
-        gui.auto_apply(self.buttonsArea, self, "auto_commit")
+        gui.auto_apply(self.controlArea, self, "auto_commit")
 
         self.plot = SliderGraph(
             "主成分", "贡献率(Proportion of variance)",
@@ -204,7 +203,9 @@ class OWPCA(widget.OWWidget):
 
     def _on_cut_changed(self, components):
         if components == self.ncomponents \
-                or self.ncomponents == 0:
+                or self.ncomponents == 0 \
+                or self._pca is not None \
+                and components == len(self._variance_ratio):
             return
 
         self.ncomponents = components
@@ -294,36 +295,22 @@ class OWPCA(widget.OWWidget):
                 self._transformed = self._pca(self.data)
             transformed = self._transformed
 
-            if self._variance_ratio is not None:
-                for var, explvar in zip(
-                        transformed.domain.attributes,
-                        self._variance_ratio[:self.ncomponents]):
-                    var.attributes["variance"] = round(explvar, 6)
             domain = Domain(
                 transformed.domain.attributes[:self.ncomponents],
                 self.data.domain.class_vars,
                 self.data.domain.metas
             )
             transformed = transformed.from_table(domain, transformed)
-
             # prevent caching new features by defining compute_value
             proposed = [a.name for a in self._pca.orig_domain.attributes]
             meta_name = get_unique_names(proposed, 'components')
-            meta_vars = [StringVariable(name=meta_name)]
-            metas = numpy.array([['PC{}'.format(i + 1)
-                                  for i in range(self.ncomponents)]],
-                                dtype=object).T
-            if self._variance_ratio is not None:
-                variance_name = get_unique_names(proposed, "variance")
-                meta_vars.append(ContinuousVariable(variance_name))
-                metas = numpy.hstack(
-                    (metas,
-                     self._variance_ratio[:self.ncomponents, None]))
-
             dom = Domain(
                 [ContinuousVariable(name, compute_value=lambda _: None)
                  for name in proposed],
-                metas=meta_vars)
+                metas=[StringVariable(name=meta_name)])
+            metas = numpy.array([['PC{}'.format(i + 1)
+                                  for i in range(self.ncomponents)]],
+                                dtype=object).T
             components = Table(dom, self._pca.components_[:self.ncomponents],
                                metas=metas)
             components.name = 'components'

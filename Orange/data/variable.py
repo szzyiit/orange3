@@ -34,10 +34,7 @@ def make_variable(cls, compute_value, *args):
     if compute_value is not None:
         return cls(*args, compute_value=compute_value)
     else:
-        # For compatibility with old pickles: remove the second arg if it's
-        # bool `compute_value` (args[3]) can't be bool, so this should be safe
-        if len(args) > 2 and isinstance(args[2], bool):
-            args = args[:2] + args[3:]
+        # For compatibility with old pickles
         return cls(*args)
 
 
@@ -56,8 +53,7 @@ def is_discrete_values(values):
     # the type is numeric
     try:
         isinstance(next(iter(values)), Number) or \
-        [v not in MISSING_VALUES and float(v)
-         for _, v in zip(range(min(3, len(values))), values)]
+        [float(v) for _, v in zip(range(min(3, len(values))), values)]
     except ValueError:
         is_numeric = False
         max_values = int(round(len(values)**.7))
@@ -629,7 +625,8 @@ class DiscreteVariable(Variable):
     presorted_values = []
 
     def __init__(
-            self, name="", values=(), compute_value=None, *, sparse=False
+            self, name="", values=(), ordered=None, compute_value=None,
+            *, sparse=False
     ):
         """ Construct a discrete variable descriptor with the given values. """
         values = tuple(values)  # some people (including me) pass a generator
@@ -639,6 +636,23 @@ class DiscreteVariable(Variable):
         super().__init__(name, compute_value, sparse=sparse)
         self._values = values
         self._value_index = {value: i for i, value in enumerate(values)}
+
+        if ordered is not None:
+            warnings.warn(
+                "ordered is deprecated and does not have effect. It will be "
+                "removed in future versions.",
+                OrangeDeprecationWarning
+            )
+
+    @property
+    def ordered(self):
+        warnings.warn(
+            "ordered is deprecated. It will be removed in future versions.",
+            # DeprecationWarning warning is used instead of OrangeDeprecation
+            # warning otherwise tests fail (__repr__ still asks for ordered)
+            DeprecationWarning
+        )
+        return None
 
     @property
     def values(self):

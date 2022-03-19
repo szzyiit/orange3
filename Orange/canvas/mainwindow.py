@@ -3,7 +3,6 @@ from AnyQt.QtWidgets import (
     QFormLayout, QCheckBox, QLineEdit, QWidget, QVBoxLayout, QLabel
 )
 from orangecanvas.application.settings import UserSettingsDialog, FormLayout
-from orangecanvas.document.interactions import PluginDropHandler
 from orangecanvas.document.usagestatistics import UsageStatistics
 from orangecanvas.utils.overlay import NotificationOverlay
 
@@ -108,16 +107,13 @@ class MainWindow(OWCanvasMainWindow):
         super().__init__(*args, **kwargs)
         self.notification_overlay = NotificationOverlay(self.scheme_widget)
         self.notification_server = None
-        self.scheme_widget.setDropHandlers([
-            PluginDropHandler("orange.canvas.drophandler")
-        ])
 
     def open_canvas_settings(self):
         # type: () -> None
         """Reimplemented."""
         dlg = OUserSettingsDialog(self, windowTitle=self.tr("设置"))
         dlg.show()
-        status = dlg.exec()
+        status = dlg.exec_()
         if status == 0:
             self.user_preferences_changed_notify_all()
 

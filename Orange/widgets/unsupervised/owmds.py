@@ -226,24 +226,21 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         )
 
     def _add_controls_optimization(self):
-        box = gui.vBox(self.controlArea, box="优化", spacing=0)
-        hbox = gui.hBox(box, margin=0)
-        gui.button(hbox, self, "PCA", callback=self.do_PCA, autoDefault=False)
-        gui.button(hbox, self, "随机", callback=self.do_random,
-                   autoDefault=False)
-        gui.button(hbox, self, "随机", callback=self.do_jitter,
-                   autoDefault=False)
+        box = gui.vBox(self.controlArea, box=True)
+        self.run_button = gui.button(box, self, "开始", self._toggle_run)
         gui.comboBox(box, self, "refresh_rate", label="刷新: ",
                      orientation=Qt.Horizontal,
                      items=[t for t, _ in OWMDS.RefreshRate],
                      callback=self.__refresh_rate_combo_changed)
-        self.run_button = gui.button(box, self, "开始", self._toggle_run)
+        hbox = gui.hBox(box, margin=0)
+        gui.button(hbox, self, "主成分分析(PCA)", callback=self.do_PCA)
+        gui.button(hbox, self, "随机(Randomize)", callback=self.do_random)
+        gui.button(hbox, self, "抖动(Jitter)", callback=self.do_jitter)
 
     def __refresh_rate_combo_changed(self):
         if self.task is not None:
             self._run()
 
-    @Inputs.data
     def set_data(self, data):
         """Set the input dataset.
 

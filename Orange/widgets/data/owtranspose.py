@@ -1,40 +1,17 @@
-from typing import Optional, Union
-
-from Orange.data import Table, ContinuousVariable, StringVariable, Variable
-from Orange.widgets.settings import Setting, ContextSetting, \
-    DomainContextHandler
-from Orange.widgets.utils.concurrent import TaskState, ConcurrentWidgetMixin
+from Orange.data import Table, ContinuousVariable, StringVariable
+from Orange.widgets.settings import (Setting, ContextSetting,
+                                     DomainContextHandler)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Msg
 from Orange.widgets import gui
 from Orange.widgets.widget import Input, Output
 
 
-def run(data: Table,
-        variable: Optional[Union[Variable, bool]],
-        feature_name: str,
-        remove_redundant_inst: bool,
-        state: TaskState
-        ) -> Table:
-    if not data:
-        return None
-
-    def callback(i: float, status=""):
-        state.set_progress_value(i * 100)
-        if status:
-            state.set_status(status)
-        if state.is_interruption_requested():
-            raise Exception
-
-    return Table.transpose(data, variable, feature_name=feature_name,
-                           remove_redundant_inst=remove_redundant_inst,
-                           progress_callback=callback)
-
-
-class OWTranspose(OWWidget, ConcurrentWidgetMixin):
-    name = "Transpose"
-    description = "Transpose data table."
+class OWTranspose(OWWidget):
+    name = "转置(Transpose)"
+    description = "转置数据表。"
     icon = "icons/Transpose.svg"
     priority = 2000
     keywords = ['zhuanzhi']
@@ -57,7 +34,6 @@ class OWTranspose(OWWidget, ConcurrentWidgetMixin):
     feature_type = ContextSetting(GENERIC)
     feature_name = ContextSetting("")
     feature_names_column = ContextSetting(None)
-    remove_redundant_inst = ContextSetting(False)
     auto_apply = Setting(True)
 
     class Warning(OWWidget.Warning):
@@ -70,8 +46,7 @@ class OWTranspose(OWWidget, ConcurrentWidgetMixin):
         value_error = Msg("{}")
 
     def __init__(self):
-        OWWidget.__init__(self)
-        ConcurrentWidgetMixin.__init__(self)
+        super().__init__()
         self.data = None
 
         # self.apply is changed later, pylint: disable=unnecessary-lambda
@@ -95,12 +70,11 @@ class OWTranspose(OWWidget, ConcurrentWidgetMixin):
             "feature_names_column", contentsLength=12, searchable=True,
             callback=self._feature_combo_changed, model=self.feature_model)
 
-        self.remove_check = gui.checkBox(
-            gui.indentedBox(box, gui.checkButtonOffsetHint(button)), self,
-            "remove_redundant_inst", "Remove redundant instance",
-            callback=lambda: self.apply())
+        self.apply_button = gui.auto_apply(self.controlArea, self, box=False, commit=self.apply)
+        self.apply_button.button.setAutoDefault(False)
 
-        gui.auto_apply(self.buttonsArea, self, commit=self.apply)
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self.set_controls()
 
@@ -120,13 +94,17 @@ class OWTranspose(OWWidget, ConcurrentWidgetMixin):
         if self.feature_model:
             self.closeContext()
         self.data = data
+        if data:
+            self.info.set_input_summary(len(data), format_summary_details(data))
+        else:
+            self.info.set_input_summary(self.info.NoInput)
         self.set_controls()
         if self.feature_model:
             self.openContext(data)
         self.unconditional_apply()
 
     def set_controls(self):
-        self.feature_model.set_domain(self.data.domain if self.data else None)
+        self.feature_model.set_domain(self.data and self.data.domain)
         self.meta_button.setEnabled(bool(self.feature_model))
         if self.feature_model:
             self.feature_names_column = self.feature_model[0]
@@ -136,33 +114,27 @@ class OWTranspose(OWWidget, ConcurrentWidgetMixin):
 
     def apply(self):
         self.clear_messages()
-        variable = self.feature_type == self.FROM_VAR and \
-            self.feature_names_column
-        if variable and self.data:
-            names = self.data.get_column_view(variable)[0]
-            if len(names) != len(set(names)):
-                self.Warning.duplicate_names(variable)
-        if self.data and self.data.domain.has_discrete_attributes():
-            self.Warning.discrete_attrs()
-        feature_name = self.feature_name or self.DEFAULT_PREFIX
-        self.start(run, self.data, variable,
-                   feature_name, self.remove_redundant_inst)
-
-    def on_partial_result(self, _):
-        pass
-
-    def on_done(self, transposed: Optional[Table]):
-        self.Outputs.data.send(transposed)
-
-    def on_exception(self, ex: Exception):
-        if isinstance(ex, ValueError):
-            self.Error.value_error(ex)
+        transposed = None
+        if self.data:
+            try:
+                variable = self.feature_type == self.FROM_VAR and \
+                           self.feature_names_column
+                transposed = Table.transpose(
+                    self.data, variable,
+                    feature_name=self.feature_name or self.DEFAULT_PREFIX)
+                if variable:
+                    names = self.data.get_column_view(variable)[0]
+                    if len(names) != len(set(names)):
+                        self.Warning.duplicate_names(variable)
+                if self.data.domain.has_discrete_attributes():
+                    self.Warning.discrete_attrs()
+                self.info.set_output_summary(len(transposed),
+                                             format_summary_details(transposed))
+            except ValueError as e:
+                self.Error.value_error(e)
         else:
-            raise ex
-
-    def onDeleteWidget(self):
-        self.shutdown()
-        super().onDeleteWidget()
+            self.info.set_output_summary(self.info.NoOutput)
+        self.Outputs.data.send(transposed)
 
     def send_report(self):
         if self.feature_type == self.GENERIC:

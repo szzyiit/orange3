@@ -3,9 +3,9 @@ from collections import namedtuple, OrderedDict
 
 import numpy as np
 
-from AnyQt.QtWidgets import QListView, QApplication, QSizePolicy
+from AnyQt.QtWidgets import QListView, QApplication
 from AnyQt.QtGui import QBrush, QColor, QPainter
-from AnyQt.QtCore import QEvent, Qt
+from AnyQt.QtCore import QEvent
 from orangewidget.utils.listview import ListViewSearch
 
 import pyqtgraph as pg
@@ -16,6 +16,7 @@ from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils import itemmodels, colorpalettes
 from Orange.widgets.utils.itemmodels import select_rows
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 
 from Orange.widgets.visualize.owscatterplotgraph import ScatterPlotItem
 from Orange.widgets.widget import Input, Output
@@ -62,6 +63,9 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
         self.component_x = 0
         self.component_y = 1
 
+        self._set_input_summary(None)
+        self._set_output_summary(None)
+
         box = gui.vBox(self.controlArea, "变量")
         self.varlist = itemmodels.VariableListModel()
         self.varview = view = ListViewSearch(
@@ -74,25 +78,23 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
         box.layout().addWidget(view)
 
         axes_box = gui.vBox(self.controlArea, "轴线")
+        box = gui.vBox(axes_box, "X 轴", margin=0)
+        box.setFlat(True)
         self.axis_x_cb = gui.comboBox(
-            axes_box, self, "component_x", label="X:",
-            callback=self._component_changed, orientation=Qt.Horizontal,
-            sizePolicy=(QSizePolicy.MinimumExpanding,
-                        QSizePolicy.Preferred)
-        )
+            box, self, "component_x", callback=self._component_changed)
 
+        box = gui.vBox(axes_box, "Y 轴", margin=0)
+        box.setFlat(True)
         self.axis_y_cb = gui.comboBox(
-            axes_box, self, "component_y", label="Y:",
-            callback=self._component_changed, orientation=Qt.Horizontal,
-            sizePolicy=(QSizePolicy.MinimumExpanding,
-                        QSizePolicy.Preferred)
-        )
+            box, self, "component_y", callback=self._component_changed)
 
         self.infotext = gui.widgetLabel(
             gui.vBox(self.controlArea, "对惯性的贡献(Contribution to Inertia)"), "\n"
         )
 
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        gui.auto_send(self.controlArea, self, "auto_commit")
+
+        gui.rubber(self.controlArea)
 
         self.plot = pg.PlotWidget(background="w")
         self.plot.setMenuEnabled(False)
@@ -109,6 +111,7 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
             data = None
 
         self.data = data
+        self._set_input_summary(self.data)
         if data is not None:
             self.varlist[:] = [var for var in data.domain.variables
                                if var.is_discrete]
@@ -148,6 +151,7 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
                               StringVariable("Value")]),
                 rf, metas=vars_data
             )
+        self._set_output_summary(output_table)
         self.Outputs.coordinates.send(output_table)
 
     def clear(self):
@@ -155,6 +159,16 @@ class OWCorrespondenceAnalysis(widget.OWWidget):
         self.ca = None
         self.plot.clear()
         self.varlist[:] = []
+
+    def _set_input_summary(self, data):
+        summary = len(data) if data else self.info.NoInput
+        details = format_summary_details(data) if data else ""
+        self.info.set_input_summary(summary, details)
+
+    def _set_output_summary(self, output):
+        summary = len(output) if output else self.info.NoOutput
+        details = format_summary_details(output) if output else ""
+        self.info.set_output_summary(summary, details)
 
     def selected_vars(self):
         rows = sorted(

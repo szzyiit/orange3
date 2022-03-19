@@ -14,6 +14,7 @@ from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
                                                  ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
@@ -36,8 +37,8 @@ class OWRuleViewer(widget.OWWidget):
     compact_view = settings.Setting(False)
 
     want_basic_layout = True
-    want_main_area = False
-    want_control_area = True
+    want_main_area = True
+    want_control_area = False
 
     def __init__(self):
         super().__init__()
@@ -45,6 +46,9 @@ class OWRuleViewer(widget.OWWidget):
         self.data = None
         self.classifier = None
         self.selected = None
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self.model = CustomRuleViewerTableModel(parent=self)
         self.model.set_horizontal_header_labels(
@@ -64,24 +68,25 @@ class OWRuleViewer(widget.OWWidget):
         self.dist_item_delegate = DistributionItemDelegate(self)
         self.view.setItemDelegateForColumn(3, self.dist_item_delegate)
 
-        self.controlArea.layout().addWidget(self.view)
+        self.mainArea.layout().setContentsMargins(0, 0, 0, 0)
+        self.mainArea.layout().addWidget(self.view)
+        bottom_box = gui.hBox(widget=self.mainArea, box=None,
+                              margin=0, spacing=0)
 
-        gui.checkBox(widget=self.buttonsArea, master=self, value="compact_view",
-                     label="紧凑视图", callback=self.on_update)
-        gui.rubber(self.buttonsArea)
-
-        original_order_button = gui.button(
-            self.buttonsArea, self,
-            "恢复原始顺序",
-            autoDefault=False,
-            callback=self.restore_original_order,
-            attribute=Qt.WA_LayoutUsesWidgetRect,
-        )
+        original_order_button = QPushButton(
+            "恢复原始顺序", autoDefault=False)
+        original_order_button.setFixedWidth(180)
+        bottom_box.layout().addWidget(original_order_button)
         original_order_button.clicked.connect(self.restore_original_order)
+
+        gui.separator(bottom_box, width=5, height=0)
+        gui.checkBox(widget=bottom_box, master=self, value="compact_view",
+                     label="紧凑型视图", callback=self.on_update)
 
     @Inputs.data
     def set_data(self, data):
         self.data = data
+        self._set_input_summary()
         self.commit()
 
     @Inputs.classifier
@@ -101,6 +106,11 @@ class OWRuleViewer(widget.OWWidget):
 
         self.on_update()
         self.commit()
+
+    def _set_input_summary(self):
+        summary = len(self.data) if self.data else self.info.NoInput
+        details = format_summary_details(self.data) if self.data else ""
+        self.info.set_input_summary(summary, details)
 
     def on_update(self):
         self._save_selected()
@@ -169,6 +179,9 @@ class OWRuleViewer(widget.OWWidget):
             data_output = data.from_table_rows(data, selected_indices) \
                 if len(selected_indices) else None
 
+        summary = len(data_output) if data_output else self.info.NoOutput
+        details = format_summary_details(data_output) if data_output else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(data_output)
         self.Outputs.annotated_data.send(create_annotated_table(data, selected_indices))
 

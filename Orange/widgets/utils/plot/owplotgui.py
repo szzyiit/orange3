@@ -142,7 +142,7 @@ class VariablesDelegate(QStyledItemDelegate):
         if option.state & QStyle.State_MouseOver:
             if not full_selection or (full_selection and is_selected):
                 txt = [" 添加 ", " 删除 "][is_selected]
-                txtw = painter.fontMetrics().horizontalAdvance(txt)
+                txtw = painter.fontMetrics().width(txt)
                 painter.save()
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(QColor("#ccc"))
@@ -194,10 +194,9 @@ class VariableSelectionView(QListView):
         self.setUniformItemSizes(True)
 
         self.setItemDelegate(VariablesDelegate())
-        self.setMinimumHeight(50)
 
     def sizeHint(self):
-        return QSize(1, 150)
+        return QSize(1, 50)
 
     def mouseMoveEvent(self, e):
         super().mouseMoveEvent(e)
@@ -728,7 +727,7 @@ class OWPlotGUI:
         else:
             gui.separator(widget)
 
-    def point_properties_box(self, widget, box='Attributes'):
+    def point_properties_box(self, widget, box=True):
         '''
             Creates a box with controls for common point properties.
             Currently, these properties are point size and transparency.
@@ -742,7 +741,7 @@ class OWPlotGUI:
             self.LabelOnlySelected], box)
         return box
 
-    def effects_box(self, widget, box=False):
+    def effects_box(self, widget, box=True):
         """
         Create a box with controls for common plot settings
         """
@@ -759,7 +758,7 @@ class OWPlotGUI:
         """
         return self.create_box([
             self.ClassDensity,
-            self.ShowLegend], widget, box, False)
+            self.ShowLegend], widget, box, True)
 
     _functions = {
         ShowFilledSymbols: filled_symbols_check_box,
@@ -797,9 +796,7 @@ class OWPlotGUI:
             The ``ids`` argument is a list of widget ID's that will be added to this box
         '''
         if box is None:
-            kwargs = {}
-            box = gui.vBox(widget, name, margin=True,
-                           contentsMargins=(8, 4, 8, 4))
+            box = gui.vBox(widget, name)
         self.add_widgets(ids, box)
         return box
 
@@ -807,12 +804,10 @@ class OWPlotGUI:
         grid = QGridLayout()
         grid.setColumnMinimumWidth(0, 50)
         grid.setColumnStretch(1, 1)
-        b = gui.widgetBox(widget, box=box, orientation=grid)
-        if not box:
-            b.setContentsMargins(8, 4, 8, 4)
+        box = gui.widgetBox(widget, box=box, orientation=grid)
         # This must come after calling widgetBox, since widgetBox overrides it
         grid.setVerticalSpacing(8)
-        return b
+        return box
 
     def _expand_id(self, id):
         if type(id) == int:

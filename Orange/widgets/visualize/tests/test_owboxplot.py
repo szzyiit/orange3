@@ -12,6 +12,7 @@ from Orange.widgets.visualize.owboxplot import (
     OWBoxPlot, FilterGraphicsRectItem, _quantiles
 )
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.tests import test_filename
 
 
@@ -353,6 +354,30 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         for box in self.widget.box_scene.items():
             if isinstance(box, FilterGraphicsRectItem):
                 box.setSelected(True)
+
+    def test_summary(self):
+        """Check if status bar is updated when data is received"""
+        data, info = self.titanic, self.widget.info
+        no_input, no_output = "No data on input", "No data on output"
+
+        self.send_signal(self.widget.Inputs.data, data)
+        summary, details = f"{len(data)}", format_summary_details(data)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
+
+        self._select_data()
+        output = self.get_output(self.widget.Outputs.selected_data)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 
 class TestUtils(unittest.TestCase):

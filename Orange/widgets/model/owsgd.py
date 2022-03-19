@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from AnyQt.QtCore import Qt
-from AnyQt.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QWidget
+from AnyQt.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QLabel
 
 from Orange.widgets.report import bool_str
 from Orange.data import ContinuousVariable, StringVariable, Domain, Table
@@ -30,6 +30,8 @@ class OWSGD(OWBaseLearner):
     settings_version = 2
 
     LEARNER = SGDLearner
+
+    left_side_scrolling = True
 
     class Outputs(OWBaseLearner.Outputs):
         coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
@@ -105,15 +107,17 @@ class OWSGD(OWBaseLearner):
     tol = Setting(1e-3)
     tol_enabled = Setting(True)
 
-    def add_main_layout(self):
-        main_widget = QWidget()
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        main_widget.setLayout(layout)
-        self.controlArea.layout().addWidget(main_widget)
+    def __init__(self):
+        super().__init__()
+        self.apply_button.layout().insertStretch(0)
 
-        left = gui.vBox(main_widget).layout()
-        right = gui.vBox(main_widget).layout()
+    def add_main_layout(self):
+        layout = QHBoxLayout()
+        self.controlArea.layout().addLayout(layout)
+        left = QVBoxLayout()
+        right = QVBoxLayout()
+        layout.addLayout(left)
+        layout.addLayout(right)
         self._add_algorithm_to_layout(left)
         self._add_regularization_to_layout(left)
         self._add_learning_params_to_layout(right)

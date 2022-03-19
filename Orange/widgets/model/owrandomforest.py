@@ -53,14 +53,12 @@ class OWRandomForest(OWBaseLearner):
             checkCallback=self.settings_changed, alignment=Qt.AlignRight,)
         self.random_state = gui.checkBox(
             box, self, "use_random_state", label="可重复的训练",
-            callback=self.settings_changed,
-            attribute=Qt.WA_LayoutUsesWidgetRect)
+            callback=self.settings_changed)
         self.weights = gui.checkBox(
             box, self,
             "class_weight", label="平衡类别分布",
             callback=self.settings_changed,
-            tooltip="将类别权重设置为出现频率的反比.",
-            attribute=Qt.WA_LayoutUsesWidgetRect
+            tooltip="将类别权重设置为出现频率的反比"
         )
 
         box = gui.vBox(self.controlArea, "生长控制")

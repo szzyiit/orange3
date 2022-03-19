@@ -154,7 +154,7 @@ def lac(conts, k, nsteps=30, window_size=1):
 
 def create_contingencies(X, callback=None):
     window_size = 1
-    dim = len(X.domain.variables)
+    dim = len(X.domain)
 
     X_ = Discretize(method=EqualFreq(n=10))(X)
     m = get_bin_centers(X_)
@@ -162,7 +162,7 @@ def create_contingencies(X, callback=None):
     from Orange.data.sql.table import SqlTable
     if isinstance(X, SqlTable):
         conts = []
-        al = len(X.domain.variables)
+        al = len(X.domain)
         if al > 1:
             conts.append(create_sql_contingency(X_, [0, 1], m))
             if callback:
@@ -176,12 +176,12 @@ def create_contingencies(X, callback=None):
                 if callback:
                     callback(al, al)
     else:
-        conts = [defaultdict(float) for i in range(len(X_.domain.variables))]
+        conts = [defaultdict(float) for i in range(len(X_.domain))]
         for i, r in enumerate(X_):
             if any(np.isnan(r)):
                 continue
             row = tuple(m[vi].get(v) for vi, v in enumerate(r))
-            for l in range(len(X_.domain.variables)):
+            for l in range(len(X_.domain)):
                 lower = l - window_size if l - window_size >= 0 else None
                 upper = l + window_size + 1 if l + window_size + 1 <= dim else None
                 dims = slice(lower, upper)

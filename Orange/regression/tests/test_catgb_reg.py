@@ -3,14 +3,9 @@ import unittest
 from Orange.data import Table
 from Orange.evaluation import CrossValidation, RMSE
 from Orange.preprocess.score import Scorer
-
-try:
-    from Orange.regression import CatGBRegressor
-except ImportError:
-    CatGBRegressor = None
+from Orange.regression import CatGBRegressor
 
 
-@unittest.skipIf(CatGBRegressor is None, "Missing 'catboost' package")
 class TestCatGBRegressor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

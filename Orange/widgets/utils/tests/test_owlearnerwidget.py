@@ -1,17 +1,16 @@
-from unittest.mock import Mock
-
 import scipy.sparse as sp
 
 # pylint: disable=missing-docstring, protected-access
 from Orange.base import Learner, Model
 from Orange.classification import KNNLearner
 from Orange.data import Table, Domain
-from Orange.modelling import TreeLearner, Fitter
+from Orange.modelling import TreeLearner
 from Orange.preprocess import continuize
 from Orange.regression import MeanLearner, LinearRegressionLearner
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.utils.signals import Output
+from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWBaseLearner(WidgetTest):
@@ -134,51 +133,19 @@ class TestOWBaseLearner(WidgetTest):
         model = self.get_output(w.Outputs.model, widget=w)
         self.assertIsNotNone(model)
 
-    def test_invalid_number_of_targets(self):
-        class MockLearner(Fitter):
-            name = 'mock'
-            __fits__ = {'classification': Mock()}
-            __returns__ = Mock()
+    def test_summary(self):
+        """Check if the status bar is updated when data is received"""
+        class WidgetA(OWBaseLearner):
+            name = "A"
+            LEARNER = KNNLearner
+        widget = self.create_widget(WidgetA)
+        info = widget.info
+        no_input = "No data on input"
 
-        class WidgetLR(OWBaseLearner):
-            name = "lr"
-            LEARNER = MockLearner
-
-        w = self.create_widget(WidgetLR)
-        error = w.Error.data_error
-        heart = Table("heart_disease")
-        domain = heart.domain
-
-        no_target = heart.transform(
-            Domain(domain.attributes,
-                   []))
-        two_targets = heart.transform(
-            Domain([domain["age"]],
-                   [domain["gender"], domain["chest pain"]]))
-
-        self.send_signal(w.Inputs.data, heart)
-        self.assertFalse(error.is_shown())
-        self.assertIs(w.data, heart)
-
-        self.send_signal(w.Inputs.data, no_target)
-        self.assertTrue(error.is_shown())
-        self.assertIsNone(w.data)
-        err_no_target = str(error)
-        self.assertIn("target", err_no_target)
-
-        self.send_signal(w.Inputs.data, two_targets)
-        self.assertTrue(error.is_shown())
-        self.assertIsNone(w.data)
-        err_two_targets = str(error)
-        self.assertIn("target", err_no_target)
-        self.assertNotEqual(err_no_target, err_two_targets)
-
-        self.send_signal(w.Inputs.data, None)
-        self.assertIsNone(w.data)
-        self.assertFalse(error.is_shown())
-
-        self.send_signal(w.Inputs.data, two_targets)
-        self.assertTrue(error.is_shown())
-
-        self.send_signal(w.Inputs.data, None)
-        self.assertFalse(error.is_shown())
+        self.send_signal(widget.Inputs.data, self.iris)
+        summary, details = "150", format_summary_details(self.iris)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        self.send_signal(widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)

@@ -304,7 +304,6 @@ class OWROCAnalysis(widget.OWWidget):
     class Inputs:
         evaluation_results = Input("评估结果(Evaluation Results)", Orange.evaluation.Results, replaces=["Evaluation Results"])
 
-    buttons_area_orientation = None
     settingsHandler = EvaluationResultsContextHandler()
     target_index = settings.ContextSetting(0)
     selected_classifiers = settings.ContextSetting([])

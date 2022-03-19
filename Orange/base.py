@@ -136,11 +136,7 @@ class Learner(ReprableWithPreprocessors):
         progress_callback(0.1, "Fitting...")
         model = self._fit_model(data)
         model.used_vals = [np.unique(y).astype(int) for y in data.Y[:, None].T]
-        if not hasattr(model, "domain") or model.domain is None:
-            # some models set domain themself and it should be respected
-            # e.g. calibration learners set the base_learner's domain which
-            # would be wrongly overwritten if we set it here for any model
-            model.domain = data.domain
+        model.domain = data.domain
         model.supports_multiclass = self.supports_multiclass
         model.name = self.name
         model.original_domain = origdomain

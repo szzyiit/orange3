@@ -1,6 +1,7 @@
 from functools import reduce
 from types import SimpleNamespace
 
+from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QGridLayout
 
 import Orange.data
@@ -13,6 +14,7 @@ from Orange.widgets import gui, widget
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
@@ -20,8 +22,8 @@ class OWContinuize(widget.OWWidget):
     name = "连续化(Continuize)"
     description = ("将分类属性转换为数值属性，还可以归一化这些值" )
     icon = "icons/Continuize.svg"
-    category = "Data"
-    keywords = ["encode", "dummy", "one-hot", 'lianxu', 'shuzhi']
+    category = 'Data'
+    keywords = ['lianxu', 'shuzhi']
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -30,6 +32,7 @@ class OWContinuize(widget.OWWidget):
         data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     want_main_area = False
+    buttons_area_orientation = Qt.Vertical
     resizing_enabled = False
 
     Normalize = SimpleNamespace(Leave=0, Standardize=1, Center=2, Scale=3,
@@ -83,19 +86,22 @@ class OWContinuize(widget.OWWidget):
             None, self, "continuous_treatment", box = "数值特征",
             btnLabels=[x[0] for x in self.continuous_treats],
             callback=self.settings_changed)
-        gui.rubber(box)
+        box.layout().addStretch(10)
         layout.addWidget(box, 0, 1, 2, 1)
 
         box = gui.radioButtonsInBox(
             None, self, "class_treatment", box="分类结果",
             btnLabels=[t[0] for t in self.class_treats],
             callback=self.settings_changed)
-        gui.rubber(box)
-        layout.addWidget(box, 0, 2, 2, 1)
+        box.layout().addStretch(10)
+        layout.addWidget(box, 0, 2)
 
-        gui.auto_apply(self.buttonsArea, self, "autosend")
+        ac = gui.auto_apply(None, self, "autosend", box=False)
+        layout.addWidget(ac, 1, 2)
 
         self.data = None
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
     def settings_changed(self):
         self.commit()
@@ -106,8 +112,12 @@ class OWContinuize(widget.OWWidget):
         self.data = data
         self.enable_normalization()
         if data is None:
+            self.info.set_input_summary(self.info.NoInput)
+            self.info.set_output_summary(self.info.NoOutput)
             self.Outputs.data.send(None)
         else:
+            self.info.set_input_summary(len(data),
+                                        format_summary_details(data))
             self.unconditional_commit()
 
     def enable_normalization(self):
@@ -138,6 +148,8 @@ class OWContinuize(widget.OWWidget):
             domain = continuizer(self.data)
             data = self.data.transform(domain)
             self.Outputs.data.send(data)
+            self.info.set_output_summary(len(data),
+                                         format_summary_details(data))
         else:
             self.Outputs.data.send(self.data)  # None or empty data
 

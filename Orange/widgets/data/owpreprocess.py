@@ -29,6 +29,7 @@ from Orange.widgets.settings import Setting
 from Orange.widgets.utils.overlay import OverlayWidget
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 from Orange.preprocess import Normalize
 from Orange.widgets.data.utils.preprocess import (
@@ -1105,24 +1106,8 @@ class OWPreprocess(widget.OWWidget, openclass=True):
         self.preprocessors.mimeData = mimeData
 
         box = gui.vBox(self.controlArea, "预处理器(Preprocessors)")
-        gui.rubber(self.controlArea)
 
-        # we define a class that lets us set the vertical sizeHint
-        # based on the height and number of items in the list
-        # see self.__update_list_sizeHint
-
-        class ListView(QListView):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.vertical_hint = None
-
-            def sizeHint(self):
-                sh = super().sizeHint()
-                if self.vertical_hint:
-                    return QSize(sh.width(), self.vertical_hint)
-                return sh
-
-        self.preprocessorsView = view = ListView(
+        self.preprocessorsView = view = QListView(
             selectionMode=QListView.SingleSelection,
             dragEnabled=True,
             dragDropMode=QListView.DragOnly
@@ -1158,7 +1143,11 @@ class OWPreprocess(widget.OWWidget, openclass=True):
         self.mainArea.layout().addWidget(self.scroll_area)
         self.flow_view.installEventFilter(self)
 
-        gui.auto_apply(self.buttonsArea, self, "autocommit")
+        box = gui.vBox(self.controlArea, "输出")
+        gui.auto_apply(box, self, "autocommit", box=False)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self._initialize()
 
@@ -1176,8 +1165,6 @@ class OWPreprocess(widget.OWWidget, openclass=True):
                           Qt.ItemIsDragEnabled)
             self.preprocessors.appendRow([item])
 
-        self.__update_list_sizeHint()
-
         model = self.load(self.storedsettings)
 
         self.set_model(model)
@@ -1189,14 +1176,6 @@ class OWPreprocess(widget.OWWidget, openclass=True):
             self.__update_size_constraint()
 
         self.apply()
-
-    def __update_list_sizeHint(self):
-        view = self.preprocessorsView
-
-        h = view.sizeHintForRow(0)
-        n = self.preprocessors.rowCount()
-        view.vertical_hint = n * h + 2  # only on Mac?
-        view.updateGeometry()
 
     def load(self, saved):
         """Load a preprocessor list from a dict."""
@@ -1287,6 +1266,10 @@ class OWPreprocess(widget.OWWidget, openclass=True):
     def set_data(self, data=None):
         """Set the input dataset."""
         self.data = data
+        if data is not None:
+            self.info.set_input_summary(len(data), format_summary_details(data))
+        else:
+            self.info.set_input_summary(self.info.NoInput)
 
     def handleNewSignals(self):
         self.apply()
@@ -1330,8 +1313,10 @@ class OWPreprocess(widget.OWWidget, openclass=True):
             except (ValueError, ZeroDivisionError) as e:
                 self.error(str(e))
                 return
+            self.info.set_output_summary(len(data), format_summary_details(data))
         else:
             data = None
+            self.info.set_output_summary(self.info.NoOutput)
 
         self.Outputs.preprocessor.send(preprocessor)
         self.Outputs.preprocessed_data.send(data)
@@ -1396,6 +1381,10 @@ class OWPreprocess(widget.OWWidget, openclass=True):
         self.scroll_area.setMinimumWidth(
             min(max(sh.width() + scroll_width + 2, self.controlArea.width()),
                 520))
+
+    def sizeHint(self):
+        sh = super().sizeHint()
+        return sh.expandedTo(QSize(sh.width() + 300, 500))
 
     def send_report(self):
         pp = [(self.controler.model().index(i, 0).data(Qt.DisplayRole), w)

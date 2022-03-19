@@ -4,6 +4,7 @@ import textwrap
 
 from Orange.widgets import widget, gui
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input
 from Orange.data.table import Table
 from Orange.data import StringVariable, DiscreteVariable, ContinuousVariable
@@ -27,7 +28,6 @@ class OWDataInfo(widget.OWWidget):
         data = Input("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
-    buttons_area_orientation = None
     resizing_enabled = False
 
     def __init__(self):
@@ -39,8 +39,11 @@ class OWDataInfo(widget.OWWidget):
                     ["Meta Attributes","元属性"], ["Location","位置"], ["Data Attributes","数据属性"]):
             name = box[0].lower().replace(" ", "_")
             chinese_name = box[1]
-            bo = gui.vBox(self.controlArea, chinese_name)
+            bo = gui.vBox(self.controlArea, chinese_name,
+                          addSpace=False and box[0] != "Meta Attributes")
             gui.label(bo, self, "%%(%s)s" % name)
+
+        self.info.set_input_summary(self.info.NoInput)
 
         # ensure the widget has some decent minimum width.
         self.targets = "Categorical outcome with 123 values"
@@ -56,9 +59,12 @@ class OWDataInfo(widget.OWWidget):
     def data(self, data):
         if data is None:
             self._clear_fields()
+            self.info.set_input_summary(self.info.NoInput)
         else:
             self._set_fields(data)
             self._set_report(data)
+            self.info.set_input_summary(data.approx_len(),
+                                        format_summary_details(data))
 
     def _clear_fields(self):
         self.data_set_name = ""
@@ -111,12 +117,12 @@ class OWDataInfo(widget.OWWidget):
             sparseness = ""
         self.data_set_size = pack_table((
             ("Rows", '~{}'.format(data.approx_len())),
-            ("Columns", len(domain.variables)+len(domain.metas)))) + sparseness
+            ("Columns", len(domain)+len(domain.metas)))) + sparseness
 
         def update_size():
             self.data_set_size = pack_table((
                 ("行", len(data)),
-                ("列", len(domain.variables)+len(domain.metas)))) + sparseness
+                ("列", len(domain)+len(domain.metas)))) + sparseness
 
         threading.Thread(target=update_size).start()
 

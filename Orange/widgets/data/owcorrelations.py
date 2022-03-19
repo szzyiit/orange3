@@ -25,6 +25,7 @@ from Orange.widgets.utils import vartype
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.utils import VizRankDialogAttrPair
 from Orange.widgets.widget import OWWidget, AttributeList, Msg
 
@@ -248,8 +249,7 @@ class OWCorrelations(OWWidget):
         features = Output("特征(Features)", AttributeList, replaces=['Features'])
         correlations = Output("相关性(Correlations)", Table, replaces=['Correlations'])
 
-    want_main_area = False
-    want_control_area = True
+    want_control_area = False
 
     correlation_type: int
 
@@ -272,7 +272,7 @@ class OWCorrelations(OWWidget):
         self.cont_data = None  # type: Table
 
         # GUI
-        box = gui.vBox(self.controlArea)
+        box = gui.vBox(self.mainArea)
         self.correlation_combo = gui.comboBox(
             box, self, "correlation_type", items=CorrelationType.items(),
             orientation=Qt.Horizontal, callback=self._correlation_combo_changed
@@ -295,8 +295,11 @@ class OWCorrelations(OWWidget):
         box.layout().addWidget(self.vizrank.filter)
         box.layout().addWidget(self.vizrank.rank_table)
 
-        button_box = gui.hBox(self.buttonsArea)
+        button_box = gui.hBox(self.mainArea)
         button_box.layout().addWidget(self.vizrank.button)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
     @staticmethod
     def sizeHint():
@@ -364,14 +367,17 @@ class OWCorrelations(OWWidget):
                     self.Warning.not_enough_vars()
                 else:
                     self.cont_data = SklImpute()(cont_data)
+            self.info.set_input_summary(len(data),
+                                        format_summary_details(data))
+        else:
+            self.info.set_input_summary(self.info.NoInput)
         self.set_feature_model()
         self.openContext(self.cont_data)
         self.apply()
         self.vizrank.button.setEnabled(self.cont_data is not None)
 
     def set_feature_model(self):
-        self.feature_model.set_domain(
-            self.cont_data.domain if self.cont_data else None)
+        self.feature_model.set_domain(self.cont_data and self.cont_data.domain)
         data = self.data
         if self.cont_data and data.domain.has_continuous_class:
             self.feature = self.cont_data.domain[data.domain.class_var.name]
@@ -388,6 +394,9 @@ class OWCorrelations(OWWidget):
 
     def commit(self):
         self.Outputs.data.send(self.data)
+        summary = len(self.data) if self.data else self.info.NoOutput
+        details = format_summary_details(self.data) if self.data else ""
+        self.info.set_output_summary(summary, details)
 
         if self.data is None or self.cont_data is None:
             self.Outputs.features.send(None)

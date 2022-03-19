@@ -99,6 +99,7 @@ class OWNNLearner(OWBaseLearner):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         form = QFormLayout()
         form.setFieldGrowthPolicy(form.AllNonFixedFieldsGrow)
+        form.setVerticalSpacing(25)
         form.setLabelAlignment(Qt.AlignLeft)
         gui.widgetBox(self.controlArea, True, orientation=form)
         form.addRow(
@@ -115,6 +116,7 @@ class OWNNLearner(OWBaseLearner):
                 label="Activation:", items=[i for i in self.chinese_act_lbl],
                 callback=self.settings_changed))
 
+        form.addRow(" ", gui.separator(None, 16))
         form.addRow(
             "求解器(Solver):",
             gui.comboBox(
@@ -137,10 +139,11 @@ class OWNNLearner(OWBaseLearner):
                 label="Max iterations:", orientation=Qt.Horizontal,
                 alignment=Qt.AlignRight, callback=self.settings_changed))
 
+        form.addRow(gui.separator(None))
         form.addRow(
             gui.checkBox(
                 None, self, "replicable", label="可重复的训练",
-                callback=self.settings_changed, attribute=Qt.WA_LayoutUsesWidgetRect)
+                callback=self.settings_changed),
         )
 
     def set_alpha(self):
@@ -160,10 +163,7 @@ class OWNNLearner(OWBaseLearner):
         self._executor = ThreadExecutor()
 
         # just a test cancel button
-        b=gui.button(self.apply_button, self, "取消",
-                       callback=self.cancel, addToLayout=False)
-        self.apply_button.layout().insertStretch(0, 100)
-        self.apply_button.layout().insertWidget(0, b)
+        gui.button(self.apply_button, self, "取消", callback=self.cancel)
 
     def create_learner(self):
         return self.LEARNER(

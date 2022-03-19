@@ -36,7 +36,6 @@ class SliderGraph(PlotWidget):
         self.getViewBox().setMouseEnabled(False, False)
         self.showGrid(True, True, alpha=0.5)
         self.setRange(xRange=(0.0, 1.0), yRange=(0.0, 1.0))
-        self.hideButtons()
 
         # tuples to store horisontal lines and labels
         self.plot_horlabel = []
@@ -97,14 +96,14 @@ class SliderGraph(PlotWidget):
                 self.addItem(label)
 
         self._plot_cutpoint(cutpoint_x)
-        self.autoRange()
+        self.setRange(xRange=(x.min(), x.max()),
+                      yRange=(0, max(yi.max() for yi in y)))
 
     def clear_plot(self):
         """
         This function clears the plot and removes data.
         """
         self.clear()
-        self.setRange(xRange=(0.0, 1.0), yRange=(0.0, 1.0))
         self.plot_horlabel = []
         self.plot_horline = []
         self._line = None
@@ -199,12 +198,11 @@ class SliderGraph(PlotWidget):
         # in every case set their position
         location = int(round(self._line.value()))
         cutidx = np.searchsorted(self.x, location)
-        minx = np.min(self.x)
         for s, curve, label, inc in zip(
                 self.sequences, self.plot_horline, self.plot_horlabel,
                 self.data_increasing):
             y = s[cutidx]
-            curve.setData([minx, location], [y, y])
+            curve.setData([-100, location], 2 * [y])
             self._set_anchor(label, cutidx, inc)
             label.setPos(location, y)
             label.setPlainText("{:.3f}".format(y))

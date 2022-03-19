@@ -1,16 +1,13 @@
 # pylint: disable=protected-access
-import unittest
-
 import numpy as np
 from scipy.sparse import csr_matrix, csc_matrix
 
 from Orange.data import Table
-from Orange.clustering import DBSCAN
 from Orange.distance import Euclidean
-from Orange.preprocess import Normalize, Continuize, SklImpute
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.tests.utils import simulate, possible_duplicate_table
 from Orange.widgets.unsupervised.owdbscan import OWDBSCAN, get_kth_distances
+from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWDBSCAN(WidgetTest):
@@ -219,11 +216,6 @@ class TestOWDBSCAN(WidgetTest):
         data = Table("titanic")
         self.send_signal(w.Inputs.data, data)
 
-    def test_data_retain_ids(self):
-        self.send_signal(self.widget.Inputs.data, self.iris)
-        output = self.get_output(self.widget.Outputs.annotated_data)
-        np.testing.assert_array_equal(self.iris.ids, output.ids)
-
     def test_missing_data(self):
         w = self.widget
         self.iris[1:5, 1] = np.nan
@@ -231,44 +223,22 @@ class TestOWDBSCAN(WidgetTest):
         output = self.get_output(w.Outputs.annotated_data)
         self.assertTupleEqual((150, 1), output[:, "Cluster"].metas.shape)
 
-    def test_normalize_data(self):
-        # not normalized
-        self.widget.controls.normalize.setChecked(False)
+    def test_summary(self):
+        """Check if the status bar updates when data on input"""
+        info = self.widget.info
+        no_input, no_output = "No data on input", "No data on output"
 
-        data = Table("heart_disease")
-        self.send_signal(self.widget.Inputs.data, data)
-
-        kwargs = {"eps": self.widget.eps,
-                  "min_samples": self.widget.min_samples,
-                  "metric": "euclidean"}
-        clusters = DBSCAN(**kwargs)(data)
-
-        output = self.get_output(self.widget.Outputs.annotated_data)
-        output_clusters = output.metas[:, 0]
-        output_clusters[np.isnan(output_clusters)] = -1
-        np.testing.assert_array_equal(output_clusters, clusters)
-
-        # normalized
-        self.widget.controls.normalize.setChecked(True)
-
-        kwargs = {"eps": self.widget.eps,
-                  "min_samples": self.widget.min_samples,
-                  "metric": "euclidean"}
-        for pp in (Continuize(), Normalize(), SklImpute()):
-            data = pp(data)
-        clusters = DBSCAN(**kwargs)(data)
-
-        output = self.get_output(self.widget.Outputs.annotated_data)
-        output_clusters = output.metas[:, 0]
-        output_clusters[np.isnan(output_clusters)] = -1
-        np.testing.assert_array_equal(output_clusters, clusters)
-
-    def test_normalize_changed(self):
         self.send_signal(self.widget.Inputs.data, self.iris)
-        simulate.combobox_run_through_all(self.widget.controls.metric_idx)
-        self.widget.controls.normalize.setChecked(False)
-        simulate.combobox_run_through_all(self.widget.controls.metric_idx)
+        summary, details = f"{len(self.iris)}", format_summary_details(self.iris)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        output = self.get_output(self.widget.Outputs.annotated_data)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
 
-
-if __name__ == '__main__':
-    unittest.main()
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)

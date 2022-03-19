@@ -91,6 +91,11 @@ class TestOWBaseSql(WidgetTest):
         self.widget.connectbutton.click()
         self.widget.report_button.click()  # empty
 
+    def test_out_summary(self):
+        self.widget.open_table()
+        info = self.widget.info
+        self.assertEqual(info._StateInfo__output_summary.brief, "150")
+
 
 if __name__ == "__main__":
     unittest.main()

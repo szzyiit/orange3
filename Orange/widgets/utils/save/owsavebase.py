@@ -83,17 +83,21 @@ class OWSaveBase(widget.OWWidget, openclass=True):
             self.filter = next(iter(self.get_filters()))
 
         self.grid = grid = QGridLayout()
-        gui.widgetBox(self.controlArea, orientation=grid, box=True)
+        gui.widgetBox(self.controlArea, orientation=grid)
         grid.addWidget(
             gui.checkBox(
                 None, self, "auto_save", "接收到新数据自动保存",
                 callback=self.update_messages),
             start_row, 0, 1, 2)
+        grid.setRowMinimumHeight(start_row + 1, 8)
         self.bt_save = gui.button(
-            self.buttonsArea, self,
+            None, self,
             label=f"另存为 {self.stored_name}" if self.stored_name else "保存",
             callback=self.save_file)
-        gui.button(self.buttonsArea, self, "另存为 ...", callback=self.save_file_as)
+        grid.addWidget(self.bt_save, start_row + 2, 0)
+        grid.addWidget(
+            gui.button(None, self, "另存为 ...", callback=self.save_file_as),
+            start_row + 2, 1)
 
         self.adjustSize()
         self.update_messages()
@@ -126,7 +130,7 @@ class OWSaveBase(widget.OWWidget, openclass=True):
             if os.path.exists(self.stored_path):
                 self.auto_save = False
                 return self.stored_path
-        elif workflow_dir is not None:
+        elif workflow_dir:
             return os.path.normpath(
                 os.path.join(workflow_dir, self.stored_path))
 

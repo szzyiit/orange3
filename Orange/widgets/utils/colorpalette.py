@@ -207,7 +207,7 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
                 if type(colors) == dict:
                     colors = colors[max(colors.keys())]
                 dlg = PaletteEditor(colors, parent=self)
-                if dlg.exec() and colors != dlg.getRgbColors():
+                if dlg.exec_() and colors != dlg.getRgbColors():
                     self.__dict__["disc" + paletteName + "View"].setDiscPalette(dlg.getRgbColors())
                 self.__dict__["disc" + paletteName + "EditButt"].setChecked(0)
                 return
@@ -415,7 +415,7 @@ class ColorPalleteListing(QDialog):
         self.buttons = []
         self.setMinimumWidth(400)
 
-        box = gui.vBox(space, "Information")
+        box = gui.vBox(space, "Information", addSpace=True)
         gui.widgetLabel(
             box,
             '<p align="center">This dialog shows a list of predefined '
@@ -423,7 +423,7 @@ class ColorPalleteListing(QDialog):
             'in Orange.<br/>You can select a palette by clicking on it.</p>'
         )
 
-        box = gui.vBox(space, "Default Palette")
+        box = gui.vBox(space, "Default Palette", addSpace=True)
 
         butt = _ColorButton(
             DefaultRGBColors, flat=True, toolTip="Default color palette",
@@ -436,7 +436,7 @@ class ColorPalleteListing(QDialog):
         for type in ["Qualitative", "Spectral", "Diverging", "Sequential", "Pastels"]:
             colorGroup = colorbrewer.colorSchemes.get(type.lower(), {})
             if colorGroup:
-                box = gui.vBox(space, type + " Palettes")
+                box = gui.vBox(space, type + " Palettes", addSpace=True)
                 items = sorted(colorGroup.items())
                 for key, colors in items:
                     butt = _ColorButton(colors, self, toolTip=key, flat=True,

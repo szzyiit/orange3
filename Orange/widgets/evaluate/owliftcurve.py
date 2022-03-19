@@ -9,7 +9,6 @@ from AnyQt.QtCore import Qt
 
 import pyqtgraph as pg
 
-from orangewidget.utils.visual_settings_dlg import VisualSettingsDialog
 from orangewidget.widget import Msg
 
 import Orange
@@ -20,9 +19,6 @@ from Orange.widgets.evaluate.utils import check_results_adequacy
 from Orange.widgets.utils import colorpalettes
 from Orange.widgets.evaluate.owrocanalysis import convex_hull
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.visualize.utils.customizableplot import Updater, \
-    CommonParameterSetter
-from Orange.widgets.visualize.utils.plotutils import AxisItem
 from Orange.widgets.widget import Input
 from Orange.widgets import report
 
@@ -47,106 +43,6 @@ class CurveTypes(IntEnum):
     LiftCurve, CumulativeGains = range(2)
 
 
-class ParameterSetter(CommonParameterSetter):
-    WIDE_LINE_LABEL = "Wide line"
-    LINE_LABEL = "Thin Line"
-    DEFAULT_LINE_LABEL = "Default Line"
-
-    WIDE_LINE_WIDTH = 3
-    LINE_WIDTH = 1
-    DEFAULT_LINE_WIDTH = 1
-
-    WIDE_LINE_STYLE = "Solid line"
-    LINE_STYLE = "Solid line"
-    DEFAULT_LINE_STYLE = "Dash line"
-
-    def __init__(self, master):
-        self.master = master
-        self.wide_line_settings = {
-            Updater.WIDTH_LABEL: self.WIDE_LINE_WIDTH,
-            Updater.STYLE_LABEL: self.WIDE_LINE_STYLE,
-        }
-        self.line_settings = {
-            Updater.WIDTH_LABEL: self.LINE_WIDTH,
-            Updater.STYLE_LABEL: self.LINE_STYLE,
-        }
-        self.default_line_settings = {
-            Updater.WIDTH_LABEL: self.DEFAULT_LINE_WIDTH,
-            Updater.STYLE_LABEL: self.DEFAULT_LINE_STYLE,
-        }
-        super().__init__()
-
-    def update_setters(self):
-        self.initial_settings = {
-            self.LABELS_BOX: {
-                self.FONT_FAMILY_LABEL: self.FONT_FAMILY_SETTING,
-                self.TITLE_LABEL: self.FONT_SETTING,
-                self.AXIS_TITLE_LABEL: self.FONT_SETTING,
-                self.AXIS_TICKS_LABEL: self.FONT_SETTING,
-            },
-            self.ANNOT_BOX: {
-                self.TITLE_LABEL: {self.TITLE_LABEL: ("", "")},
-            },
-            self.PLOT_BOX: {
-                self.WIDE_LINE_LABEL: {
-                    Updater.WIDTH_LABEL: (range(1, 15), self.WIDE_LINE_WIDTH),
-                    Updater.STYLE_LABEL: (list(Updater.LINE_STYLES),
-                                          self.WIDE_LINE_STYLE),
-                },
-                self.LINE_LABEL: {
-                    Updater.WIDTH_LABEL: (range(1, 15), self.LINE_WIDTH),
-                    Updater.STYLE_LABEL: (list(Updater.LINE_STYLES),
-                                          self.LINE_STYLE),
-                },
-                self.DEFAULT_LINE_LABEL: {
-                    Updater.WIDTH_LABEL: (range(1, 15),
-                                          self.DEFAULT_LINE_WIDTH),
-                    Updater.STYLE_LABEL: (list(Updater.LINE_STYLES),
-                                          self.DEFAULT_LINE_STYLE),
-                },
-            }
-        }
-
-        def update_wide_curves(**_settings):
-            self.wide_line_settings.update(**_settings)
-            if self.master.display_convex_hull:
-                Updater.update_lines(self.master.hull_items,
-                                     **self.wide_line_settings)
-            else:
-                Updater.update_lines(self.master.curve_items,
-                                     **self.wide_line_settings)
-
-        def update_thin_curves(**_settings):
-            self.line_settings.update(**_settings)
-            if self.master.display_convex_hull:
-                Updater.update_lines(self.master.curve_items,
-                                     **self.line_settings)
-
-        def update_default_line(**_settings):
-            self.default_line_settings.update(**_settings)
-            Updater.update_lines(self.default_line_items,
-                                 **self.default_line_settings)
-
-        self._setters[self.PLOT_BOX] = {
-            self.WIDE_LINE_LABEL: update_wide_curves,
-            self.LINE_LABEL: update_thin_curves,
-            self.DEFAULT_LINE_LABEL: update_default_line,
-        }
-
-    @property
-    def title_item(self):
-        return self.master.titleLabel
-
-    @property
-    def axis_items(self):
-        return [value["item"] for value in self.master.axes.values()]
-
-    @property
-    def default_line_items(self):
-        return [self.master.default_line_item] \
-            if self.master.default_line_item else []
-
-
 class OWLiftCurve(widget.OWWidget):
     name = "提升曲线(Lift Curve)"
     description = "根据分类器的评估结果构建并显示提升曲线。"
@@ -167,15 +63,12 @@ class OWLiftCurve(widget.OWWidget):
         undefined_curves = Msg(
             "No defined curves; check models and data")
 
-    buttons_area_orientation = None
-
     settingsHandler = EvaluationResultsContextHandler()
     target_index = settings.ContextSetting(0)
     selected_classifiers = settings.ContextSetting([])
 
     display_convex_hull = settings.Setting(True)
     curve_type = settings.Setting(CurveTypes.LiftCurve)
-    visual_settings = settings.Setting({}, schema_only=True)
 
     graph_name = "plot"
 
@@ -217,14 +110,7 @@ class OWLiftCurve(widget.OWWidget):
         self.plotview = pg.GraphicsView(background="w")
         self.plotview.setFrameStyle(QFrame.StyledPanel)
 
-        axes = {"bottom": AxisItem(orientation="bottom"),
-                "left": AxisItem(orientation="left")}
-        self.plot = pg.PlotItem(enableMenu=False, axisItems=axes)
-        self.plot.parameter_setter = ParameterSetter(self.plot)
-        self.plot.curve_items = []
-        self.plot.hull_items = []
-        self.plot.default_line_item = None
-        self.plot.display_convex_hull = self.display_convex_hull
+        self.plot = pg.PlotItem(enableMenu=False)
         self.plot.setMouseEnabled(False, False)
         self.plot.hideButtons()
 
@@ -245,8 +131,6 @@ class OWLiftCurve(widget.OWWidget):
         self.plotview.setCentralItem(self.plot)
         self.mainArea.layout().addWidget(self.plotview)
 
-        VisualSettingsDialog(self, self.plot.parameter_setter.initial_settings)
-
     @Inputs.evaluation_results
     def set_results(self, results):
         self.closeContext()
@@ -260,10 +144,6 @@ class OWLiftCurve(widget.OWWidget):
 
     def clear(self):
         self.plot.clear()
-        self.plot.curve_items = []
-        self.plot.hull_items = []
-        self.plot.default_line_item = None
-        self.plot.display_convex_hull = self.display_convex_hull
         self.Warning.clear()
         self.Error.clear()
         self.results = None
@@ -291,10 +171,6 @@ class OWLiftCurve(widget.OWWidget):
 
     def _replot(self):
         self.plot.clear()
-        self.plot.curve_items = []
-        self.plot.hull_items = []
-        self.plot.default_line_item = None
-        self.plot.display_convex_hull = self.display_convex_hull
         if self.results is not None:
             self._setup_plot()
 
@@ -327,43 +203,28 @@ class OWLiftCurve(widget.OWWidget):
         if not points.is_valid:
             return False
 
-        param_setter = self.plot.parameter_setter
         color = self.colors[clf_idx]
-        width = param_setter.line_settings[Updater.WIDTH_LABEL]
-        style = param_setter.line_settings[Updater.STYLE_LABEL]
-        pen = QPen(color, width, Updater.LINE_STYLES[style])
+        pen = QPen(color, 1)
         pen.setCosmetic(True)
-        width = param_setter.wide_line_settings[Updater.WIDTH_LABEL]
-        style = param_setter.wide_line_settings[Updater.STYLE_LABEL]
-        wide_pen = QPen(color, width, Updater.LINE_STYLES[style])
+        wide_pen = QPen(color, 3)
         wide_pen.setCosmetic(True)
 
         def _plot(points, pen):
             contacted, respondents, _ = points
             if self.curve_type == CurveTypes.LiftCurve:
                 respondents = respondents / contacted
-            curve = pg.PlotCurveItem(contacted, respondents, pen=pen,
-                                     antialias=True)
-            self.plot.addItem(curve)
-            return curve
+            self.plot.plot(contacted, respondents, pen=pen, antialias=True)
 
-        self.plot.curve_items.append(
-            _plot(points, wide_pen if not self.display_convex_hull else pen)
-        )
+        _plot(points, wide_pen if not self.display_convex_hull else pen)
         if self.display_convex_hull:
-            self.plot.hull_items.append(_plot(hull, wide_pen))
+            _plot(hull, wide_pen)
         return True
 
     def _plot_default_line(self):
-        param_setter = self.plot.parameter_setter
-        width = param_setter.default_line_settings[Updater.WIDTH_LABEL]
-        style = param_setter.default_line_settings[Updater.STYLE_LABEL]
-        pen = QPen(QColor(20, 20, 20), width, Updater.LINE_STYLES[style])
+        pen = QPen(QColor(20, 20, 20), 1, Qt.DashLine)
         pen.setCosmetic(True)
         y0 = 1 if self.curve_type == CurveTypes.LiftCurve else 0
-        curve = pg.PlotCurveItem([0, 1], [y0, 1], pen=pen, antialias=True)
-        self.plot.addItem(curve)
-        self.plot.default_line_item = curve
+        self.plot.plot([0, 1], [y0, 1], pen=pen, antialias=True)
 
     def _set_undefined_curves_err_warn(self, is_valid):
         self.Error.undefined_curves.clear()
@@ -382,10 +243,6 @@ class OWLiftCurve(widget.OWWidget):
         self.report_items((("Target class", self.target_cb.currentText()),))
         self.report_plot()
         self.report_caption(caption)
-
-    def set_visual_settings(self, key, value):
-        self.plot.parameter_setter.set_parameter(key, value)
-        self.visual_settings[key] = value
 
 
 def points_from_results(results, target, clf_index):

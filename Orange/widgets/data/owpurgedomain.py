@@ -1,3 +1,4 @@
+from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QFrame
 
 from Orange.data import Table
@@ -6,6 +7,7 @@ from Orange.widgets import gui, widget
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
@@ -34,6 +36,7 @@ class OWPurgeDomain(widget.OWWidget):
 
     want_main_area = False
     resizing_enabled = False
+    buttons_area_orientation = Qt.Vertical
 
     feature_options = (('sortValues', '分类特征值排序'),
                        ('removeValues', '删除未使用的特征值'),
@@ -72,10 +75,14 @@ class OWPurgeDomain(widget.OWWidget):
             frame = QFrame()
             frame.setFrameShape(QFrame.HLine)
             frame.setFrameShadow(QFrame.Sunken)
+            parent.layout().addSpacing(6)
             parent.layout().addWidget(frame)
+            parent.layout().addSpacing(6)
 
         boxAt = gui.vBox(self.controlArea, "特征")
-        for value, label in self.feature_options:
+        for not_first, (value, label) in enumerate(self.feature_options):
+            if not_first:
+                gui.separator(boxAt, 2)
             gui.checkBox(boxAt, self, value, label,
                          callback=self.optionsChanged)
         add_line(boxAt)
@@ -83,8 +90,10 @@ class OWPurgeDomain(widget.OWWidget):
                   "排序了: %(resortedAttrs)s, "
                   "减少了: %(reducedAttrs)s, 删除了: %(removedAttrs)s")
 
-        boxAt = gui.vBox(self.controlArea, "类别(Classes)")
-        for value, label in self.class_options:
+        boxAt = gui.vBox(self.controlArea, "类别(Classes)", addSpace=True)
+        for not_first, (value, label) in enumerate(self.class_options):
+            if not_first:
+                gui.separator(boxAt, 2)
             gui.checkBox(boxAt, self, value, label,
                          callback=self.optionsChanged)
         add_line(boxAt)
@@ -92,8 +101,10 @@ class OWPurgeDomain(widget.OWWidget):
                   "排序了: %(resortedClasses)s,"
                   "减少了: %(reducedClasses)s, 删除了: %(removedClasses)s")
 
-        boxAt = gui.vBox(self.controlArea, "元属性")
-        for value, label in self.meta_options:
+        boxAt = gui.vBox(self.controlArea, "元属性", addSpace=True)
+        for not_first, (value, label) in enumerate(self.meta_options):
+            if not_first:
+                gui.separator(boxAt, 2)
             gui.checkBox(boxAt, self, value, label,
                          callback=self.optionsChanged)
         add_line(boxAt)
@@ -101,12 +112,18 @@ class OWPurgeDomain(widget.OWWidget):
                   "减少了: %(reducedMetas)s, 删除了: %(removedMetas)s")
 
         gui.auto_send(self.buttonsArea, self, "autoSend")
+        gui.rubber(self.controlArea)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
     @Inputs.data
     @check_sql_input
     def setData(self, dataset):
         if dataset is not None:
             self.data = dataset
+            self.info.set_input_summary(len(dataset),
+                                        format_summary_details(dataset))
             self.unconditional_commit()
         else:
             self.removedAttrs = "-"
@@ -119,6 +136,8 @@ class OWPurgeDomain(widget.OWWidget):
             self.reducedMetas = "-"
             self.Outputs.data.send(None)
             self.data = None
+            self.info.set_input_summary(self.info.NoInput)
+            self.info.set_output_summary(self.info.NoOutput)
 
     def optionsChanged(self):
         self.commit()
@@ -151,6 +170,8 @@ class OWPurgeDomain(widget.OWWidget):
         self.removedMetas = meta_res['removed']
         self.reducedMetas = meta_res['reduced']
 
+        self.info.set_output_summary(len(cleaned),
+                                     format_summary_details(cleaned))
         self.Outputs.data.send(cleaned)
 
     def send_report(self):

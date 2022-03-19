@@ -11,6 +11,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import r2_score
 
+from AnyQt.QtWidgets import QSizePolicy
 from AnyQt.QtGui import QStandardItem, QColor
 from AnyQt.QtCore import Qt, QRectF, QLineF, pyqtSignal as Signal
 
@@ -284,35 +285,36 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         no_cont_features = Msg("Plotting requires numeric features")
 
     def _add_controls(self):
-        box = gui.vBox(self.controlArea, box="Features")
-        self._add_controls_variables(box)
-        self._add_controls_placement(box)
+        self._add_controls_variables()
+        self._add_controls_placement()
         super()._add_controls()
         self.gui.add_control(
             self._effects_box, gui.hSlider, "隐藏半径:", master=self.graph,
             value="hide_radius", minValue=0, maxValue=100, step=10,
             createLabel=False, callback=self.__radius_slider_changed
         )
+        self.controlArea.layout().removeWidget(self.control_area_stretch)
+        self.control_area_stretch.setParent(None)
 
-    def _add_controls_variables(self, box):
+    def _add_controls_variables(self):
         self.model_selected = VariableSelectionModel(self.selected_vars)
-        variables_selection(box, self, self.model_selected)
+        variables_selection(self.controlArea, self, self.model_selected)
         self.model_selected.selection_changed.connect(
             self.__model_selected_changed)
         self.vizrank, self.btn_vizrank = LinearProjectionVizRank.add_vizrank(
             None, self, "建议特征", self.__vizrank_set_attrs)
-        box.layout().addWidget(self.btn_vizrank)
+        self.controlArea.layout().addWidget(self.btn_vizrank)
 
-    def _add_controls_placement(self, box):
+    def _add_controls_placement(self):
+        box = gui.widgetBox(
+            self.controlArea, True,
+            sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Maximum)
+        )
         self.radio_placement = gui.radioButtonsInBox(
             box, self, "placement",
             btnLabels=[self.Projection_name[x] for x in Placement],
             callback=self.__placement_radio_changed
         )
-
-    def _add_buttons(self):
-        self.gui.box_zoom_select(self.buttonsArea)
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
 
     @property
     def continuous_variables(self):

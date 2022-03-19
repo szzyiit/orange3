@@ -2,7 +2,7 @@ from xml.sax.saxutils import escape
 
 import numpy as np
 
-from AnyQt.QtCore import QSize, Signal, Qt
+from AnyQt.QtCore import QSize, Signal
 from AnyQt.QtWidgets import QApplication
 
 from orangewidget.utils.visual_settings_dlg import VisualSettingsDialog
@@ -25,6 +25,7 @@ from Orange.widgets.utils.annotated_data import (
 )
 from Orange.widgets.utils.plot import OWPlotGUI
 from Orange.widgets.utils.sql import check_sql_input
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owscatterplotgraph import (
     OWScatterPlotBase, MAX_COLORS
 )
@@ -391,7 +392,7 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
     graph = SettingProvider(OWScatterPlotBase)
     graph_name = "graph.plot_widget.plotItem"
     embedding_variables_names = ("proj-x", "proj-y")
-    buttons_area_orientation = Qt.Vertical
+    left_side_scrolling = True
 
     input_changed = Signal(object)
     output_changed = Signal(object)
@@ -403,6 +404,8 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
         self.__pending_selection = self.selection
         self._invalidated = True
         self._domain_invalidated = True
+        self.input_changed.connect(self.set_input_summary)
+        self.output_changed.connect(self.set_output_summary)
         self.setup_gui()
         VisualSettingsDialog(self, self.graph.parameter_setter.initial_settings)
 
@@ -410,7 +413,6 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
     def setup_gui(self):
         self._add_graph()
         self._add_controls()
-        self._add_buttons()
         self.input_changed.emit(None)
         self.output_changed.emit(None)
 
@@ -427,11 +429,10 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
         self._point_box = self.gui.point_properties_box(area)
         self._effects_box = self.gui.effects_box(area)
         self._plot_box = self.gui.plot_properties_box(area)
-
-    def _add_buttons(self):
-        gui.rubber(self.controlArea)
-        self.gui.box_zoom_select(self.buttonsArea)
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        self.control_area_stretch = gui.widgetBox(area)
+        self.control_area_stretch.layout().addStretch(100)
+        self.gui.box_zoom_select(area)
+        gui.auto_send(area, self, "auto_commit")
 
     @property
     def effective_variables(self):
@@ -503,6 +504,16 @@ class OWDataProjectionWidget(OWProjectionWidgetBase, openclass=True):
     def _update_opacity_warning(self):
         self.Warning.transparent_subset(
             shown=self.subset_indices and self.graph.alpha_value < 128)
+
+    def set_input_summary(self, data):
+        summary = len(data) if data else self.info.NoInput
+        detail = format_summary_details(data) if data else ""
+        self.info.set_input_summary(summary, detail)
+
+    def set_output_summary(self, data):
+        summary = len(data) if data else self.info.NoOutput
+        detail = format_summary_details(data) if data else ""
+        self.info.set_output_summary(summary, detail)
 
     def get_subset_mask(self):
         if not self.subset_indices:
@@ -794,5 +805,5 @@ if __name__ == "__main__":
     ow.set_subset_data(table[::10])
     ow.handleNewSignals()
     ow.show()
-    app.exec()
+    app.exec_()
     ow.saveSettings()

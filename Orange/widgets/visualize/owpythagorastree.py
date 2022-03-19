@@ -14,6 +14,7 @@ from Orange.widgets.utils.annotated_data import (
     ANNOTATED_DATA_SIGNAL_Chinese_NAME
 )
 from Orange.widgets.utils.signals import Input, Output
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.visualize.pythagorastreeviewer import (
     PythagorasTreeViewer,
@@ -94,6 +95,7 @@ class OWPythagorasTree(OWWidget):
         # Tree info area
         box_info = gui.widgetBox(self.controlArea, '树信息')
         self.infolabel = gui.widgetLabel(box_info)
+        self.info.set_output_summary(self.info.NoOutput)
 
         # Display settings area
         box_display = gui.widgetBox(self.controlArea, '显示设置')
@@ -124,9 +126,10 @@ class OWPythagorasTree(OWWidget):
             box_plot, self, 'show_legend', label='显示图例',
             callback=self.update_show_legend)
 
-        gui.rubber(self.controlArea)
+        gui.button(self.controlArea, self, label="重新绘制", callback=self.redraw)
 
-        gui.button(self.buttonsArea, self, label="Redraw", callback=self.redraw)
+        # Stretch to fit the rest of the unsused area
+        gui.rubber(self.controlArea)
 
         self.controlArea.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding)
@@ -308,6 +311,7 @@ class OWPythagorasTree(OWWidget):
     def commit(self):
         """Commit the selected data to output."""
         if self.data is None:
+            self.info.set_output_summary(self.info.NoOutput)
             self.Outputs.selected_data.send(None)
             self.Outputs.annotated_data.send(None)
             return
@@ -318,6 +322,9 @@ class OWPythagorasTree(OWWidget):
         ]
         data = self.tree_adapter.get_instances_in_nodes(nodes)
 
+        summary = len(data) if data else self.info.NoOutput
+        details = format_summary_details(data) if data else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(data)
         selected_indices = self.tree_adapter.get_indices(nodes)
         self.Outputs.annotated_data.send(

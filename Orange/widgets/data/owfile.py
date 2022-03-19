@@ -1,20 +1,18 @@
 import os
 import logging
 from itertools import chain
+from warnings import catch_warnings
 from urllib.parse import urlparse
-from typing import List, Dict, Any
+from typing import List
 
 import numpy as np
 from AnyQt.QtWidgets import \
     QStyle, QComboBox, QMessageBox, QGridLayout, QLabel, \
     QLineEdit, QSizePolicy as Policy, QCompleter
-from AnyQt.QtCore import Qt, QTimer, QSize, QUrl
-
-from orangewidget.workflow.drophandler import SingleUrlDropHandler
+from AnyQt.QtCore import Qt, QTimer, QSize
 
 from Orange.data.table import Table, get_sample_datasets_dir
 from Orange.data.io import FileFormat, UrlReader, class_from_qualified_name
-from Orange.util import log_warnings
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting, ContextSetting, \
     PerfectDomainContextHandler, SettingProvider
@@ -23,12 +21,14 @@ from Orange.widgets.utils.itemmodels import PyListModel
 from Orange.widgets.utils.filedialogs import RecentPathsWComboMixin, \
     open_filename_dialog
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Output, Msg
 
 # Backward compatibility: class RecentPath used to be defined in this module,
 # and it is used in saved (pickled) settings. It must be imported into the
 # module's namespace so that old saved settings still work
 from Orange.widgets.utils.filedialogs import RecentPath
+
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +88,6 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
                       doc="Attribute-valued dataset read from the input file.", replaces=['Data'])
 
     want_main_area = False
-    buttons_area_orientation = None
 
     SEARCH_PATHS = [("sample-datasets", get_sample_datasets_dir())]
     SIZE_LIMIT = 1e7
@@ -129,7 +128,6 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             "Categorical variables with >100 values may decrease performance.")
         renamed_vars = Msg("Some variables have been renamed "
                            "to avoid duplicates.\n{}")
-        multiple_targets = Msg("Most widgets do not support multiple targets")
 
     class Error(widget.OWWidget.Error):
         file_not_found = Msg("File not found.")
@@ -161,9 +159,8 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         self.reader = None
 
         layout = QGridLayout()
-        layout.setSpacing(4)
-        gui.widgetBox(self.controlArea, orientation=layout, box='Source')
-        vbox = gui.radioButtons(None, self, "source", box=True,
+        gui.widgetBox(self.controlArea, margin=0, orientation=layout)
+        vbox = gui.radioButtons(None, self, "source", box=True, addSpace=True,
                                 callback=self.load_data, addToLayout=False)
 
         rb_button = gui.appendRadioButton(vbox, "文件:", addToLayout=False)
@@ -219,7 +216,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         url_edit = url_combo.lineEdit()
         l, t, r, b = url_edit.getTextMargins()
         url_edit.setTextMargins(l + 5, t, r, b)
-        layout.addWidget(url_combo, 3, 1, 1, 3)
+        layout.addWidget(url_combo, 3, 1, 3, 3)
         url_combo.activated.connect(self._url_set)
         # whit completer we set that combo box is case sensitive when
         # matching the history
@@ -236,12 +233,14 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         self.editor_model = self.domain_editor.model()
         box.layout().addWidget(self.domain_editor)
 
-        box = gui.hBox(box)
+        box = gui.hBox(self.controlArea)
         gui.button(
-            box, self, "重置", callback=self.reset_domain_edit,
-            autoDefault=False
-        )
+            box, self, "浏览文档数据集",
+            callback=lambda: self.browse_file(True), autoDefault=False)
         gui.rubber(box)
+
+        gui.button(
+            box, self, "重置", callback=self.reset_domain_edit)
         self.apply_button = gui.button(
             box, self, "应用", callback=self.apply_domain_edit)
         self.apply_button.setEnabled(False)
@@ -249,12 +248,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         self.editor_model.dataChanged.connect(
             lambda: self.apply_button.setEnabled(True))
 
-        hBox = gui.hBox(self.controlArea)
-        gui.rubber(hBox)
-        gui.button(
-            hBox, self, "Browse documentation datasets",
-            callback=lambda: self.browse_file(True), autoDefault=False)
-        gui.rubber(hBox)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self.set_file_list()
         # Must not call open_file from within __init__. open_file
@@ -341,6 +335,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             self.sheet_box.hide()
             self.Outputs.data.send(None)
             self.infolabel.setText("无数据.")
+            self.info.set_output_summary(self.info.NoOutput)
 
     def _try_load(self):
         # pylint: disable=broad-except
@@ -355,6 +350,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
 
         if self.reader is self.NoFileSelected:
             self.Outputs.data.send(None)
+            self.info.set_output_summary(self.info.NoOutput)
             return None
 
         try:
@@ -362,7 +358,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         except Exception:
             return self.Error.sheet_error
 
-        with log_warnings() as warnings:
+        with catch_warnings(record=True) as warnings:
             try:
                 data = self.reader.read()
             except Exception as ex:
@@ -413,12 +409,14 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         self.sheet_box.show()
 
     def _select_active_sheet(self):
-        try:
-            idx = self.reader.sheets.index(self.reader.sheet)
-            self.sheet_combo.setCurrentIndex(idx)
-        except ValueError:
-            # Requested sheet does not exist in this file
-            self.reader.select_sheet(None)
+        if self.reader.sheet:
+            try:
+                idx = self.reader.sheets.index(self.reader.sheet)
+                self.sheet_combo.setCurrentIndex(idx)
+            except ValueError:
+                # Requested sheet does not exist in this file
+                self.reader.select_sheet(None)
+        else:
             self.sheet_combo.setCurrentIndex(0)
 
     @staticmethod
@@ -506,8 +504,9 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             if renamed:
                 self.Warning.renamed_vars(f"Renamed: {', '.join(renamed)}")
 
-        self.Warning.multiple_targets(
-            shown=table is not None and len(table.domain.class_vars) > 1)
+        summary = len(table) if table else self.info.NoOutput
+        details = format_summary_details(table) if table else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.data.send(table)
         self.apply_button.setEnabled(False)
 
@@ -570,35 +569,6 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         (e.g. relative file paths are changed)
         """
         self.update_file_list(key, value, oldvalue)
-
-
-class OWFileDropHandler(SingleUrlDropHandler):
-    WIDGET = OWFile
-
-    def canDropUrl(self, url: QUrl) -> bool:
-        if url.isLocalFile():
-            try:
-                FileFormat.get_reader(url.toLocalFile())
-                return True
-            except Exception:  # noqa # pylint:disable=broad-except
-                return False
-        else:
-            return url.scheme().lower() in ("http", "https", "ftp")
-
-    def parametersFromUrl(self, url: QUrl) -> Dict[str, Any]:
-        if url.isLocalFile():
-            path = url.toLocalFile()
-            r = RecentPath(os.path.abspath(path), None, None,
-                           os.path.basename(path))
-            return {
-                "recent_paths": [r],
-                "source": OWFile.LOCAL_FILE,
-            }
-        else:
-            return {
-                "recent_urls": [url.toString()],
-                "source": OWFile.URL,
-            }
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -21,6 +21,7 @@ from Orange.widgets.utils.annotated_data import \
     ANNOTATED_DATA_SIGNAL_Chinese_NAME
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.utils.plotutils import ElidedLabelsAxis
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
 
@@ -329,10 +330,6 @@ class OWDistributions(OWWidget):
             callback=self._on_sort_by_freq, stateWhenDisabled=False)
 
         box = self.continuous_box = gui.vBox(self.controlArea, "分布")
-        gui.comboBox(
-            box, self, "fitted_distribution", label="拟合分布",
-            orientation=Qt.Horizontal, items=(name[0] for name in self.Fitters),
-            callback=self._on_fitted_dist_changed)
         slider = gui.hSlider(
             box, self, "number_of_bins",
             label="Bin 宽度", orientation=Qt.Horizontal,
@@ -342,10 +339,15 @@ class OWDistributions(OWWidget):
         self.bin_width_label.setFixedWidth(35)
         self.bin_width_label.setAlignment(Qt.AlignRight)
         slider.sliderReleased.connect(self._on_bin_slider_released)
-        self.smoothing_box = gui.hSlider(
-            box, self, "kde_smoothing",
+        gui.comboBox(
+            box, self, "fitted_distribution", label="拟合分布",
+            orientation=Qt.Horizontal, items=(name[0] for name in self.Fitters),
+            callback=self._on_fitted_dist_changed)
+        self.smoothing_box = gui.indentedBox(box, 40)
+        gui.hSlider(
+            self.smoothing_box, self, "kde_smoothing",
             label="平滑化", orientation=Qt.Horizontal,
-            minValue=2, maxValue=20, callback=self.replot, disabled=True)
+            minValue=2, maxValue=20, callback=self.replot)
         gui.checkBox(
             box, self, "hide_bars", "隐藏柱子", stateWhenDisabled=False,
             callback=self._on_hide_bars_changed,
@@ -368,7 +370,10 @@ class OWDistributions(OWWidget):
             box, self, "cumulative_distr", "Show cumulative distribution",
             callback=self._on_show_cumulative)
 
-        gui.auto_apply(self.buttonsArea, self, commit=self.apply)
+        gui.auto_apply(self.controlArea, self, commit=self.apply)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self._set_smoothing_visibility()
         self._setup_plots()
@@ -388,8 +393,7 @@ class OWDistributions(OWWidget):
         self.plotview.blank_clicked.connect(self._on_blank_clicked)
         self.plotview.mouse_released.connect(self._on_end_selecting)
         self.plotview.setRenderHint(QPainter.Antialiasing)
-        box = gui.vBox(self.mainArea, box=True, margin=0)
-        box.layout().addWidget(self.plotview)
+        self.mainArea.layout().addWidget(self.plotview)
         self.ploti = pg.PlotItem(
             enableMenu=False, enableMouse=False,
             axisItems={"bottom": ElidedAxisNoUnits("bottom")})
@@ -435,6 +439,9 @@ class OWDistributions(OWWidget):
         self.closeContext()
         self.var = self.cvar = None
         self.data = data
+        summary = len(data) if data else self.info.NoInput
+        details = format_summary_details(data) if data else ""
+        self.info.set_input_summary(summary, details)
         domain = self.data.domain if self.data else None
         varmodel = self.controls.var.model()
         cvarmodel = self.controls.cvar.model()
@@ -495,8 +502,8 @@ class OWDistributions(OWWidget):
         self.plot.update()
 
     def _set_smoothing_visibility(self):
-        self.smoothing_box.setDisabled(
-            self.Fitters[self.fitted_distribution][1] is not AshCurve)
+        self.smoothing_box.setVisible(
+            self.Fitters[self.fitted_distribution][1] is AshCurve)
 
     def _set_bin_width_slider_label(self):
         if self.number_of_bins < len(self.binnings):
@@ -1125,6 +1132,10 @@ class OWDistributions(OWWidget):
                 annotated_data = create_groups_table(
                     annotated_data, hist_indices, var_name="Bin", values=hist_values)
             histogram_data = self._get_histogram_table()
+
+        summary = len(selected_data) if selected_data else self.info.NoOutput
+        details = format_summary_details(selected_data) if selected_data else ""
+        self.info.set_output_summary(summary, details)
 
         self.Outputs.selected_data.send(selected_data)
         self.Outputs.annotated_data.send(annotated_data)

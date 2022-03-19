@@ -1,15 +1,12 @@
+import sys
 import unittest
+from unittest.mock import patch
 
 from Orange.data import Table
 from Orange.evaluation import CrossValidation
-
-try:
-    from Orange.modelling import CatGBLearner
-except ImportError:
-    CatGBLearner = None
+from Orange.modelling import CatGBLearner
 
 
-@unittest.skipIf(CatGBLearner is None, "Missing 'catboost' package")
 class TestCatGBLearner(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -41,6 +38,18 @@ class TestCatGBLearner(unittest.TestCase):
         booster = CatGBLearner()
         booster.score(self.iris)
         booster.score(self.housing)
+
+    def test_import_missing_library(self):
+        modules = {k: v for k, v in sys.modules.items()
+                   if "orange" not in k.lower()}  # retain built-ins
+        modules["catboost"] = None
+        # pylint: disable=reimported,redefined-outer-name
+        # pylint: disable=unused-import,import-outside-toplevel
+        with patch.dict(sys.modules, modules, clear=True):
+            def import_():
+                from Orange.modelling import CatGBLearner
+
+            self.assertRaises(ImportError, import_)
 
 
 if __name__ == "__main__":

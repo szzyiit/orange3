@@ -398,4 +398,4 @@ if __name__ == '__main__':
     scene.addItem(histogram)
 
     widget.show()
-    app.exec()
+    app.exec_()

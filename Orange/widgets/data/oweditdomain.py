@@ -41,6 +41,7 @@ from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils.buttons import FixedSizeButton
 from Orange.widgets.utils.itemmodels import signal_blocking
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 ndarray = np.ndarray  # pylint: disable=invalid-name
@@ -700,7 +701,7 @@ class GroupItemsDialog(QDialog):
         spin2.setMaximum(max_val)
         spin2.setValue(dialog_settings.get("frequent_abs_spin", 10))
         spin2.setMinimumWidth(
-            self.fontMetrics().horizontalAdvance("X") * (len(str(max_val)) + 1) + 20
+            self.fontMetrics().width("X") * (len(str(max_val)) + 1) + 20
         )
         spin2.valueChanged.connect(self._frequent_abs_spin_changed)
 
@@ -710,7 +711,7 @@ class GroupItemsDialog(QDialog):
         spin3.setSingleStep(0.1)
         spin3.setMaximum(100)
         spin3.setValue(dialog_settings.get("frequent_rel_spin", 10))
-        spin3.setMinimumWidth(self.fontMetrics().horizontalAdvance("X") * (2 + 1) + 20)
+        spin3.setMinimumWidth(self.fontMetrics().width("X") * (2 + 1) + 20)
         spin3.setSuffix(" %")
         spin3.valueChanged.connect(self._frequent_rel_spin_changed)
 
@@ -723,7 +724,7 @@ class GroupItemsDialog(QDialog):
             )
         )
         spin4.setMinimumWidth(
-            self.fontMetrics().horizontalAdvance("X") * (len(str(max_val)) + 1) + 20
+            self.fontMetrics().width("X") * (len(str(max_val)) + 1) + 20
         )
         spin4.valueChanged.connect(self._n_values_spin_spin_changed)
 
@@ -1474,7 +1475,7 @@ class DiscreteVariableEditor(VariableEditor):
             sizeGripEnabled=True,
         )
         dlg.setWindowModality(Qt.WindowModal)
-        status = dlg.exec()
+        status = dlg.exec_()
         dlg.deleteLater()
         self.merge_dialog_settings[self.var] = dlg.get_dialog_settings()
 
@@ -1816,7 +1817,7 @@ class OWEditDomain(widget.OWWidget):
     _merge_dialog_settings = settings.ContextSetting({})
     output_table_name = settings.ContextSetting("")
 
-    want_main_area = False
+    want_control_area = False
 
     def __init__(self):
         super().__init__()
@@ -1826,8 +1827,13 @@ class OWEditDomain(widget.OWWidget):
         self._invalidated = False
         self.typeindex = 0
 
-        main = gui.hBox(self.controlArea, spacing=6)
-        box = gui.vBox(main, "变量")
+        mainlayout = self.mainArea.layout()
+        assert isinstance(mainlayout, QVBoxLayout)
+        layout = QHBoxLayout()
+        mainlayout.addLayout(layout)
+        box = QGroupBox("变量")
+        box.setLayout(QVBoxLayout())
+        layout.addWidget(box)
 
         self.variables_model = VariableListModel(parent=self)
         self.variables_view = self.domain_view = QListView(
@@ -1841,41 +1847,53 @@ class OWEditDomain(widget.OWWidget):
         )
         box.layout().addWidget(self.variables_view)
 
-        box = gui.vBox(main, "编辑")
+        box = QGroupBox("编辑", )
+        box.setLayout(QVBoxLayout(margin=4))
+        layout.addWidget(box)
+
         self._editor = ReinterpretVariableEditor()
+
         box.layout().addWidget(self._editor)
 
         self.le_output_name = gui.lineEdit(
-            self.buttonsArea, self, "output_table_name", "输出表名: ",
-            orientation=Qt.Horizontal)
+            self.mainArea, self, "output_table_name", "输出表名: ",
+            box=True, orientation=Qt.Horizontal)
 
-        gui.rubber(self.buttonsArea)
-
-        bbox = gui.hBox(self.buttonsArea)
-        breset_all = gui.button(
-            bbox, self, "全部重置",
-            objectName="button-reset-all",
-            toolTip="重置所有变量为输入状态.",
-            autoDefault=False,
-            callback=self.reset_all
+        bbox = QDialogButtonBox()
+        bbox.setStyleSheet(
+            "button-layout: {:d};".format(QDialogButtonBox.MacLayout))
+        bapply = QPushButton(
+            "应用",
+            objectName="button-apply",
+            toolTip="Apply changes and commit data on output.",
+            default=True,
+            autoDefault=False
         )
-        breset = gui.button(
-            bbox, self, "重置选中",
+        bapply.clicked.connect(self.commit)
+        breset = QPushButton(
+            "重置所选内容",
             objectName="button-reset",
             toolTip="Rest selected variable to its input state.",
-            autoDefault=False,
-            callback=self.reset_selected
+            autoDefault=False
         )
-        bapply = gui.button(
-            bbox, self, "应用",
-            objectName="button-apply",
-            toolTip="应用变化.",
-            default=True,
-            autoDefault=False,
-            callback=self.commit
+        breset.clicked.connect(self.reset_selected)
+        breset_all = QPushButton(
+            "全部重置",
+            objectName="button-reset-all",
+            toolTip="Reset all variables to their input state.",
+            autoDefault=False
         )
+        breset_all.clicked.connect(self.reset_all)
 
+        bbox.addButton(bapply, QDialogButtonBox.AcceptRole)
+        bbox.addButton(breset, QDialogButtonBox.ResetRole)
+        bbox.addButton(breset_all, QDialogButtonBox.ResetRole)
+
+        mainlayout.addWidget(bbox)
         self.variables_view.setFocus(Qt.NoFocusReason)  # initial focus
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
     @Inputs.data
     def set_data(self, data):
@@ -1885,6 +1903,8 @@ class OWEditDomain(widget.OWWidget):
         self.data = data
 
         if self.data is not None:
+            self.info.set_input_summary(len(data),
+                                        format_summary_details(data))
             self.setup_model(data)
             self.le_output_name.setPlaceholderText(data.name)
             self.openContext(self.data)
@@ -1892,6 +1912,7 @@ class OWEditDomain(widget.OWWidget):
             self._restore()
         else:
             self.le_output_name.setPlaceholderText("")
+            self.info.set_input_summary(self.info.NoInput)
 
         self.commit()
 
@@ -2074,6 +2095,7 @@ class OWEditDomain(widget.OWWidget):
         data = self.data
         if data is None:
             self.Outputs.data.send(None)
+            self.info.set_output_summary(self.info.NoOutput)
             return
         model = self.variables_model
 
@@ -2089,6 +2111,8 @@ class OWEditDomain(widget.OWWidget):
                 and not any(requires_transform(var, trs)
                             for var, (_, trs) in zip(input_vars, state)):
             self.Outputs.data.send(data)
+            self.info.set_output_summary(len(data),
+                                         format_summary_details(data))
             return
 
         assert all(v_.vtype.name == v.name
@@ -2112,6 +2136,7 @@ class OWEditDomain(widget.OWWidget):
         if len(output_vars) != len({v.name for v in output_vars}):
             self.Error.duplicate_var_name()
             self.Outputs.data.send(None)
+            self.info.set_output_summary(self.info.NoOutput)
             return
 
         domain = data.domain
@@ -2138,6 +2163,8 @@ class OWEditDomain(widget.OWWidget):
         if self.output_table_name:
             new_data.name = self.output_table_name
         self.Outputs.data.send(new_data)
+        self.info.set_output_summary(len(new_data),
+                                     format_summary_details(new_data))
 
     def sizeHint(self):
         sh = super().sizeHint()

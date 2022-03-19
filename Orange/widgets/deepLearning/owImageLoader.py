@@ -239,7 +239,7 @@ class ImageLoader(OWWidget):
         ax = self.figure.add_subplot(111)
 
         # discards the old graph
-        # ax.clear()
+        ax.clear()
 
         if clear:
             self.canvas.draw()
@@ -254,7 +254,6 @@ class ImageLoader(OWWidget):
         # refresh canvas
         QGuiApplication.processEvents()
         self.canvas.draw()
-        self.figure.clear()
         self.main_label.setText('随机样图')
 
     def commit(self):

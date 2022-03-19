@@ -18,6 +18,7 @@ from Orange.widgets.utils.listfilter import (
     VariablesListItemView, slices, variables_filter
 )
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output, AttributeList, Msg
 from Orange.data.table import Table
 from Orange.widgets.utils.itemmodels import VariableListModel
@@ -172,7 +173,6 @@ class OWSelectAttributes(widget.OWWidget):
 
     class Warning(widget.OWWidget.Warning):
         mismatching_domain = Msg("Features and data domain do not match")
-        multiple_targets = Msg("Most widgets do not support multiple targets")
 
     def __init__(self):
         super().__init__()
@@ -193,15 +193,12 @@ class OWSelectAttributes(widget.OWWidget):
             self.__last_active_view = view
             self.__interface_update_timer.start()
 
-        new_control_area = QWidget(self.controlArea)
-        self.controlArea.layout().addWidget(new_control_area)
-        self.controlArea = new_control_area
-
-        # init grid
+        self.controlArea = QWidget(self.controlArea)
+        self.layout().addWidget(self.controlArea)
         layout = QGridLayout()
         self.controlArea.setLayout(layout)
-        layout.setContentsMargins(0, 0, 0, 0)
-        box = gui.vBox(self.controlArea, "忽略",
+        layout.setContentsMargins(4, 4, 4, 4)
+        box = gui.vBox(self.controlArea, "可用变量",
                        addToLayout=False)
 
         self.available_attrs = VariablesListItemModel()
@@ -220,7 +217,6 @@ class OWSelectAttributes(widget.OWWidget):
         box.layout().addWidget(self.available_attrs_view)
         layout.addWidget(box, 0, 0, 3, 1)
 
-        # 3rd column
         box = gui.vBox(self.controlArea, "特征", addToLayout=False)
         self.used_attrs = VariablesListItemModel()
         filter_edit, self.used_attrs_view = variables_filter(
@@ -248,13 +244,12 @@ class OWSelectAttributes(widget.OWWidget):
         self.class_attrs = VariablesListItemModel()
         self.class_attrs_view = VariablesListItemView(
             acceptedType=(Orange.data.DiscreteVariable,
-                          Orange.data.ContinuousVariable)
-        )
+                          Orange.data.ContinuousVariable))
         self.class_attrs_view.setModel(self.class_attrs)
         self.class_attrs_view.selectionModel().selectionChanged.connect(
             partial(update_on_change, self.class_attrs_view))
         self.class_attrs_view.dragDropActionDidComplete.connect(dropcompleted)
-
+        self.class_attrs_view.setMaximumHeight(72)
         box.layout().addWidget(self.class_attrs_view)
         layout.addWidget(box, 1, 2, 1, 1)
 
@@ -269,35 +264,42 @@ class OWSelectAttributes(widget.OWWidget):
         box.layout().addWidget(self.meta_attrs_view)
         layout.addWidget(box, 2, 2, 1, 1)
 
-        # 2nd column
         bbox = gui.vBox(self.controlArea, addToLayout=False, margin=0)
-        self.move_attr_button = gui.button(
-            bbox, self, ">",
-            callback=partial(self.move_selected,
-                             self.used_attrs_view)
-        )
         layout.addWidget(bbox, 0, 1, 1, 1)
 
+        self.up_attr_button = gui.button(bbox, self, "⬆",
+                                         callback=partial(self.move_up, self.used_attrs_view))
+        self.move_attr_button = gui.button(bbox, self, ">",
+                                           callback=partial(self.move_selected,
+                                                            self.used_attrs_view)
+                                          )
+        self.down_attr_button = gui.button(bbox, self, "⬇",
+                                           callback=partial(self.move_down, self.used_attrs_view))
+
         bbox = gui.vBox(self.controlArea, addToLayout=False, margin=0)
-        self.move_class_button = gui.button(
-            bbox, self, ">",
-            callback=partial(self.move_selected,
-                             self.class_attrs_view)
-        )
         layout.addWidget(bbox, 1, 1, 1, 1)
 
+        self.up_class_button = gui.button(bbox, self, "⬆",
+                                          callback=partial(self.move_up, self.class_attrs_view))
+        self.move_class_button = gui.button(bbox, self, ">",
+                                            callback=partial(self.move_selected,
+                                                             self.class_attrs_view)
+                                           )
+        self.down_class_button = gui.button(bbox, self, "⬇",
+                                            callback=partial(self.move_down, self.class_attrs_view))
+
         bbox = gui.vBox(self.controlArea, addToLayout=False)
-        self.move_meta_button = gui.button(
-            bbox, self, ">",
-            callback=partial(self.move_selected,
-                             self.meta_attrs_view)
-        )
         layout.addWidget(bbox, 2, 1, 1, 1)
+        self.up_meta_button = gui.button(bbox, self, "⬆",
+                                         callback=partial(self.move_up, self.meta_attrs_view))
+        self.move_meta_button = gui.button(bbox, self, ">",
+                                           callback=partial(self.move_selected,
+                                                            self.meta_attrs_view)
+                                          )
+        self.down_meta_button = gui.button(bbox, self, "⬇",
+                                           callback=partial(self.move_down, self.meta_attrs_view))
 
-        # footer
-        gui.button(self.buttonsArea, self, "重置", callback=self.reset)
-
-        bbox = gui.vBox(self.buttonsArea)
+        bbox = gui.vBox(self.controlArea, "Additional settings", addToLayout=False)
         gui.checkBox(
             widget=bbox,
             master=self,
@@ -307,18 +309,25 @@ class OWSelectAttributes(widget.OWWidget):
                     "they are added to the available attributes column if "
                     "<i>Ignore new variables by default</i> is checked."
         )
+        layout.addWidget(bbox, 3, 0, 1, 3)
 
-        gui.rubber(self.buttonsArea)
-        gui.auto_send(self.buttonsArea, self, "auto_commit")
+        autobox = gui.auto_send(None, self, "auto_commit")
+        layout.addWidget(autobox, 4, 0, 1, 3)
+        reset = gui.button(None, self, "重置", callback=self.reset, width=120)
+        autobox.layout().insertWidget(0, reset)
+        autobox.layout().insertStretch(1, 20)
 
-        layout.setRowStretch(0, 2)
+        layout.setRowStretch(0, 4)
         layout.setRowStretch(1, 0)
-        layout.setRowStretch(2, 1)
+        layout.setRowStretch(2, 2)
         layout.setHorizontalSpacing(0)
         self.controlArea.setLayout(layout)
 
         self.output_data = None
         self.original_completer_items = []
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self.resize(600, 600)
 
@@ -363,6 +372,7 @@ class OWSelectAttributes(widget.OWWidget):
             self.class_attrs[:] = []
             self.meta_attrs[:] = []
             self.available_attrs[:] = []
+            self.info.set_input_summary(self.info.NoInput)
             return
 
         self.openContext(data)
@@ -379,8 +389,7 @@ class OWSelectAttributes(widget.OWWidget):
         self.class_attrs[:] = attrs_for_role("class")
         self.meta_attrs[:] = attrs_for_role("meta")
         self.available_attrs[:] = attrs_for_role("available")
-
-        self.update_interface_state(self.class_attrs_view)
+        self.info.set_input_summary(len(data), format_summary_details(data))
 
     def restore_hints(self, domain: Domain) -> Dict[Variable, Tuple[str, int]]:
         """
@@ -453,7 +462,9 @@ class OWSelectAttributes(widget.OWWidget):
             self.Warning.mismatching_domain()
 
     def enable_used_attrs(self, enable=True):
+        self.up_attr_button.setEnabled(enable)
         self.move_attr_button.setEnabled(enable)
+        self.down_attr_button.setEnabled(enable)
         self.used_attrs_view.setEnabled(enable)
         self.used_attrs_view.repaint()
 
@@ -577,20 +588,11 @@ class OWSelectAttributes(widget.OWWidget):
         if move_meta_enabled:
             self.move_meta_button.setText(">" if available_selected else "<")
 
-        # update class_vars height
-        if self.class_attrs.rowCount() == 0:
-            height = 22
-        else:
-            height = ((self.class_attrs.rowCount() or 1) *
-                      self.class_attrs_view.sizeHintForRow(0)) + 2
-        self.class_attrs_view.setFixedHeight(height)
-
         self.__last_active_view = None
         self.__interface_update_timer.stop()
 
     def commit(self):
         self.update_domain_role_hints()
-        self.Warning.multiple_targets.clear()
         if self.data is not None:
             attributes = list(self.used_attrs)
             class_var = list(self.class_attrs)
@@ -601,11 +603,13 @@ class OWSelectAttributes(widget.OWWidget):
             self.output_data = newdata
             self.Outputs.data.send(newdata)
             self.Outputs.features.send(AttributeList(attributes))
-            self.Warning.multiple_targets(shown=len(class_var) > 1)
+            self.info.set_output_summary(len(newdata),
+                                         format_summary_details(newdata))
         else:
             self.output_data = None
             self.Outputs.data.send(None)
             self.Outputs.features.send(None)
+            self.info.set_output_summary(self.info.NoOutput)
 
     def reset(self):
         self.enable_used_attrs()

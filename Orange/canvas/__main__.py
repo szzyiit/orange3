@@ -39,7 +39,6 @@ from orangecanvas.application.application import CanvasApplication
 from orangecanvas.application.outputview import TextStream, ExceptHook
 from orangecanvas.document.usagestatistics import UsageStatistics
 from orangecanvas.gui.splashscreen import SplashScreen
-from orangecanvas.utils.after_exit import run_after_exit
 from orangecanvas.utils.overlay import Notification, NotificationServer
 from orangecanvas.main import (
     fix_win_pythonw_std_stream, fix_set_proxy_env, fix_macos_nswindow_tabbing,
@@ -336,7 +335,7 @@ def send_usage_statistics():
             r = requests.post(url, files={'file': json.dumps(data)})
             if r.status_code != 200:
                 log.warning("Error communicating with server while attempting to send "
-                            "usage statistics. Status code %d", r.status_code)
+                            "usage statistics. Status code " + str(r.status_code))
                 return
             # success - wipe statistics file
             log.info("Usage statistics sent.")
@@ -361,7 +360,6 @@ def send_usage_statistics():
     return thread
 
 
-# pylint: disable=too-many-locals,too-many-branches
 def main(argv=None):
     # Allow termination with CTRL + C
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -456,20 +454,6 @@ def main(argv=None):
         if fusiontheme == "breeze-dark":
             app.setPalette(breeze_dark())
             defaultstylesheet = "darkorange.qss"
-
-    # set pyqtgraph colors
-    def onPaletteChange():
-        p = app.palette()
-        bg = p.base().color().name()
-        fg = p.windowText().color().name()
-
-        log.info('Setting pyqtgraph background to %s', bg)
-        pyqtgraph.setConfigOption('background', bg)
-        log.info('Setting pyqtgraph foreground to %s', fg)
-        pyqtgraph.setConfigOption('foreground', fg)
-
-    app.paletteChanged.connect(onPaletteChange)
-    onPaletteChange()
 
     palette = app.palette()
     if style is None and palette.color(QPalette.Window).value() < 127:
@@ -573,9 +557,6 @@ def main(argv=None):
                              search_path, prefix)
 
                 stylesheet_string = pattern.sub("", stylesheet_string)
-
-                if 'dark' in stylesheet:
-                    app.setProperty('darkMode', True)
 
             else:
                 log.info("%r style sheet not found.", stylesheet)
@@ -702,7 +683,7 @@ def main(argv=None):
              patch('sys.excepthook', excepthook),\
              patch('sys.stderr', stderr),\
              patch('sys.stdout', stdout):
-            status = app.exec()
+            status = app.exec_()
     except BaseException:
         log.error("Error in main event loop.", exc_info=True)
         status = 42
@@ -718,11 +699,6 @@ def main(argv=None):
     gc.collect()
 
     del app
-
-    if status == 96:
-        log.info('Restarting via exit code 96.')
-        run_after_exit([sys.executable, sys.argv[0]])
-
     return status
 
 

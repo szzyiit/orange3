@@ -2,6 +2,7 @@
 # pylint: disable=protected-access
 import unittest
 from unittest.mock import Mock, patch
+import warnings
 
 import numpy as np
 from AnyQt.QtCore import Qt
@@ -26,6 +27,8 @@ from Orange.widgets.settings import (
     ClassValuesContextHandler, PerfectDomainContextHandler)
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.tests.utils import simulate, possible_duplicate_table
+from Orange.widgets.utils.state_summary import (format_summary_details,
+                                                format_multiple_summaries)
 from Orange.tests import test_filename
 
 
@@ -419,51 +422,13 @@ class TestOWTestAndScore(WidgetTest):
                     OWTestAndScore.KFold, 0),
                 (0.8, 0.5, 0.5, 0.5, 0.5))))
 
-    def test_no_stratification(self):
-        w = self.widget
-        w.cv_stratified = True
-        self._test_scores(
-            Table("zoo"), None, MajorityLearner(),
-            OWTestAndScore.KFold, 2)
-        self.assertTrue(w.Warning.cant_stratify.is_shown())
+    def test_no_pregressbar_warning(self):
+        data = Table("iris")[::15]
 
-        w.controls.cv_stratified.click()
-        self.assertFalse(w.Warning.cant_stratify.is_shown())
-
-        w.controls.cv_stratified.click()
-        self.assertTrue(w.Warning.cant_stratify.is_shown())
-
-        w.controls.n_folds.setCurrentIndex(0)
-        w.controls.n_folds.activated[int].emit(0)
-        self.assertFalse(w.Warning.cant_stratify.is_shown())
-
-        w.controls.n_folds.setCurrentIndex(2)
-        w.controls.n_folds.activated[int].emit(2)
-        self.assertTrue(w.Warning.cant_stratify.is_shown())
-
-        self._test_scores(
-            Table("iris"), None, MajorityLearner(), OWTestAndScore.KFold, 2)
-        self.assertFalse(w.Warning.cant_stratify.is_shown())
-
-        self._test_scores(
-            Table("zoo"), None, MajorityLearner(), OWTestAndScore.KFold, 2)
-        self.assertTrue(w.Warning.cant_stratify.is_shown())
-
-        self._test_scores(
-            Table("housing"), None, MeanLearner(), OWTestAndScore.KFold, 2)
-        self.assertFalse(w.Warning.cant_stratify.is_shown())
-        self.assertTrue(w.Information.cant_stratify_numeric.is_shown())
-
-        w.controls.cv_stratified.click()
-        self.assertFalse(w.Warning.cant_stratify.is_shown())
-
-    def test_too_many_folds(self):
-        w = self.widget
-        w.controls.resampling.buttons[OWTestAndScore.KFold].click()
-        w.n_folds = 3
-        self.send_signal(w.Inputs.train_data, Table("zoo")[:8])
-        self.send_signal(w.Inputs.learner, MajorityLearner(), 0, wait=5000)
-        self.assertTrue(w.Error.too_many_folds.is_shown())
+        with warnings.catch_warnings(record=True) as w:
+            self.send_signal(self.widget.Inputs.train_data, data)
+            self.send_signal(self.widget.Inputs.learner, MajorityLearner(), 0)
+            assert not w
 
     def _set_comparison_score(self, score):
         w = self.widget
@@ -598,7 +563,7 @@ class TestOWTestAndScore(WidgetTest):
         w = self.widget
         self._set_three_majorities()
         self._set_comparison_score("F1")
-        f1mock = Mock(wraps=scoring.F1.compute_score)
+        f1mock = Mock(wraps=scoring.F1)
 
         iris = Table("iris")
         with patch.object(scoring.F1, "compute_score", f1mock):
@@ -681,6 +646,46 @@ class TestOWTestAndScore(WidgetTest):
                 w._fill_table(slots, scores)
                 label = w.comparison_table.cellWidget(1, 0)
                 self.assertEqual(label.text(), "NA")
+
+    def test_summary(self):
+        """Check if the status bar updates when data is on input"""
+        iris = Table("iris")
+        train, test = iris[:120], iris[120:]
+        info = self.widget.info
+        no_input, no_output = "No data on input", "No data on output"
+
+        self.send_signal(self.widget.Inputs.train_data, train)
+        self.send_signal(self.widget.Inputs.learner, LogisticRegressionLearner(), 0)
+        summary, details = f"{len(train)}", format_summary_details(train)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        output = self.get_output(self.widget.Outputs.predictions)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+
+        self.send_signal(self.widget.Inputs.test_data, test)
+        summary = f"{len(train)}, {len(test)}"
+        details = format_multiple_summaries([("Data", train), ("Test data", test)])
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        output = self.get_output(self.widget.Outputs.predictions)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+
+        self.send_signal(self.widget.Inputs.train_data, None)
+        summary, details = f"{len(test)}", format_summary_details(test)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
+
+        self.send_signal(self.widget.Inputs.test_data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_unique_output_domain(self):
         data = possible_duplicate_table('random forest')

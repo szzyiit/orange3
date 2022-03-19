@@ -14,7 +14,7 @@ from AnyQt.QtCore import (
     Qt, QObject, QAbstractListModel, QModelIndex,
     QItemSelectionModel, QItemSelection)
 from AnyQt.QtCore import pyqtSignal as Signal
-from AnyQt.QtGui import QColor, QBrush
+from AnyQt.QtGui import QColor
 from AnyQt.QtWidgets import (
     QWidget, QBoxLayout, QToolButton, QAbstractButton, QAction
 )
@@ -358,9 +358,9 @@ class PyTableModel(AbstractSortTableModel):
 
 
 class PyListModelTooltip(PyListModel):
-    def __init__(self, iterable=None, tooltips=[], **kwargs):
-        super().__init__(iterable, **kwargs)
-        self.tooltips = tooltips
+    def __init__(self):
+        super().__init__()
+        self.tooltips = []
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.ToolTipRole:
@@ -815,11 +815,6 @@ class TableModel(AbstractSortTableModel):
         self.Y_density = sourcedata.Y_density()
         self.M_density = sourcedata.metas_density()
 
-        brush_for_role = {
-            role: QBrush(c) if c is not None else None
-            for role, c in self.ColorForRole.items()
-        }
-
         def format_sparse(vars, datagetter, instance):
             data = datagetter(instance)
             return ", ".join("{}={}".format(vars[i].name, vars[i].repr_val(v))
@@ -845,13 +840,13 @@ class TableModel(AbstractSortTableModel):
 
         def make_basket(vars, density, role):
             return TableModel.Basket(
-                vars, TableModel.Attribute, brush_for_role[role], density,
+                vars, TableModel.Attribute, self.ColorForRole[role], density,
                 make_basket_formater(vars, density, role)
             )
 
         def make_column(var, role):
             return TableModel.Column(
-                var, role, brush_for_role[role],
+                var, role, self.ColorForRole[role],
                 partial(format_dense, var)
             )
 

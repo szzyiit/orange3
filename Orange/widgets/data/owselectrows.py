@@ -270,18 +270,29 @@ class OWSelectRows(widget.OWWidget):
             box2, self, "删除全部", callback=self.remove_all)
         gui.rubber(box2)
 
-        box_setting = gui.vBox(self.buttonsArea)
+        boxes = gui.widgetBox(self.controlArea, orientation=QHBoxLayout())
+        layout = boxes.layout()
+
+        box_setting = gui.vBox(boxes, addToLayout=False, box=True)
         self.cb_pa = gui.checkBox(
             box_setting, self, "purge_attributes", "删除未使用的特征",
             callback=self.conditions_changed)
+        gui.separator(box_setting, height=1)
         self.cb_pc = gui.checkBox(
             box_setting, self, "purge_classes", "删除未使用的分类",
             callback=self.conditions_changed)
+        layout.addWidget(box_setting, 1)
 
         self.report_button.setFixedWidth(120)
         gui.rubber(self.buttonsArea.layout())
+        layout.addWidget(self.buttonsArea)
 
-        acbox = gui.auto_send(self.buttonsArea, self, "auto_commit")
+        acbox = gui.auto_send(None, self, "auto_commit")
+        layout.addWidget(acbox, 1)
+        layout.setAlignment(acbox, Qt.AlignBottom)
+
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
 
         self.set_data(None)
         self.resize(600, 400)
@@ -551,6 +562,7 @@ class OWSelectRows(widget.OWWidget):
             data is None or
             len(data.domain.variables) + len(data.domain.metas) > 100)
         if not data:
+            self.info.set_input_summary(self.info.NoInput)
             self.data_desc = None
             self.variable_model.set_domain(None)
             self.commit()
@@ -566,6 +578,8 @@ class OWSelectRows(widget.OWWidget):
         if not self.cond_list.model().rowCount():
             self.add_row()
 
+        self.info.set_input_summary(data.approx_len(),
+                                    format_summary_details(data))
         self.unconditional_commit()
 
     def conditions_changed(self):
@@ -705,6 +719,11 @@ class OWSelectRows(widget.OWWidget):
 
         self.match_desc = report.describe_data_brief(matching_output)
         self.nonmatch_desc = report.describe_data_brief(non_matching_output)
+
+        summary = matching_output.approx_len() if matching_output else \
+            self.info.NoOutput
+        details = format_summary_details(matching_output) if matching_output else ""
+        self.info.set_output_summary(summary, details)
 
     def send_report(self):
         if not self.data:

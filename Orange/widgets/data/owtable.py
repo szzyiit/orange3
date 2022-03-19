@@ -12,7 +12,7 @@ from scipy.sparse import issparse
 
 from AnyQt.QtWidgets import (
     QTableView, QHeaderView, QAbstractButton, QApplication, QStyleOptionHeader,
-    QStyle, QStylePainter
+    QStyle, QStylePainter, QStyledItemDelegate
 )
 from AnyQt.QtGui import QColor, QClipboard
 from AnyQt.QtCore import (
@@ -30,7 +30,6 @@ from Orange.statistics import basic_stats
 
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from Orange.widgets.utils.itemdelegates import TableDataDelegate
 from Orange.widgets.utils.itemselectionmodel import (
     BlockSelectionModel, ranges, selection_blocks
 )
@@ -171,10 +170,6 @@ class DataTableView(gui.HScrollStepMixin, TableView):
     input_slot: TableSlot
 
 
-class TableBarItemDelegate(gui.TableBarItem, TableDataDelegate):
-    pass
-
-
 class OWDataTable(OWWidget):
     name = "数据表(Data Table)"
     description = "在电子表格中查看数据集。"
@@ -183,15 +178,14 @@ class OWDataTable(OWWidget):
     keywords = ['shujubiao', 'biao']
     category = "Data"
 
+    buttons_area_orientation = Qt.Vertical
+
     class Inputs:
-        data = Input("数据(Data)", Table, multiple=True,
-             auto_summary=False, replaces=['Data'])
+        data = Input("数据(Data)", Table, multiple=True, replaces=['Data'])
 
     class Outputs:
         selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
         annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
-
-    buttons_area_orientation = Qt.Vertical
 
     show_distributions = Setting(False)
     dist_color_RGB = Setting((220, 220, 220, 255))
@@ -202,8 +196,6 @@ class OWDataTable(OWWidget):
     color_by_class = Setting(True)
     selected_rows = Setting([], schema_only=True)
     selected_cols = Setting([], schema_only=True)
-
-    settings_version = 2
 
     def __init__(self):
         super().__init__()
@@ -220,6 +212,8 @@ class OWDataTable(OWWidget):
         info_box = gui.vBox(self.controlArea, "Info")
         self.info_text = gui.widgetLabel(info_box)
         self._set_input_summary(None)
+        self._set_output_summary(None)
+        gui.separator(self.controlArea)
 
         box = gui.vBox(self.controlArea, "变量")
         self.c_show_attribute_labels = gui.checkBox(
@@ -240,11 +234,10 @@ class OWDataTable(OWWidget):
 
         gui.rubber(self.controlArea)
 
-        gui.button(self.buttonsArea, self, "恢复原始顺序",
-                   callback=self.restore_order,
-                   tooltip="Show rows in the original order",
-                   autoDefault=False,
-                   attribute=Qt.WA_LayoutUsesWidgetRect)
+        reset = gui.button(
+            None, self, "恢复原始顺序", callback=self.restore_order,
+            tooltip="Show rows in the original order", autoDefault=False)
+        self.buttonsArea.layout().insertWidget(0, reset)
         gui.auto_send(self.buttonsArea, self, "auto_commit")
 
         # GUI with tabs
@@ -275,7 +268,6 @@ class OWDataTable(OWWidget):
             else:
                 view = DataTableView()
                 view.setSortingEnabled(True)
-                view.setItemDelegate(TableDataDelegate(view))
 
                 if self.select_rows:
                     view.setSelectionBehavior(QTableView.SelectRows)
@@ -363,11 +355,11 @@ class OWDataTable(OWWidget):
             color_schema = None
         if self.show_distributions:
             view.setItemDelegate(
-                TableBarItemDelegate(
-                    view, color=self.dist_color, color_schema=color_schema)
+                gui.TableBarItem(
+                    self, color=self.dist_color, color_schema=color_schema)
             )
         else:
-            view.setItemDelegate(TableDataDelegate(view))
+            view.setItemDelegate(QStyledItemDelegate(self))
 
         # Enable/disable view sorting based on data's type
         view.setSortingEnabled(is_sortable(data))
@@ -468,7 +460,7 @@ class OWDataTable(OWWidget):
                 s = btn.style().sizeFromContents(
                     QStyle.CT_HeaderSection,
                     opt, QSize(),
-                    btn)
+                    btn).expandedTo(QApplication.globalStrut())
                 if s.isValid():
                     table.verticalHeader().setMinimumWidth(s.width())
             except Exception:
@@ -550,10 +542,15 @@ class OWDataTable(OWWidget):
                     + format_part(summary.M))
         return text
 
+    def _set_output_summary(self, output):
+        summary = len(output) if output else self.info.NoOutput
+        details = format_summary_details(output) if output else ""
+        self.info.set_output_summary(summary, details)
+
     def _on_select_all(self, _):
         data_info = self.tabs.currentWidget().input_slot.summary
         if len(self.selected_rows) == data_info.len \
-                and len(self.selected_cols) == len(data_info.domain.variables):
+                and len(self.selected_cols) == len(data_info.domain):
             self.tabs.currentWidget().clearSelection()
         else:
             self.tabs.currentWidget().selectAll()
@@ -606,10 +603,10 @@ class OWDataTable(OWWidget):
             else:
                 color_schema = None
             if self.show_distributions:
-                delegate = TableBarItemDelegate(widget, color=self.dist_color,
-                                                color_schema=color_schema)
+                delegate = gui.TableBarItem(self, color=self.dist_color,
+                                            color_schema=color_schema)
             else:
-                delegate = TableDataDelegate(widget)
+                delegate = QStyledItemDelegate(self)
             widget.setItemDelegate(delegate)
         tab = self.tabs.currentWidget()
         if tab:
@@ -713,6 +710,7 @@ class OWDataTable(OWWidget):
             # Selections of individual instances are not implemented
             # for SqlTables
             if isinstance(table, SqlTable):
+                self._set_output_summary(selected_data)
                 self.Outputs.selected_data.send(selected_data)
                 self.Outputs.annotated_data.send(None)
                 return
@@ -722,7 +720,7 @@ class OWDataTable(OWWidget):
 
             domain = table.domain
 
-            if len(colsel) < len(domain.variables) + len(domain.metas):
+            if len(colsel) < len(domain) + len(domain.metas):
                 # only a subset of the columns is selected
                 allvars = domain.class_vars + domain.metas + domain.attributes
                 columns = [(c, model.headerData(c, Qt.Horizontal,
@@ -742,12 +740,13 @@ class OWDataTable(OWWidget):
                 metas = select_vars(TableModel.Meta)
                 domain = Orange.data.Domain(attrs, class_vars, metas)
 
-            # Send all data by default
+            # Avoid a copy if none rows are selected.
             if not rowsel:
-                selected_data = table
+                selected_data = None
             else:
                 selected_data = table.from_table(domain, table, rowsel)
 
+        self._set_output_summary(selected_data)
         self.Outputs.selected_data.send(selected_data)
         self.Outputs.annotated_data.send(create_annotated_table(table, rowsel))
 

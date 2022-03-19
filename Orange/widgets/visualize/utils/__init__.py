@@ -128,8 +128,7 @@ class VizRankDialog(QDialog, ProgressBarMixin, WidgetMessagesMixin,
 
         self.rank_model = QStandardItemModel(self)
         self.model_proxy = QSortFilterProxyModel(
-            self, filterCaseSensitivity=Qt.CaseInsensitive
-        )
+            self, filterCaseSensitivity=False)
         self.model_proxy.setSourceModel(self.rank_model)
         self.rank_table = view = QTableView(
             selectionBehavior=QTableView.SelectRows,

@@ -20,6 +20,7 @@ from Orange.widgets.utils.annotated_data import (create_annotated_table,
                                                  ANNOTATED_DATA_SIGNAL_Chinese_NAME)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.utils import (
     CanvasText, CanvasRectangle, ViewWithPress, VizRankDialogAttrPair)
 from Orange.widgets.widget import OWWidget, AttributeList, Input, Output
@@ -107,8 +108,10 @@ class OWSieveDiagram(OWWidget):
         self.areas = []
         self.selection = set()
 
-        self.mainArea.layout().setSpacing(0)
-        self.attr_box = gui.hBox(self.mainArea, margin=0)
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
+
+        self.attr_box = gui.hBox(self.mainArea)
         self.domain_model = DomainModel(valid_types=DomainModel.PRIMITIVE)
         combo_args = dict(
             widget=self.attr_box, master=self, contentsLength=12,
@@ -116,7 +119,7 @@ class OWSieveDiagram(OWWidget):
             callback=self.attr_changed, model=self.domain_model)
         fixed_size = (QSizePolicy.Fixed, QSizePolicy.Fixed)
         gui.comboBox(value="attr_x", **combo_args)
-        gui.widgetLabel(self.attr_box, "\u2717", sizePolicy=fixed_size)
+        gui.widgetLabel(self.attr_box, "\u2715", sizePolicy=fixed_size)
         gui.comboBox(value="attr_y", **combo_args)
         self.vizrank, self.vizrank_button = SieveRank.add_vizrank(
             self.attr_box, self, "分数组合", self.set_attr)
@@ -174,8 +177,11 @@ class OWSieveDiagram(OWWidget):
             self.attrs[:] = []
             self.domain_model.set_domain(None)
             self.discrete_data = None
+            self.info.set_input_summary(self.info.NoInput)
         else:
             self.domain_model.set_domain(data.domain)
+            self.info.set_input_summary(len(self.data),
+                                        format_summary_details(self.data))
         self.attrs = [x for x in self.domain_model if isinstance(x, Variable)]
         if self.attrs:
             self.attr_x = self.attrs[0]
@@ -300,6 +306,7 @@ class OWSieveDiagram(OWWidget):
         if self.areas is None or not self.selection:
             self.Outputs.selected_data.send(None)
             self.Outputs.annotated_data.send(create_annotated_table(self.data, []))
+            self.info.set_output_summary(self.info.NoOutput)
             return
 
         filts = []
@@ -327,6 +334,9 @@ class OWSieveDiagram(OWWidget):
         if self.discrete_data is not self.data:
             selection = self.data[sel_idx]
 
+        summary = len(selection) if selection is not None else self.info.NoOutput
+        details = format_summary_details(selection) if selection is not None else ""
+        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(selection)
         self.Outputs.annotated_data.send(create_annotated_table(self.data, sel_idx))
 

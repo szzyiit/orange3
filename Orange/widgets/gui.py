@@ -12,11 +12,8 @@ from collections.abc import Sequence
 from AnyQt import QtWidgets, QtCore, QtGui
 from AnyQt.QtCore import Qt, QSize, QItemSelection
 from AnyQt.QtGui import QColor, QWheelEvent
-from AnyQt.QtWidgets import QWidget, QListView, QComboBox
+from AnyQt.QtWidgets import QWidget, QItemDelegate, QListView, QComboBox
 
-from orangewidget.utils.itemdelegates import (
-    BarItemDataDelegate as _BarItemDataDelegate
-)
 # re-export relevant objects
 from orangewidget.gui import (
     OWComponent, OrangeUserRole, TableView, resource_filename,
@@ -37,7 +34,6 @@ from orangewidget.gui import (
     CalendarWidgetWithTime, DateTimeEditWCalendarTime,
     ControlGetter, VerticalScrollArea, ProgressBar,
     ControlledCallback, ControlledCallFront, ValueCallback, connectControl,
-    is_macstyle
 )
 
 
@@ -51,8 +47,7 @@ except ImportError:
 import Orange.data
 from Orange.widgets.utils import getdeepattr
 from Orange.data import \
-    ContinuousVariable, StringVariable, TimeVariable, DiscreteVariable, \
-    Variable, Value
+    ContinuousVariable, StringVariable, TimeVariable, DiscreteVariable, Variable
 from Orange.widgets.utils import vartype
 
 __all__ = [
@@ -72,7 +67,7 @@ __all__ = [
     "BarRatioRole", "BarBrushRole", "SortOrderRole", "LinkRole",
     "BarItemDelegate", "IndicatorItemDelegate", "LinkStyledItemDelegate",
     "ColoredBarItemDelegate", "HorizontalGridDelegate", "VerticalItemDelegate",
-    "ValueCallback", 'is_macstyle',
+    "ValueCallback",
     # Defined here
     "createAttributePixmap", "attributeIconDict", "attributeItem",
     "listView", "ListViewWithSizeHint", "listBox", "OrangeListBox",
@@ -197,6 +192,7 @@ def listView(widget, master, value=None, model=None, box=None, callback=None,
                        view.selectionModel().selectionChanged,
                        CallFrontListView(view),
                        CallBackListView(model, view, master, value))
+    misc.setdefault('addSpace', True)
     misc.setdefault('uniformItemSizes', True)
     miscellanea(view, bg, widget, **misc)
     return view
@@ -263,6 +259,7 @@ def listBox(widget, master, value=None, labels=None, box=None, callback=None,
         connectControl(master, value, callback, lb.itemSelectionChanged,
                        CallFrontListBox(lb), CallBackListBox(lb, master))
 
+    misc.setdefault('addSpace', True)
     miscellanea(lb, bg, widget, **misc)
     return lb
 
@@ -597,17 +594,12 @@ TableDistribution = next(OrangeUserRole)
 TableVariable = next(OrangeUserRole)
 
 
-class TableBarItem(_BarItemDataDelegate):
+class TableBarItem(QItemDelegate):
     BarRole = next(OrangeUserRole)
     BarColorRole = next(OrangeUserRole)
-    __slots__ = ("color_schema",)
 
-    def __init__(
-            self, parent=None, color=QColor(255, 170, 127), width=5,
-            barFillRatioRole=BarRole, barColorRole=BarColorRole,
-            color_schema=None,
-            **kwargs
-    ):
+    def __init__(self, parent=None, color=QtGui.QColor(255, 170, 127),
+                 color_schema=None):
         """
         :param QObject parent: Parent object.
         :param QColor color: Default color of the distribution bar.
@@ -617,21 +609,54 @@ class TableBarItem(_BarItemDataDelegate):
             parameter, if set, overrides the ``color``)
         :type color_schema: :class:`OWColorPalette.ColorPaletteGenerator`
         """
-        super().__init__(
-            parent, color=color, penWidth=width,
-            barFillRatioRole=barFillRatioRole, barColorRole=barColorRole,
-            **kwargs
-        )
+        super().__init__(parent)
+        self.color = color
         self.color_schema = color_schema
 
-    def barColorData(self, index):
-        class_ = self.cachedData(index, TableClassValueRole)
-        if self.color_schema is not None \
-                and isinstance(class_, Value) \
-                and isinstance(class_.variable, DiscreteVariable) \
-                and not math.isnan(class_):
-            return self.color_schema[int(class_)]
-        return self.cachedData(index, self.BarColorRole)
+    def paint(self, painter, option, index):
+        painter.save()
+        self.drawBackground(painter, option, index)
+        ratio = index.data(TableBarItem.BarRole)
+        if isinstance(ratio, float):
+            if math.isnan(ratio):
+                ratio = None
+
+        color = None
+        if ratio is not None:
+            if self.color_schema is not None:
+                class_ = index.data(TableClassValueRole)
+                if isinstance(class_, Orange.data.Value) and \
+                        class_.variable.is_discrete and \
+                        not math.isnan(class_):
+                    color = self.color_schema[int(class_)]
+            else:
+                color = index.data(self.BarColorRole)
+        if color is None:
+            color = self.color
+        rect = option.rect
+        if ratio is not None:
+            pw = 5
+            hmargin = 3 + pw / 2  # + half pen width for the round line cap
+            vmargin = 1
+            textoffset = pw + vmargin * 2
+            baseline = rect.bottom() - textoffset / 2
+            width = (rect.width() - 2 * hmargin) * ratio
+            painter.save()
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            painter.setPen(QtGui.QPen(QtGui.QBrush(color), pw,
+                                      Qt.SolidLine, Qt.RoundCap))
+            line = QtCore.QLineF(
+                rect.left() + hmargin, baseline,
+                rect.left() + hmargin + width, baseline
+            )
+            painter.drawLine(line)
+            painter.restore()
+            text_rect = rect.adjusted(0, 0, 0, -textoffset)
+        else:
+            text_rect = rect
+        text = str(index.data(Qt.DisplayRole))
+        self.drawDisplay(painter, option, text_rect, text)
+        painter.restore()
 
 
 from Orange.widgets.utils.colorpalettes import patch_variable_colors

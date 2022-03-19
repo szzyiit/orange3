@@ -27,6 +27,8 @@ from Orange.widgets.settings import (Setting, ContextSetting,
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.utils.state_summary import format_summary_details, \
+    format_multiple_summaries
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
 
@@ -759,7 +761,6 @@ class OWPivot(OWWidget):
         cannot_aggregate = Msg("某些聚合 ({}) 无法执行.")
         renamed_vars = Msg("为防止重复, 某些变量已经重命名\n{}")
         too_many_values = Msg("选中的变量有过多的值.")
-        no_variables = Msg("至少需要一个原始变量.")
 
     settingsHandler = DomainContextHandler()
     row_feature = ContextSetting(None)
@@ -794,31 +795,28 @@ class OWPivot(OWWidget):
         self._add_main_area_controls()
 
     def _add_control_area_controls(self):
-        gui.comboBox(gui.vBox(self.controlArea, box="行"),
-                     self, "row_feature",
-                     contentsLength=14,
+        box = gui.vBox(self.controlArea, box=True)
+        gui.comboBox(box, self, "row_feature", label="行", contentsLength=12,
                      searchable=True,
                      model=DomainModel(valid_types=DomainModel.PRIMITIVE),
-                     callback=self.__feature_changed,
-                     orientation=Qt.Horizontal)
-        gui.comboBox(gui.vBox(self.controlArea, box="列"),
-                     self, "col_feature",
-                     contentsLength=14,
+                     callback=self.__feature_changed)
+        gui.comboBox(box, self, "col_feature", label="列",
+                     contentsLength=12,
                      searchable=True,
                      model=DomainModel(placeholder="(与行相同)",
                                        valid_types=DiscreteVariable),
-                     callback=self.__feature_changed,
-                     orientation=Qt.Horizontal)
-        gui.comboBox(gui.vBox(self.controlArea, box="值"),
-                     self, "val_feature",
-                     contentsLength=14,
+                     callback=self.__feature_changed,)
+        gui.comboBox(box, self, "val_feature", label="值",
+                     contentsLength=12,
                      searchable=True,
                      model=DomainModel(placeholder="(无)"),
-                     callback=self.__val_feature_changed,
-                     orientation=Qt.Horizontal)
+                     callback=self.__val_feature_changed)
         self.__add_aggregation_controls()
         gui.rubber(self.controlArea)
-        gui.auto_apply(self.buttonsArea, self, "auto_commit")
+        gui.auto_apply(self.controlArea, self, "auto_commit")
+
+        self.set_input_summary()
+        self.set_output_summary(None, None, None)
 
     def __add_aggregation_controls(self):
         def new_inbox():
@@ -837,6 +835,7 @@ class OWPivot(OWWidget):
         self.aggregation_checkboxes = []  # for test purposes
         for agg in self.AGGREGATIONS:
             if agg is None:
+                gui.separator(box, height=1)
                 line = QFrame()
                 line.setFrameShape(QFrame.HLine)
                 line.setLineWidth(1)
@@ -870,20 +869,11 @@ class OWPivot(OWWidget):
     def skipped_aggs(self):
         def add(fun):
             data, var = self.data, self.val_feature
-            primitive_funcs = Pivot.ContVarFunctions + Pivot.DiscVarFunctions
             return data and not var and fun not in Pivot.AutonomousFunctions \
                 or var and var.is_discrete and fun in Pivot.ContVarFunctions \
-                or var and var.is_continuous and fun in Pivot.DiscVarFunctions \
-                or var and not var.is_primitive() and fun in primitive_funcs
+                or var and var.is_continuous and fun in Pivot.DiscVarFunctions
         skipped = [str(fun) for fun in self.sel_agg_functions if add(fun)]
         return ", ".join(sorted(skipped))
-
-    @property
-    def data_has_primitives(self):
-        if not self.data:
-            return False
-        domain = self.data.domain
-        return any(v.is_primitive() for v in domain.variables + domain.metas)
 
     def __feature_changed(self):
         self.selection = set()
@@ -892,7 +882,7 @@ class OWPivot(OWWidget):
 
     def __val_feature_changed(self):
         self.selection = set()
-        if self.no_col_feature or not self.pivot:
+        if self.no_col_feature:
             return
         self.pivot.update_pivot_table(self.val_feature)
         self.commit()
@@ -921,12 +911,12 @@ class OWPivot(OWWidget):
         self.pivot = None
         self.check_data()
         self.init_attr_values()
-        if self.data_has_primitives:
-            self.openContext(self.data)
+        self.openContext(self.data)
         self.unconditional_commit()
 
     def check_data(self):
         self.clear_messages()
+        self.set_input_summary()
 
     def init_attr_values(self):
         domain = self.data.domain if self.data and len(self.data) else None
@@ -938,37 +928,24 @@ class OWPivot(OWWidget):
             self.row_feature = model[0]
         model = self.controls.val_feature.model()
         if model and len(model) > 2:
-            allvars = domain.variables + domain.metas
-            self.val_feature = allvars[0] if allvars[0] in model else model[2]
+            self.val_feature = domain.variables[0] \
+                if domain.variables[0] in model else model[2]
 
     def commit(self):
         def send_outputs(pivot_table, filtered_data, grouped_data):
-            if self.data:
-                if grouped_data:
-                    grouped_data.name = self.data.name
-                if pivot_table:
-                    pivot_table.name = self.data.name
-                if filtered_data:
-                    filtered_data.name = self.data.name
             self.Outputs.grouped_data.send(grouped_data)
             self.Outputs.pivot_table.send(pivot_table)
             self.Outputs.filtered_data.send(filtered_data)
+            self.set_output_summary(pivot_table, filtered_data, grouped_data)
 
         self.Warning.renamed_vars.clear()
         self.Warning.too_many_values.clear()
         self.Warning.cannot_aggregate.clear()
         self.Warning.no_col_feature.clear()
 
-        self.table_view.clear()
-
         if self.pivot is None:
-            if self.data:
-                if not self.data_has_primitives:
-                    self.Warning.no_variables()
-                    send_outputs(None, None, None)
-                    return
-
             if self.no_col_feature:
+                self.table_view.clear()
                 self.Warning.no_col_feature()
                 send_outputs(None, None, None)
                 return
@@ -997,7 +974,30 @@ class OWPivot(OWWidget):
         if self.pivot.renamed:
             self.Warning.renamed_vars(self.pivot.renamed)
 
+    def set_input_summary(self):
+        summary = len(self.data) if self.data else self.info.NoInput
+        details = format_summary_details(self.data) if self.data else ""
+        self.info.set_input_summary(summary, details)
+
+    def set_output_summary(self, pivot: Table, filtered: Table, grouped: Table):
+        summary, detail, kwargs = self.info.NoOutput, "", {}
+        if pivot or filtered or grouped:
+            n_pivot = len(pivot) if pivot else 0
+            n_filtered = len(filtered) if filtered else 0
+            n_grouped = len(grouped) if grouped else 0
+            summary = f"{self.info.format_number(n_pivot)}, " \
+                      f"{self.info.format_number(n_filtered)}, " \
+                      f"{self.info.format_number(n_grouped)}"
+            detail = format_multiple_summaries([
+                ("Pivot table", pivot),
+                ("Filtered data", filtered),
+                ("Grouped data", grouped)
+            ])
+            kwargs = {"format": Qt.RichText}
+        self.info.set_output_summary(summary, detail, **kwargs)
+
     def _update_graph(self):
+        self.table_view.clear()
         if self.pivot.pivot_table:
             col_feature = self.col_feature or self.row_feature
             self.table_view.update_table(col_feature.name,

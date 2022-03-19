@@ -56,9 +56,8 @@ class OWTreeLearner(OWBaseLearner):
     def add_main_layout(self):
         box = gui.widgetBox(self.controlArea, '参数')
         # the checkbox is put into vBox for alignemnt with other checkboxes
-        gui.checkBox(box, self, "binary_trees", "归纳二叉树",
-                     callback=self.settings_changed,
-                     attribute=Qt.WA_LayoutUsesWidgetRect)
+        gui.checkBox(gui.vBox(box), self, "binary_trees", "归纳二叉树",
+                     callback=self.settings_changed)
         for label, check, setting, fromv, tov in self.spin_boxes:
             gui.spin(box, self, setting, fromv, tov, label=label,
                      checked=check, alignment=Qt.AlignRight,

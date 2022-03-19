@@ -39,6 +39,8 @@ from Orange.widgets.evaluate.utils import \
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.utils.concurrent import ThreadExecutor, TaskState
+from Orange.widgets.utils.state_summary import (format_multiple_summaries,
+                                                format_summary_details)
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 log = logging.getLogger(__name__)
@@ -151,7 +153,6 @@ class OWTestAndScore(OWWidget):
         evaluations_results = Output("评价结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
 
     settings_version = 3
-    buttons_area_orientation = None
     UserAdviceMessages = [
         widget.Message(
             "Click on the table header to select shown columns",
@@ -212,16 +213,12 @@ class OWTestAndScore(OWWidget):
         scores_not_computed = Msg("Some scores could not be computed.")
         test_data_unused = Msg("Test data is present but unused. "
                                "Select 'Test on test data' to use it.")
-        cant_stratify = \
-            Msg("Can't run stratified {}-fold cross validation; "
-                "the least common class has only {} instances.")
 
     class Information(OWWidget.Information):
         data_sampled = Msg("Train data has been sampled")
         test_data_sampled = Msg("Test data has been sampled")
         test_data_transformed = Msg(
             "Test data has been transformed to match the train data.")
-        cant_stratify_numeric = Msg("Stratification is ignored for regression")
 
     def __init__(self):
         super().__init__()
@@ -244,20 +241,23 @@ class OWTestAndScore(OWWidget):
         self.__task = None  # type: Optional[TaskState]
         self.__executor = ThreadExecutor()
 
+        self.info.set_input_summary(self.info.NoInput)
+        self.info.set_output_summary(self.info.NoOutput)
+
         sbox = gui.vBox(self.controlArea, "抽样")
         rbox = gui.radioButtons(
             sbox, self, "resampling", callback=self._param_changed)
 
-        gui.appendRadioButton(rbox, "交叉验证")
+        gui.appendRadioButton(rbox, "交叉验证(Cross validation)")
         ibox = gui.indentedBox(rbox)
         gui.comboBox(
             ibox, self, "n_folds", label="折叠次数: ",
             items=[str(x) for x in self.NFolds],
             orientation=Qt.Horizontal, callback=self.kfold_changed)
         gui.checkBox(
-            ibox, self, "cv_stratified", "分层",
+            ibox, self, "cv_stratified", "分层(Stratified)",
             callback=self.kfold_changed)
-        gui.appendRadioButton(rbox, "按特征交叉验证)")
+        gui.appendRadioButton(rbox, "按特征交叉验证(Cross validation by feature)")
         ibox = gui.indentedBox(rbox)
         self.feature_model = DomainModel(
             order=DomainModel.METAS, valid_types=DiscreteVariable)
@@ -266,7 +266,7 @@ class OWTestAndScore(OWWidget):
             orientation=Qt.Horizontal, searchable=True,
             callback=self.fold_feature_changed)
 
-        gui.appendRadioButton(rbox, "随机抽样")
+        gui.appendRadioButton(rbox, "随机抽样(Random sampling)")
         ibox = gui.indentedBox(rbox)
         gui.comboBox(
             ibox, self, "n_repeats", label="重复训练/测试: ",
@@ -279,10 +279,10 @@ class OWTestAndScore(OWWidget):
             orientation=Qt.Horizontal, callback=self.shuffle_split_changed
         )
         gui.checkBox(
-            ibox, self, "shuffle_stratified", "分层",
+            ibox, self, "shuffle_stratified", "分层(Stratified)",
             callback=self.shuffle_split_changed)
 
-        gui.appendRadioButton(rbox, "留一法")
+        gui.appendRadioButton(rbox, "留一法(Leave one out)")
 
         gui.appendRadioButton(rbox, "测试训练数据")
         gui.appendRadioButton(rbox, "测试测试数据")
@@ -301,7 +301,7 @@ class OWTestAndScore(OWWidget):
 
         hbox = gui.hBox(box)
         gui.checkBox(hbox, self, "use_rope",
-                     "可忽略差别: ",
+                     "可忽略区别: ",
                      callback=self._on_use_rope_changed)
         gui.lineEdit(hbox, self, "rope", validator=QDoubleValidator(),
                      controlWidth=70, callback=self.update_comparison_table,
@@ -342,9 +342,9 @@ class OWTestAndScore(OWWidget):
             "\"列模型\"的评价指标. "
             "值小说明概率很小, 区别可以忽略不计.</small>", wordWrap=True))
 
-    def sizeHint(self):
-        sh = super().sizeHint()
-        return QSize(780, sh.height())
+    @staticmethod
+    def sizeHint():
+        return QSize(780, 1)
 
     def _update_controls(self):
         self.fold_feature = None
@@ -541,8 +541,26 @@ class OWTestAndScore(OWWidget):
         self.score_table.update_header(self.scorers)
         self._update_view_enabled()
         self.update_stats_model()
+        self.set_input_summary()
         if self.__needupdate:
             self.__update()
+
+    def set_input_summary(self):
+        summary, details, kwargs = self.info.NoInput, "", {}
+        if self.data and self.test_data:
+            summary = f"{self.info.format_number(len(self.data))}," \
+                      f" {self.info.format_number(len(self.test_data))}"
+            details = format_multiple_summaries([
+                ("Data", self.data), ("Test data", self.test_data)
+            ])
+            kwargs = {"format": Qt.RichText}
+        elif self.data and not self.test_data:
+            summary, details = len(
+                self.data), format_summary_details(self.data)
+        elif self.test_data and not self.data:
+            summary = len(self.test_data)
+            details = format_summary_details(self.test_data)
+        self.info.set_input_summary(summary, details, **kwargs)
 
     def kfold_changed(self):
         self.resampling = OWTestAndScore.KFold
@@ -851,6 +869,10 @@ class OWTestAndScore(OWWidget):
             except MemoryError:
                 self.Error.memory_error()
 
+        summary = len(predictions) if predictions else self.info.NoOutput
+        details = format_summary_details(predictions) if predictions else ""
+        self.info.set_output_summary(summary, details)
+
         self.Outputs.evaluations_results.send(combined)
         self.Outputs.predictions.send(predictions)
 
@@ -907,8 +929,6 @@ class OWTestAndScore(OWWidget):
         self.Warning.test_data_unused.clear()
         self.Error.test_data_incompatible.clear()
         self.Warning.test_data_missing.clear()
-        self.Warning.cant_stratify.clear()
-        self.Information.cant_stratify_numeric.clear()
         self.Information.test_data_transformed(
             shown=self.resampling == self.TestOnTest
             and self.data is not None
@@ -919,7 +939,7 @@ class OWTestAndScore(OWWidget):
         self.Error.too_many_folds.clear()
         self.error()
 
-        # check preconditions and return early or show warnings
+        # check preconditions and return early
         if self.data is None:
             self.__state = State.Waiting
             self.commit()
@@ -928,24 +948,12 @@ class OWTestAndScore(OWWidget):
             self.__state = State.Waiting
             self.commit()
             return
-        if self.resampling == OWTestAndScore.KFold:
-            k = self.NFolds[self.n_folds]
-            if len(self.data) < k:
-                self.Error.too_many_folds()
-                self.__state = State.Waiting
-                self.commit()
-                return
-            do_stratify = self.cv_stratified
-            if do_stratify:
-                if self.data.domain.class_var.is_discrete:
-                    least = min(filter(None,
-                                       np.bincount(self.data.Y.astype(int))))
-                    if least < k:
-                        self.Warning.cant_stratify(k, least)
-                        do_stratify = False
-                else:
-                    self.Information.cant_stratify_numeric()
-                    do_stratify = False
+        if self.resampling == OWTestAndScore.KFold and \
+                len(self.data) < self.NFolds[self.n_folds]:
+            self.Error.too_many_folds()
+            self.__state = State.Waiting
+            self.commit()
+            return
 
         elif self.resampling == OWTestAndScore.TestOnTest:
             if self.test_data is None:
@@ -985,8 +993,7 @@ class OWTestAndScore(OWWidget):
             if self.resampling == OWTestAndScore.KFold:
                 sampler = Orange.evaluation.CrossValidation(
                     k=self.NFolds[self.n_folds],
-                    random_state=rstate,
-                    stratified=do_stratify)
+                    random_state=rstate)
             elif self.resampling == OWTestAndScore.FeatureFold:
                 sampler = Orange.evaluation.CrossValidationFeature(
                     feature=self.fold_feature)

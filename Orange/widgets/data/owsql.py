@@ -50,8 +50,6 @@ class OWSql(OWBaseSql):
 
     settings_version = 2
 
-    buttons_area_orientation = None
-
     selected_backend = Setting(None)
     table = Setting(None)
     sql = Setting("")
@@ -106,13 +104,13 @@ class OWSql(OWBaseSql):
         self.selected_backend = backend.display_name if backend else None
 
     def _add_tables_controls(self):
-        vbox = gui.vBox(self.controlArea, "表")
+        vbox = gui.vBox(self.controlArea, "数据表", addSpace=True)
         box = gui.vBox(vbox)
         self.tables = TableModel()
 
         self.tablecombo = QComboBox(
             minimumContentsLength=35,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
         )
         self.tablecombo.setModel(self.tables)
         self.tablecombo.setToolTip('table')

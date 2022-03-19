@@ -58,7 +58,7 @@ class OWLogisticRegression(OWBaseLearner):
         self.penalty_combo = gui.comboBox(
             box, self, "penalty_type", label="正则化类型: ",
             items=self.Chinese_penalty_types, orientation=Qt.Horizontal,
-            callback=self.settings_changed)
+            addSpace=4, callback=self.settings_changed)
         gui.widgetLabel(box, "强度:")
         box2 = gui.hBox(gui.indentedBox(box))
         gui.widgetLabel(box2, "弱").setStyleSheet("margin-top:6px")

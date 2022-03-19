@@ -10,7 +10,9 @@ from sklearn.exceptions import ConvergenceWarning
 from AnyQt.QtCore import Qt, QModelIndex
 
 from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
+from Orange.preprocess import Continuize
 from Orange.widgets.utils import colorpalettes
+from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owheatmap import OWHeatMap, Clustering
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin, datasets
 
@@ -205,20 +207,6 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(w.Inputs.data, iris, widget=w)
         self.assertEqual(len(self.get_output(w.Outputs.selected_data)), 21)
 
-    def test_saved_selection_when_not_possible(self):
-        # Has stored selection but ot enough columns for clustering.
-        iris = Table("iris")[:, ["petal width"]]
-        w = self.create_widget(
-            OWHeatMap, stored_settings={
-                "__version__": 3,
-                "col_clustering_method": "Clustering",
-                "selected_rows": [1, 2, 3],
-            }
-        )
-        self.send_signal(w.Inputs.data, iris)
-        out = self.get_output(w.Outputs.selected_data)
-        self.assertSequenceEqual(list(out.ids), list(iris.ids[[1, 2, 3]]))
-
     def test_set_split_var(self):
         data = self.brown_selected[::3]
         w = self.widget
@@ -388,6 +376,30 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         widget.set_column_annotation_color_var(data.domain["diau g"])
         widget.set_column_annotation_color_var(None)
         self.assertFalse(widget.scene.widget.top_side_colors[0].isVisible())
+
+    def test_summary(self):
+        """Check if status bar is updated when data is received"""
+        info = self.widget.info
+        no_input, no_output = "No data on input", "No data on output"
+
+        data = self.housing
+        self.send_signal(self.widget.Inputs.data, data)
+        summary, details = f"{len(data)}", format_summary_details(data)
+        self.assertEqual(info._StateInfo__input_summary.brief, summary)
+        self.assertEqual(info._StateInfo__input_summary.details, details)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
+        self._select_data()
+        output = self.get_output(self.widget.Outputs.selected_data)
+        summary, details = f"{len(output)}", format_summary_details(output)
+        self.assertEqual(info._StateInfo__output_summary.brief, summary)
+        self.assertEqual(info._StateInfo__output_summary.details, details)
+
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertEqual(info._StateInfo__input_summary.brief, "-")
+        self.assertEqual(info._StateInfo__input_summary.details, no_input)
+        self.assertEqual(info._StateInfo__output_summary.brief, "-")
+        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 
 if __name__ == "__main__":

@@ -7,9 +7,8 @@ from typing import Set, List, Sequence, Union
 
 import numpy
 from AnyQt.QtWidgets import (
-    QTableView, QListWidget, QSplitter, QToolTip, QStyle, QApplication,
-    QSizePolicy
-)
+    QTableView, QListWidget, QSplitter, QStyledItemDelegate,
+    QToolTip, QStyle, QApplication, QSizePolicy)
 from AnyQt.QtGui import QPainter, QStandardItem, QPen, QColor
 from AnyQt.QtCore import (
     Qt, QSize, QRect, QRectF, QPoint, QLocale,
@@ -33,7 +32,7 @@ from Orange.widgets.utils.itemmodels import TableModel
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.colorpalettes import LimitedDiscretePalette
-from Orange.widgets.utils.itemdelegates import DataDelegate, TableDataDelegate
+
 
 # Input slot for the Predictors channel
 PredictorSlot = namedtuple(
@@ -51,8 +50,6 @@ class OWPredictions(OWWidget):
     description = "显示输入数据集的模型预测。"
     keywords = ['yuce', 'moxing']
     category = 'evaluate'
-
-    buttons_area_orientation = None
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -89,16 +86,18 @@ class OWPredictions(OWWidget):
         self.selection_store = None
         self.__pending_selection = self.selection
 
-        controlBox = gui.vBox(self.controlArea, "Show probabilities for")
+        self._set_input_summary()
+        self._set_output_summary(None)
 
-        gui.listBox(controlBox, self, "selected_classes", "class_values",
+        gui.listBox(self.controlArea, self, "selected_classes", "class_values",
+                    box="显示概率",
                     callback=self._update_prediction_delegate,
                     selectionMode=QListWidget.ExtendedSelection,
-                    sizePolicy=(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding),
-                    sizeHint=QSize(1, 350),
-                    minimumHeight=100)
+                    addSpace=False,
+                    sizePolicy=(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        gui.rubber(self.controlArea)
         self.reset_button = gui.button(
-            controlBox, self, "恢复原始顺序",
+            self.controlArea, self, "恢复原始顺序",
             callback=self._reset_order,
             tooltip="以原始顺序显示行")
 
@@ -225,6 +224,7 @@ class OWPredictions(OWWidget):
         self._update_predictions_model()
         self._update_prediction_delegate()
         self._set_errors()
+        self._set_input_summary()
         self.commit()
 
     def _call_predictors(self):
@@ -330,9 +330,19 @@ class OWPredictions(OWWidget):
         else:
             self.Warning.wrong_targets.clear()
 
+    def _set_input_summary(self):
+        if not self.data and not self.predictors:
+            self.info.set_input_summary(self.info.NoInput)
+            return
+
+        summary = len(self.data) if self.data else 0
+        details = self._get_details()
+        self.info.set_input_summary(summary, details, format=Qt.RichText)
+
     def _get_details(self):
         details = "Data:<br>"
-        details += format_summary_details(self.data, format=Qt.RichText)
+        details += format_summary_details(self.data).replace('\n', '<br>') if \
+            self.data else "No data on input."
         details += "<hr>"
         pred_names = [v.name for v in self.predictors.values()]
         n_predictors = len(self.predictors)
@@ -348,6 +358,11 @@ class OWPredictions(OWWidget):
         else:
             details += "Model:<br>No model on input."
         return details
+
+    def _set_output_summary(self, output):
+        summary = len(output) if output else self.info.NoOutput
+        details = format_summary_details(output) if output else ""
+        self.info.set_output_summary(summary, details)
 
     def _invalidate_predictions(self):
         for inputid, pred in list(self.predictors.items()):
@@ -571,6 +586,7 @@ class OWPredictions(OWWidget):
 
     def _commit_predictions(self):
         if not self.data:
+            self._set_output_summary(None)
             self.Outputs.predictions.send(None)
             return
 
@@ -616,6 +632,7 @@ class OWPredictions(OWWidget):
             source_rows = [map_to(index(row, 0)).row() for row in rows]
             predictions = predictions[source_rows]
         self.Outputs.predictions.send(predictions)
+        self._set_output_summary(predictions)
 
     @staticmethod
     def _add_classification_out_columns(slot, newmetas, newcolumns):
@@ -687,7 +704,7 @@ class OWPredictions(OWWidget):
         QTimer.singleShot(0, self._update_splitter)
 
 
-class DataItemDelegate(TableDataDelegate):
+class DataItemDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
         if self.parent().selectionModel().isSelected(index):
@@ -696,13 +713,10 @@ class DataItemDelegate(TableDataDelegate):
                             | QStyle.State_Active
 
 
-class PredictionsItemDelegate(DataDelegate):
+class PredictionsItemDelegate(QStyledItemDelegate):
     """
     A Item Delegate for custom formatting of predictions/probabilities
     """
-    #: Roles supplied by the `PredictionsModel`
-    DefaultRoles = (Qt.DisplayRole, )
-
     def __init__(
             self, class_values, colors, shown_probabilities=(),
             target_format=None, parent=None,
@@ -774,8 +788,9 @@ class PredictionsItemDelegate(DataDelegate):
         height = sh.height() + metrics.leading() + 2 * margin
         return QSize(sh.width(), height)
 
-    def distribution(self, index):
-        value = self.cachedData(index, Qt.DisplayRole)
+    @staticmethod
+    def distribution(index):
+        value = index.data(Qt.DisplayRole)
         if isinstance(value, tuple) and len(value) == 2:
             _, dist = value
             return dist
@@ -802,15 +817,20 @@ class PredictionsItemDelegate(DataDelegate):
             QStyle.PM_FocusFrameHMargin, option, option.widget) + 1
         bottommargin = min(margin, 1)
         rect = option.rect.adjusted(margin, margin, -margin, -bottommargin)
-        option.text = ""
+
         textrect = style.subElementRect(
             QStyle.SE_ItemViewItemText, option, option.widget)
         # Are the margins included in the subElementRect?? -> No!
         textrect = textrect.adjusted(margin, margin, -margin, -bottommargin)
+
+        text = option.fontMetrics.elidedText(
+            text, option.textElideMode, textrect.width())
+
         spacing = max(metrics.leading(), 1)
 
         distheight = rect.height() - metrics.height() - spacing
-        distheight = min(max(distheight, 2), metrics.height())
+        distheight = numpy.clip(distheight, 2, metrics.height())
+
         painter.save()
         painter.setClipRect(option.rect)
         painter.setFont(option.font)
@@ -821,6 +841,12 @@ class PredictionsItemDelegate(DataDelegate):
         style.drawPrimitive(
             QStyle.PE_PanelItemViewItem, option, painter, option.widget)
 
+        if option.state & QStyle.State_Selected:
+            color = option.palette.highlightedText().color()
+        else:
+            color = option.palette.text().color()
+        painter.setPen(QPen(color))
+
         textrect = textrect.adjusted(0, 0, 0, -distheight - spacing)
         distrect = QRect(
             textrect.bottomLeft() + QPoint(0, spacing),
@@ -829,8 +855,9 @@ class PredictionsItemDelegate(DataDelegate):
         self.drawDistBar(painter, distrect, dist)
         painter.restore()
         if text:
-            option.text = text
-            self.drawViewItemText(style, painter, option, textrect)
+            style.drawItemText(
+                painter, textrect, option.displayAlignment, option.palette,
+                option.state & QStyle.State_Enabled, text)
 
     def drawDistBar(self, painter, rect, distribution):
         painter.save()

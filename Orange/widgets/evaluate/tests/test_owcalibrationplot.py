@@ -102,6 +102,7 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         res = copy.copy(self.results)
         res.row_indices = res.row_indices[:0]
         res.actual = res.actual[:0]
+        res.predicted = res.predicted[:, 0]
         res.probabilities = res.probabilities[:, :0, :]
         self.send_signal(widget.Inputs.evaluation_results, self.results)
         self.assertFalse(widget.Error.empty_input.is_shown())
@@ -124,6 +125,7 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         res.domain = Domain([], ContinuousVariable("y"))
         res.row_indices = res.row_indices[:0]
         res.actual = res.actual[:0]
+        res.predicted = res.predicted[:, 0]
         res.probabilities = res.probabilities[:, :0, :]
         self.send_signal(widget.Inputs.evaluation_results, self.results)
         self.assertFalse(widget.Error.non_discrete_target.is_shown())

@@ -5,6 +5,8 @@ import pyqtgraph as pg
 __all__ = ["create_palette", "OWPalette"]
 
 
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
 pg.setConfigOptions(antialias=True)
 
 
