@@ -1,0 +1,232 @@
+# pylint: disable=protected-access
+
+import unittest
+from unittest.mock import patch
+import copy
+import numpy as np
+
+from AnyQt.QtWidgets import QToolTip
+
+from Orange.data import Table
+import Orange.evaluation
+import Orange.classification
+
+from Orange.widgets.evaluate import owrocanalysis
+from Orange.widgets.evaluate.owrocanalysis import OWROCAnalysis
+from Orange.widgets.evaluate.tests.base import EvaluateTest
+from Orange.widgets.tests.base import WidgetTest
+from Orange.widgets.tests.utils import mouseMove, simulate
+from Orange.tests import test_filename
+
+
+class TestROC(unittest.TestCase):
+    def test_ROCData_from_results(self):
+        data = Orange.data.Table("iris")
+        learners = [
+            Orange.classification.MajorityLearner(),
+            Orange.classification.LogisticRegressionLearner(),
+            Orange.classification.TreeLearner()
+        ]
+        res = Orange.evaluation.CrossValidation(data, learners, k=10)
+
+        for i, _ in enumerate(learners):
+            for c in range(len(data.domain.class_var.values)):
+                rocdata = owrocanalysis.roc_data_from_results(res, i, target=c)
+                self.assertTrue(rocdata.merged.is_valid)
+                self.assertEqual(len(rocdata.folds), 10)
+                self.assertTrue(all(c.is_valid for c in rocdata.folds))
+                self.assertTrue(rocdata.avg_vertical.is_valid)
+                self.assertTrue(rocdata.avg_threshold.is_valid)
+
+        # fixed random seed because otherwise it could happen that data sample
+        # contained only instances of two classes (and the test then fails)
+        # Pylint complains about RandomState; pylint: disable=no-member
+        data = data[np.random.RandomState(0).choice(len(data), size=20)]
+        res = Orange.evaluation.LeaveOneOut(data, learners)
+
+        for i, _ in enumerate(learners):
+            for c in range(len(data.domain.class_var.values)):
+                rocdata = owrocanalysis.roc_data_from_results(res, i, target=c)
+                self.assertTrue(rocdata.merged.is_valid)
+                self.assertEqual(len(rocdata.folds), 20)
+                # all individual fold curves and averaged curve data
+                # should be invalid
+                self.assertTrue(all(not c.is_valid for c in rocdata.folds))
+                self.assertFalse(rocdata.avg_vertical.is_valid)
+                self.assertFalse(rocdata.avg_threshold.is_valid)
+
+        # equivalent test to the LeaveOneOut but from a slightly different
+        # constructed Orange.evaluation.Results
+        res = Orange.evaluation.CrossValidation(data, learners, k=20)
+
+        for i, _ in enumerate(learners):
+            for c in range(len(data.domain.class_var.values)):
+                rocdata = owrocanalysis.roc_data_from_results(res, i, target=c)
+                self.assertTrue(rocdata.merged.is_valid)
+                self.assertEqual(len(rocdata.folds), 20)
+                # all individual fold curves and averaged curve data
+                # should be invalid
+                self.assertTrue(all(not c.is_valid for c in rocdata.folds))
+                self.assertFalse(rocdata.avg_vertical.is_valid)
+                self.assertFalse(rocdata.avg_threshold.is_valid)
+
+
+class TestOWROCAnalysis(WidgetTest, EvaluateTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.lenses = data = Table(test_filename("datasets/lenses.tab"))
+        cls.res = Orange.evaluation.TestOnTestData(
+            train_data=data[::2], test_data=data[1::2],
+            learners=[Orange.classification.MajorityLearner(),
+                      Orange.classification.KNNLearner()],
+            store_data=True,
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.widget = self.create_widget(
+            OWROCAnalysis,
+            stored_settings={
+                "display_perf_line": True,
+                "display_def_threshold": True,
+                "display_convex_hull": True,
+                "display_convex_curve": True
+            }
+        )  # type: OWROCAnalysis
+
+    def tearDown(self):
+        super().tearDown()
+        self.widget.onDeleteWidget()
+        self.widgets.remove(self.widget)
+        self.widget = None
+
+    def test_basic(self):
+        res = self.res
+        self.send_signal(self.widget.Inputs.evaluation_results, res)
+        self.widget.roc_averaging = OWROCAnalysis.Merge
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Vertical
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Threshold
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.NoAveraging
+        self.widget._replot()
+        self.send_signal(self.widget.Inputs.evaluation_results, None)
+
+    def test_empty_input(self):
+        res = Orange.evaluation.Results(
+            data=self.lenses[:0], nmethods=2, store_data=True)
+        res.row_indices = np.array([], dtype=int)
+        res.actual = np.array([])
+        res.predicted = np.zeros((2, 0))
+        res.probabilities = np.zeros((2, 0, 3))
+
+        self.send_signal(self.widget.Inputs.evaluation_results, res)
+        self.widget.roc_averaging = OWROCAnalysis.Merge
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Vertical
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Threshold
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.NoAveraging
+        self.widget._replot()
+
+        res.row_indices = np.array([1], dtype=int)
+        res.actual = np.array([0.0])
+        res.predicted = np.zeros((2, 1))
+        res.probabilities = np.zeros((2, 1, 3))
+
+        self.send_signal(self.widget.Inputs.evaluation_results, res)
+        self.widget.roc_averaging = OWROCAnalysis.Merge
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Vertical
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.Threshold
+        self.widget._replot()
+        self.widget.roc_averaging = OWROCAnalysis.NoAveraging
+        self.widget._replot()
+
+    def test_nan_input(self):
+        res = copy.copy(self.res)
+        res.actual = res.actual.copy()
+        res.predicted = res.predicted.copy()
+        res.probabilities = res.probabilities.copy()
+
+        res.actual[0] = np.nan
+        res.predicted[:, 1] = np.nan
+        res.probabilities[0, 1, :] = np.nan
+
+        self.send_signal(self.widget.Inputs.evaluation_results, res)
+        self.assertTrue(self.widget.Error.invalid_results.is_shown())
+        self.send_signal(self.widget.Inputs.evaluation_results, None)
+        self.assertFalse(self.widget.Error.invalid_results.is_shown())
+
+    def test_tooltips(self):
+        data_in = Orange.data.Table("titanic")
+        res = Orange.evaluation.TestOnTrainingData(
+            data=data_in,
+            learners=[Orange.classification.KNNLearner(),
+                      Orange.classification.LogisticRegressionLearner()],
+            store_data=True
+        )
+
+        self.send_signal(self.widget.Inputs.evaluation_results, res)
+        self.widget.roc_averaging = OWROCAnalysis.Merge
+        self.widget.target_index = 0
+        self.widget.selected_classifiers = [0, 1]
+        vb = self.widget.plot.getViewBox()
+        vb.childTransform()  # Force pyqtgraph to update transforms
+
+        curve = self.widget.plot_curves(self.widget.target_index, 0)
+        curve_merge = curve.merge()
+        view = self.widget.plotview
+        item = curve_merge.curve_item  # type: pg.PlotCurveItem
+
+        with patch.object(QToolTip, "showText") as show_text:
+            # no tooltips to be shown
+            pos = item.mapToScene(0.0, 1.0)
+            pos = view.mapFromScene(pos)
+            mouseMove(view.viewport(), pos)
+            show_text.assert_not_called()
+
+            # test single point
+            pos = item.mapToScene(0.22504, 0.45400)
+            pos = view.mapFromScene(pos)
+            mouseMove(view.viewport(), pos)
+            (_, text), _ = show_text.call_args
+            self.assertIn("(#1) 0.400", text)
+
+            # test overlapping points
+            pos = item.mapToScene(0.0, 0.0)
+            pos = view.mapFromScene(pos)
+            mouseMove(view.viewport(), pos)
+            (_, text), _ = show_text.call_args
+            self.assertIn("(#1) 1.800\n(#2) 1.893", text)
+
+            # test that cache is invalidated when changing averaging mode
+            self.widget.roc_averaging = OWROCAnalysis.Threshold
+            self.widget._replot()
+            mouseMove(view.viewport(), pos)
+            (_, text), _ = show_text.call_args
+            self.assertIn("(#1) 1.000\n(#2) 1.000", text)
+
+            # test nan thresholds
+            self.widget.roc_averaging = OWROCAnalysis.Vertical
+            self.widget._replot()
+            mouseMove(view.viewport(), pos)
+            (_, text), _ = show_text.call_args
+            self.assertEqual(text, "")
+
+    def test_target_prior(self):
+        w = self.widget
+        self.send_signal(w.Inputs.evaluation_results, self.res)
+        # hard selected
+        self.assertEqual(np.round(4/12 * 100), w.target_prior)
+
+        simulate.combobox_activate_item(w.controls.target_index, "none")
+        self.assertEqual(np.round(3/12 * 100), w.target_prior)
+
+        simulate.combobox_activate_item(w.controls.target_index, "soft")
+        self.assertEqual(np.round(5/12 * 100), w.target_prior)

@@ -14,6 +14,7 @@ Here we need to copy the getting started guide.
    building-workflows/index
    exporting-models/index
    exporting-visualizations/index
+   learners-as-scorers/index
    report/index
 
 Widgets
@@ -62,6 +63,7 @@ Data
    widgets/data/melt
    widgets/data/neighbors
    widgets/data/unique
+   widgets/data/groupby
 
 
 Visualize

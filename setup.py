@@ -34,10 +34,17 @@ try:
 except ImportError:
     have_cython = False
 
+try:
+    import PyQt5.QtCore  # pylint: disable=unused-import
+    have_pyqt5 = True
+except ImportError:
+    have_pyqt5 = False
+
+is_conda = os.path.exists(os.path.join(sys.prefix, 'conda-meta'))
 
 NAME = 'Orange3-zh'
 
-VERSION = '3.30.0'
+VERSION = '3.32.0'
 ISRELEASED = False
 # full version identifier including a git revision identifier for development
 # build/releases (this is filled/updated in `write_version_py`)
@@ -78,6 +85,12 @@ CLASSIFIERS = [
 
 requirements = ['requirements-core.txt', 'requirements-gui.txt']
 
+# pyqt5 is named pyqt5 on pypi and pyqt on conda
+# due to possible conflicts, skip the pyqt5 requirement in conda environments
+# that already have pyqt
+if not (is_conda and have_pyqt5):
+    requirements.append('requirements-pyqt.txt')
+
 INSTALL_REQUIRES = sorted(set(
     line.partition('#')[0].strip()
     for file in (os.path.join(os.path.dirname(__file__), file)
@@ -86,9 +99,7 @@ INSTALL_REQUIRES = sorted(set(
 ) - {''})
 
 
-EXTRAS_REQUIRE = {
-    ':python_version<="3.4"': ["typing"],
-}
+EXTRAS_REQUIRE = {}
 
 ENTRY_POINTS = {
     "orange.widgets": (

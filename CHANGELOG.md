@@ -4,6 +4,74 @@ Change Log
 [next] - TBA
 ------------
 
+
+[3.31.1] - 2022-01-07
+--------------------
+##### Bugfixes
+* Group by: compute mode when all values in group nan ([#5763](../../pull/5763))
+* Support numpy 1.22 ([#5760](../../pull/5760))
+* Unpickling pre-3.28.0 Transformation ([#5759](../../pull/5759))
+
+
+[3.31.0] - 2021-12-17
+--------------------
+##### Enhancements
+* oweditdomain: Indicate variables in error state ([#5732](../../pull/5732))
+* Scatterplot: Use opacity for contrast ([#5684](../../pull/5684))
+* Feature Constructor: Evaluate categorical variables to strings ([#5637](../../pull/5637))
+* New widget: Group By  ([#5541](../../pull/5541))
+* Table lock: tests run with tables that are read-only by default ([#5381](../../pull/5381))
+* config: sort example workflows ([#5600](../../pull/5600))
+
+##### Bugfixes
+* Paint Data: Fix ClearTool's issued commands ([#5718](../../pull/5718))
+* pandas_compat: fix table_from_frames for "normal" dataframe ([#5652](../../pull/5652))
+* pandas_compat: do not parse column of numbers (object dtype) to datetime ([#5681](../../pull/5681))
+* HeatMap: Color gradient center value edit ([#5647](../../pull/5647))
+* Distance Matrix: Fix crash on numeric meta vars as labels ([#5664](../../pull/5664))
+* Fix running OWS with widgets with WebView in Orange.canvas.run ([#5657](../../pull/5657))
+* main: Fix `--clear-widget-settings` parameter declaration ([#5619](../../pull/5619))
+
+
+[3.30.2] - 2021-10-27
+--------------------
+##### Bugfixes
+* Projections: Fix color density for continuous color palettes ([#5665](../../pull/5665))
+* Fixes for scikit-learn 1.0 ([#5608](../../pull/5608))
+* table_from_grames: fix indices parsing ([#5620](../../pull/5620))
+* Fix overflow in bin calculations for time variables.  ([#5667](../../pull/5667))
+* Variable: fix timezone when parsing time variable ([#5617](../../pull/5617))
+* Require widget-base 4.15.1 and canvas-core 0.1.23 to fix some bugs/crashes
+
+
+[3.30.1] - 2021-09-24
+--------------------
+##### Bugfixes
+* OWTable: fix select whole rows regression ([#5605](../../pull/5605))
+
+
+[3.30.0] - 2021-09-22
+--------------------
+##### Enhancements
+* OWPythonScript: Better text editor ([#5208](../../pull/5208))
+* PCA: Output variance of components ([#5513](../../pull/5513))
+* Curve Fit: New widget ([#5481](../../pull/5481))
+* Hierarchical Clustering: Annotate variables with clusters ([#5514](../../pull/5514))
+* Create nodes on canvas drag/drop ([#5031](../../pull/5031))
+
+##### Bugfixes
+* setup.py: do not overwrite conda's PyQt5 ([#5593](../../pull/5593))
+* Use explicit ordered multiple inputs ([#4860](../../pull/4860))
+* Prevent crash when saving in unsupported format ([#5560](../../pull/5560))
+* owrocanalysis: Fix test for non empty points array ([#5571](../../pull/5571))
+* pandas_compat: fix conversion of datetime series ([#5547](../../pull/5547))
+* Fix deepcopy and pickle for classes derived from `np.ndarray` ([#5536](../../pull/5536))
+* owheatmap: Fix assertion error when restoring selection ([#5517](../../pull/5517))
+* Pivot: Handle empty data, metas only ([#5527](../../pull/5527))
+* table_to_frame - handle numeric columns with dtype=object ([#5474](../../pull/5474))
+* listfilter: Bypass QListView.dropEvent ([#5477](../../pull/5477))
+
+
 [3.29.3] - 2021-06-09
 --------------------
 ##### Bugfixes
@@ -17,8 +85,10 @@ Change Log
 * owpca: fix component selection when dragging selection line ([#5469](../../pull/5469))
 * Save File when workflow basedir is an empty string ([#5459](../../pull/5459))
 
+
 [3.29.1] - 2021-05-31
 --------------------
+
 
 [3.29.0] - 2021-05-28
 --------------------
@@ -43,6 +113,7 @@ Change Log
 * Errors when converting negative timestamps on Windows ([#5388](../../pull/5388))
 * Nomogram: Retain original compute_value ([#5382](../../pull/5382))
 * Radviz VizRank: Implement on_selection_changed ([#5338](../../pull/5338))
+
 
 [3.28.0] - 2021-03-05
 --------------------
@@ -1568,7 +1639,12 @@ Change Log
 * Initial version based on Python 1.5.2 and Qt 2.3
 
 
-[next]: https://github.com/biolab/orange3/compare/3.29.3...HEAD
+[next]: https://github.com/biolab/orange3/compare/3.31.1...HEAD
+[3.31.1]: https://github.com/biolab/orange3/compare/3.31.0...3.31.1
+[3.31.0]: https://github.com/biolab/orange3/compare/3.30.2...3.31.0
+[3.30.2]: https://github.com/biolab/orange3/compare/3.30.1...3.30.2
+[3.30.1]: https://github.com/biolab/orange3/compare/3.30.0...3.30.1
+[3.30.0]: https://github.com/biolab/orange3/compare/3.29.3...3.30.0
 [3.29.3]: https://github.com/biolab/orange3/compare/3.29.2...3.29.3
 [3.29.2]: https://github.com/biolab/orange3/compare/3.29.1...3.29.2
 [3.29.1]: https://github.com/biolab/orange3/compare/3.29.0...3.29.1
