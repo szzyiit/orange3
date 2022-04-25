@@ -55,7 +55,7 @@ README_FILE = os.path.join(os.path.dirname(__file__), 'README.pypi')
 LONG_DESCRIPTION = open(README_FILE).read()
 LONG_DESCRIPTION_CONTENT_TYPE = 'text/markdown'
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
-AUTHOR_EMAIL = 'info@biolab.si'
+AUTHOR_EMAIL = 'gengyabc@aliyun.com'
 URL = 'https://chengxianzn.one/'
 LICENSE = 'GPLv3+'
 
@@ -123,6 +123,8 @@ ENTRY_POINTS = {
 DATA_FILES = []
 
 # Return the git revision as a string
+
+
 def git_version():
     """Return the git revision as a string.
 
@@ -139,7 +141,8 @@ def git_version():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
         return out
 
     try:
@@ -242,6 +245,7 @@ class LintCommand(Command):
         best_ancestor=$(git merge-base HEAD refs/remotes/$upstream/master)
         .github/workflows/check_pylint_diff.sh $best_ancestor
         ''', shell=True, cwd=os.path.dirname(os.path.abspath(__file__))))
+
 
 class CoverageCommand(Command):
     """A setup.py coverage subcommand developers can run locally."""
@@ -395,7 +399,8 @@ class build(build.build):
 # build html files.
 HAVE_SPHINX_SOURCE = os.path.isdir("doc/visual-programming/source")
 # Doest the build htmlhelp documentation exist
-HAVE_BUILD_HTML = os.path.exists("doc/visual-programming/build/htmlhelp/index.html")
+HAVE_BUILD_HTML = os.path.exists(
+    "doc/visual-programming/build/htmlhelp/index.html")
 
 if have_sphinx and HAVE_SPHINX_SOURCE:
     class build_htmlhelp(BuildDoc):
