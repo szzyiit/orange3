@@ -10,7 +10,7 @@ class Crawler(OWWidget):
     description = "训练一个爬行机器人, 熟悉强化学习的各种参数"
     icon = "icons/robot.svg"
     keywords = ['paixingzhe']
-    category = 'reinforcement'
+    category = '强化学习(Reinforcement)'
 
     want_main_area = False
 
@@ -32,7 +32,6 @@ class Crawler(OWWidget):
         self.process.started.connect(self.onstart)
         self.process.finished.connect(self.onfinish)
         self.process.start(command)
-
 
     def onstart(self):
         self.commit_button.setEnabled(False)

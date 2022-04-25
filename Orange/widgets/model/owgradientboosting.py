@@ -64,7 +64,7 @@ class BaseEditor(QWidget, gui.OWComponent):
 
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
-        self._layout: QWidget = gui.vBox(self)
+        self._layout: QWidget = gui.vBox(self, spacing=6, margin=0)
 
         self._add_main_layout()
 
@@ -80,10 +80,9 @@ class BaseEditor(QWidget, gui.OWComponent):
             self.basic_box, self, "learning_rate", 0, 1, 0.001,
             label="学习率: ", **common_args
         )
-        gui.separator(self.basic_box, height=1)
         gui.checkBox(
             self.basic_box, self, "random_state", label="可重复训练",
-            callback=self.settings_changed
+            callback=self.settings_changed, attribute=Qt.WA_LayoutUsesWidgetRect
         )
 
         self.growth_box = gui.vBox(self._layout, "生长控制")
@@ -98,7 +97,7 @@ class BaseEditor(QWidget, gui.OWComponent):
         return {
             "n_estimators": self.n_estimators,
             "learning_rate": self.learning_rate,
-            "random_state": 0 if self.random_state else randint(1, 1e6),
+            "random_state": 0 if self.random_state else randint(1, 1000000),
             "max_depth": self.max_depth,
         }
 
@@ -290,9 +289,9 @@ class OWGradientBoosting(OWBaseLearner):
     description = "在决策树上使用梯度提升进行预测."
     icon = "icons/GradientBoosting.svg"
     priority = 45
-    keywords = ["catboost", "gradient", "boost", "tree", "forest",
-                "xgb", "gb", "extreme", 'tisheng', 'tidutisheng']
-    category = 'model'
+    keywords = ["catboost", "gradient", "boost",
+                "xgb", "extreme", 'tisheng', 'tidutisheng']
+    category = '模型(Model)'
 
     LEARNER: Learner = GBLearner
     editor: BaseEditor = None

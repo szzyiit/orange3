@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from Orange.data import Table
+from Orange.data import Table, Domain
 from Orange.projection import FreeViz
 from Orange.projection.freeviz import FreeVizModel
 from Orange.widgets.tests.base import (
@@ -22,7 +22,7 @@ class TestOWFreeViz(WidgetTest, AnchorProjectionWidgetTestMixin,
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
         cls.same_input_output_domain = False
         cls.heart_disease = Table("heart_disease")
@@ -48,37 +48,72 @@ class TestOWFreeViz(WidgetTest, AnchorProjectionWidgetTestMixin,
         self.assertFalse(self.widget.Error.no_class_var.is_shown())
         self.assertFalse(self.widget.Error.not_enough_class_vars.is_shown())
 
+    def test_number_of_targets(self):
+        data = self.heart_disease
+        domain = data.domain
+
+        no_target = data.transform(
+            Domain(domain.attributes,
+                   []))
+        two_targets = data.transform(
+            Domain([domain["age"]],
+                   [domain["gender"], domain["chest pain"]]))
+
+        self.send_signal(self.widget.Inputs.data, data)
+        self.assertFalse(self.widget.Error.no_class_var.is_shown())
+        self.assertFalse(self.widget.Error.multiple_class_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, no_target)
+        self.assertTrue(self.widget.Error.no_class_var.is_shown())
+        self.assertFalse(self.widget.Error.multiple_class_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, two_targets)
+        self.assertFalse(self.widget.Error.no_class_var.is_shown())
+        self.assertTrue(self.widget.Error.multiple_class_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, data)
+        self.assertFalse(self.widget.Error.no_class_var.is_shown())
+        self.assertFalse(self.widget.Error.multiple_class_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, two_targets)
+        self.assertFalse(self.widget.Error.no_class_var.is_shown())
+        self.assertTrue(self.widget.Error.multiple_class_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, None)
+        self.assertFalse(self.widget.Error.no_class_var.is_shown())
+        self.assertFalse(self.widget.Error.multiple_class_vars.is_shown())
+
     def test_optimization(self):
         self.send_signal(self.widget.Inputs.data, self.heart_disease)
         self.widget.run_button.click()
-        self.assertEqual(self.widget.run_button.text(), "停止")
+        self.assertEqual(self.widget.run_button.text(), "Stop")
 
     def test_optimization_cancelled(self):
         self.test_optimization()
         self.widget.run_button.click()
-        self.assertEqual(self.widget.run_button.text(), "重新开始")
+        self.assertEqual(self.widget.run_button.text(), "Resume")
 
     def test_optimization_reset(self):
         self.test_optimization()
         init = self.widget.controls.initialization
         simulate.combobox_activate_index(init, 0)
-        self.assertEqual(self.widget.run_button.text(), "停止")
+        self.assertEqual(self.widget.run_button.text(), "Stop")
         simulate.combobox_activate_index(init, 1)
-        self.assertEqual(self.widget.run_button.text(), "停止")
+        self.assertEqual(self.widget.run_button.text(), "Stop")
 
     def test_optimization_finish(self):
         self.send_signal(self.widget.Inputs.data, self.data[::10].copy())
         output1 = self.get_output(self.widget.Outputs.components)
         self.widget.run_button.click()
-        self.assertEqual(self.widget.run_button.text(), "停止")
+        self.assertEqual(self.widget.run_button.text(), "Stop")
         self.wait_until_finished()
-        self.assertEqual(self.widget.run_button.text(), "开始")
+        self.assertEqual(self.widget.run_button.text(), "Start")
         output2 = self.get_output(self.widget.Outputs.components)
         self.assertTrue((output1.X != output2.X).any())
 
     def test_optimization_no_data(self):
         self.widget.run_button.click()
-        self.assertEqual(self.widget.run_button.text(), "开始")
+        self.assertEqual(self.widget.run_button.text(), "Start")
 
     def test_constant_data(self):
         data = Table("titanic")[56:59]

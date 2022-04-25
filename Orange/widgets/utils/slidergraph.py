@@ -1,8 +1,10 @@
 import numpy as np
-from pyqtgraph import PlotWidget, mkPen, InfiniteLine, PlotCurveItem, \
+from pyqtgraph import mkPen, InfiniteLine, PlotCurveItem, \
     TextItem, Point
 from AnyQt.QtGui import QColor
 from AnyQt.QtCore import Qt
+
+from Orange.widgets.visualize.utils.plotutils import PlotWidget
 
 
 class SliderGraph(PlotWidget):
@@ -12,7 +14,7 @@ class SliderGraph(PlotWidget):
     the line is moved a callback function is called with selected value (on
     x axis).
 
-    Attributes
+    Parameters
     ----------
     x_axis_label : str
         A text label for x axis
@@ -20,12 +22,10 @@ class SliderGraph(PlotWidget):
         A text label for y axis
     callback : callable
         A function which is called when selection is changed.
-    background : str, optional (default: "w")
-        Plot background color
     """
 
-    def __init__(self, x_axis_label, y_axis_label, callback):
-        super().__init__(background="w")
+    def __init__(self, x_axis_label, y_axis_label, callback, **kwargs):
+        super().__init__(**kwargs)
 
         axis = self.getAxis("bottom")
         axis.setLabel(x_axis_label)
@@ -36,6 +36,7 @@ class SliderGraph(PlotWidget):
         self.getViewBox().setMouseEnabled(False, False)
         self.showGrid(True, True, alpha=0.5)
         self.setRange(xRange=(0.0, 1.0), yRange=(0.0, 1.0))
+        self.hideButtons()
 
         # tuples to store horisontal lines and labels
         self.plot_horlabel = []
@@ -82,7 +83,8 @@ class SliderGraph(PlotWidget):
         self.selection_limit = selection_limit
 
         self.data_increasing = [np.sum(d[1:] - d[:-1]) > 0 for d in y]
-
+        foreground = self.palette().text().color()
+        foreground.setAlpha(128)
         # plot sequence
         for s, c, n, inc in zip(y, colors, names, self.data_increasing):
             c = QColor(c)
@@ -90,20 +92,20 @@ class SliderGraph(PlotWidget):
 
             if n is not None:
                 label = TextItem(
-                    text=n, anchor=(0, 1), color=QColor(0, 0, 0, 128))
+                    text=n, anchor=(0, 1), color=foreground)
                 label.setPos(x[-1], s[-1])
                 self._set_anchor(label, len(x) - 1, inc)
                 self.addItem(label)
 
         self._plot_cutpoint(cutpoint_x)
-        self.setRange(xRange=(x.min(), x.max()),
-                      yRange=(0, max(yi.max() for yi in y)))
+        self.autoRange()
 
     def clear_plot(self):
         """
         This function clears the plot and removes data.
         """
         self.clear()
+        self.setRange(xRange=(0.0, 1.0), yRange=(0.0, 1.0))
         self.plot_horlabel = []
         self.plot_horline = []
         self._line = None
@@ -141,7 +143,7 @@ class SliderGraph(PlotWidget):
                 else (self.x.min(), self.x.max())
             )
             self._line.setCursor(Qt.SizeHorCursor)
-            self._line.setPen(mkPen(QColor(Qt.black), width=2))
+            self._line.setPen(mkPen(self.palette().text().color(), width=2))
             self._line.sigPositionChanged.connect(self._on_cut_changed)
             self.addItem(self._line)
         else:
@@ -154,11 +156,13 @@ class SliderGraph(PlotWidget):
         Function plots the vertical dashed lines that points to the selected
         sequence values at the y axis.
         """
+        highlight = self.palette().highlight()
+        text = self.palette().text()
         for _ in range(len(self.sequences)):
             self.plot_horline.append(PlotCurveItem(
-                pen=mkPen(QColor(Qt.blue), style=Qt.DashLine)))
+                pen=mkPen(highlight.color(), style=Qt.DashLine)))
             self.plot_horlabel.append(TextItem(
-                color=QColor(Qt.black), anchor=(0, 1)))
+                color=text.color(), anchor=(0, 1)))
         for item in self.plot_horlabel + self.plot_horline:
             self.addItem(item)
 
@@ -198,11 +202,12 @@ class SliderGraph(PlotWidget):
         # in every case set their position
         location = int(round(self._line.value()))
         cutidx = np.searchsorted(self.x, location)
+        minx = np.min(self.x)
         for s, curve, label, inc in zip(
                 self.sequences, self.plot_horline, self.plot_horlabel,
                 self.data_increasing):
             y = s[cutidx]
-            curve.setData([-100, location], 2 * [y])
+            curve.setData([minx, location], [y, y])
             self._set_anchor(label, cutidx, inc)
             label.setPos(location, y)
             label.setPlainText("{:.3f}".format(y))

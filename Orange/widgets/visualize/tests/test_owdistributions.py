@@ -11,7 +11,6 @@ from Orange.data import Table, Domain, DiscreteVariable
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_FEATURE_NAME
 from Orange.widgets.utils.itemmodels import DomainModel
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owdistributions import OWDistributions
 
 
@@ -194,7 +193,7 @@ class TestOWDistributions(WidgetTest):
         valid_data = widget.valid_data.copy()
         widget.selection.add(1)
         widget._clear_plot = Mock()
-        widget.apply = Mock()
+        widget.apply.now = widget.apply.deferred = Mock()
 
         self._set_var(2)
         self.assertFalse(
@@ -205,7 +204,7 @@ class TestOWDistributions(WidgetTest):
                          and np.allclose(valid_data, widget.valid_data))
         self.assertEqual(widget.selection, set())
         widget._clear_plot.assert_called()
-        widget.apply.assert_called()
+        widget.apply.now.assert_called()
 
     def test_switch_cvar(self):
         """Widget reset and recomputes when changing splitting variable"""
@@ -214,9 +213,10 @@ class TestOWDistributions(WidgetTest):
         y = self.iris.domain.class_var
         extra = DiscreteVariable("foo", values=("a", "b"))
         domain = Domain(self.iris.domain.attributes + (extra, ), y)
-        data = self.iris.transform(domain)
-        data.X[:75, -1] = 0
-        data.X[75:120, -1] = 1
+        data = self.iris.transform(domain).copy()
+        with data.unlocked():
+            data.X[:75, -1] = 0
+            data.X[75:120, -1] = 1
         self.send_signal(widget.Inputs.data, data)
         self._set_var(2)
         self._set_cvar(y)
@@ -225,7 +225,7 @@ class TestOWDistributions(WidgetTest):
         valid_data = widget.valid_data.copy()
         widget.selection.add(1)
         widget._clear_plot = Mock()
-        widget.apply = Mock()
+        widget.apply.now = widget.apply.deferred = Mock()
 
         self.assertEqual(len(widget.valid_group_data), 150)
 
@@ -235,9 +235,9 @@ class TestOWDistributions(WidgetTest):
         self.assertEqual(len(widget.valid_group_data), 120)
         self.assertEqual(widget.selection, {1})
         widget._clear_plot.assert_called()
-        widget.apply.assert_called()
+        widget.apply.now.assert_called()
         widget._clear_plot.reset_mock()
-        widget.apply.reset_mock()
+        widget.apply.now.reset_mock()
 
         self._set_cvar(None)
         self.assertIs(binnings, widget.binnings)
@@ -245,7 +245,7 @@ class TestOWDistributions(WidgetTest):
         self.assertIsNone(widget.valid_group_data)
         self.assertEqual(widget.selection, {1})
         widget._clear_plot.assert_called()
-        widget.apply.assert_called()
+        widget.apply.now.assert_called()
 
     def test_on_bins_changed(self):
         """Widget replots and outputs data when the number of bins is changed"""
@@ -255,12 +255,12 @@ class TestOWDistributions(WidgetTest):
         self._set_slider(0)
         widget.selection.add(1)
         n_bars = len(widget.bar_items)
-        widget.apply = Mock()
+        widget.apply.now = widget.apply.deferred = Mock()
 
         self._set_slider(1)
         self.assertEqual(widget.selection, set())
         self.assertGreater(n_bars, len(widget.bar_items))
-        widget.apply.assert_called_once()
+        widget.apply.now.assert_called_once()
 
     def test_set_valid_data(self):
         """Widget handles nans in data"""
@@ -289,11 +289,12 @@ class TestOWDistributions(WidgetTest):
         self.assertIsNotNone(widget.valid_group_data)
         self.assertTrue(widget.is_valid)
 
-        X, Y = self.iris.X, self.iris.Y
-        X[:, 0] = np.nan
-        X[:50, 1] = np.nan
-        X[:100, 2] = np.nan
-        Y[75:] = np.nan
+        with self.iris.unlocked():
+            X, Y = self.iris.X, self.iris.Y
+            X[:, 0] = np.nan
+            X[:50, 1] = np.nan
+            X[:100, 2] = np.nan
+            Y[75:] = np.nan
         self.send_signal(widget.Inputs.data, self.iris)
 
         self._set_var(domain[0])
@@ -510,7 +511,8 @@ class TestOWDistributions(WidgetTest):
             self._set_check(cb, False)
             self.assertTrue(all(not bar.hidden
                                 for bar in widget.bar_items))
-            self.assertTrue(all(curve.opts["brush"].style() == Qt.NoBrush
+            self.assertTrue(all(curve.opts["brush"] is None or
+                                curve.opts["brush"].style() == Qt.NoBrush
                                 for curve in widget.curve_items))
 
             self._set_check(cb, True)
@@ -524,32 +526,6 @@ class TestOWDistributions(WidgetTest):
         widget = self.widget
         self.send_signal(widget.Inputs.data, self.iris)
         widget.send_report()
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data, info = self.iris, self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self._set_slider(0)
-        self.widget.selection = {1, 2, 3, 5, 6, 9}
-        self.widget._on_end_selecting()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_sort_by_freq_no_split(self):
         data = Table("heart_disease")

@@ -4,14 +4,13 @@ import unittest
 from unittest.mock import patch, Mock
 
 import numpy as np
+from numpy.testing import assert_array_equal
 
 from Orange.data import (
     Table, Domain, ContinuousVariable, DiscreteVariable, StringVariable
 )
 from Orange.preprocess.transformation import Identity
 from Orange.widgets.data.owconcatenate import OWConcatenate
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
 from Orange.widgets.tests.base import WidgetTest
 
 
@@ -27,9 +26,9 @@ class TestOWConcatenate(WidgetTest):
         self.titanic = Table("titanic")
 
     def test_no_input(self):
-        self.widget.apply()
+        self.widget.commit.now()
         self.widget.controls.append_source_column.toggle()
-        self.widget.apply()
+        self.widget.commit.now()
         self.assertIsNone(self.get_output(self.widget.Outputs.data))
 
     def test_single_input(self):
@@ -94,7 +93,7 @@ class TestOWConcatenate(WidgetTest):
         places = ["class_vars", "attributes", "metas"]
         for i, place in enumerate(places):
             self.widget.source_column_role = i
-            self.widget.apply()
+            self.widget.commit.now()
             source = get_source()
             output = self.get_output(self.widget.Outputs.data)
             self.assertTrue(source in getattr(output.domain, place))
@@ -115,7 +114,7 @@ class TestOWConcatenate(WidgetTest):
         self.assertTrue(self.widget.mergebox.isEnabled())
 
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_apply') as apply:
+        with patch.object(self.widget.commit, 'now') as apply:
             self.widget.auto_commit = False
             apply.reset_mock()
             self.send_signal(self.widget.Inputs.primary_data, self.iris)
@@ -378,49 +377,6 @@ class TestOWConcatenate(WidgetTest):
             x = out_dom.attributes[0]
             self.assertEqual(x.number_of_decimals, 4)
 
-    def test_summary(self):
-        """Check if the status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.primary_data, self.iris)
-        data_list = [("Primary data", self.iris), ("", None)]
-        summary, details = "150, 0", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.additional_data, self.titanic, 0)
-        data_list = [("Primary data", self.iris), ("", self.titanic)]
-        summary, details = "150, 2201", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.primary_data, None)
-        self.send_signal(self.widget.Inputs.additional_data, self.iris, 1)
-        data_list = [("Primary data", None), ("", self.titanic), ("", self.iris)]
-        summary, details = "0, 2201, 150", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.additional_data, None, 0)
-        self.send_signal(self.widget.Inputs.additional_data, None, 1)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
     def _create_compute_values(self):
         a1, a2, a3, a4, c1 = self.iris.domain.variables
 
@@ -443,7 +399,7 @@ class TestOWConcatenate(WidgetTest):
         return table_n, table_m
 
     def test_dumb_tables(self):
-        self.widget.apply = Mock()
+        self.widget.commit.deferred = Mock()
         table_n, table_m = self._create_compute_values()
         na1, na2, na3, na4, nc1 = table_n.domain.variables
         ma1, ma2, ma3 = table_m.domain.attributes
@@ -494,7 +450,7 @@ class TestOWConcatenate(WidgetTest):
         self.send_signal(self.widget.Inputs.additional_data, table_m, 2)
 
         self.widget.ignore_compute_value = False
-        self.widget.apply()
+        self.widget.commit.now()
 
         output = self.get_output(self.widget.Outputs.data)
         attributes = output.domain.attributes
@@ -520,7 +476,7 @@ class TestOWConcatenate(WidgetTest):
         self.send_signal(self.widget.Inputs.additional_data, table_m, 2)
 
         self.widget.ignore_compute_value = True
-        self.widget.apply()
+        self.widget.commit.now()
 
         output = self.get_output(self.widget.Outputs.data)
         attributes = output.domain.attributes
@@ -537,6 +493,27 @@ class TestOWConcatenate(WidgetTest):
 
         self.assertEqual(len(output.domain.metas), 1)
         self.assertIs(output.domain.metas[0].compute_value.variable, ma4)  # renamed
+
+    def test_explicit_closing(self):
+        w = self.widget
+        self.send_signal(w.Inputs.additional_data, self.iris[:1], 0)
+        self.send_signal(w.Inputs.additional_data, self.iris[1:2], 1)
+        self.send_signal(w.Inputs.additional_data, self.iris[2:3], 2)
+
+        def assert_output_equal(expected: np.ndarray):
+            out = self.get_output(w.Outputs.data)
+            assert_array_equal(out.X, expected)
+
+        assert_output_equal(self.iris[:3].X)
+        self.send_signal(w.Inputs.additional_data, None, 1)
+        assert_output_equal(self.iris[:3:2].X)
+        self.send_signal(w.Inputs.additional_data, self.iris[1:2], 1)
+        assert_output_equal(self.iris[:3].X)
+        self.send_signal(w.Inputs.additional_data,
+                         w.Inputs.additional_data.closing_sentinel, 1)
+        assert_output_equal(self.iris[:3:2].X)
+        self.send_signal(w.Inputs.additional_data, self.iris[1:2], 1)
+        assert_output_equal(np.vstack((self.iris[:3:2].X, self.iris[1:2].X)))
 
 
 if __name__ == "__main__":

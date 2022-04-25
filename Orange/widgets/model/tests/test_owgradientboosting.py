@@ -2,13 +2,29 @@ import unittest
 from unittest.mock import patch, Mock
 import sys
 
-from Orange.classification import XGBClassifier, XGBRFClassifier, \
-    GBClassifier, CatGBClassifier
+from Orange.classification import GBClassifier
+
+try:
+    from Orange.classification import XGBClassifier, XGBRFClassifier
+except ImportError:
+    XGBClassifier = XGBRFClassifier = None
+try:
+    from Orange.classification import CatGBClassifier
+except ImportError:
+    CatGBClassifier = None
 from Orange.data import Table
 from Orange.modelling import GBLearner
 from Orange.preprocess.score import Scorer
-from Orange.regression import XGBRegressor, XGBRFRegressor, \
-    GBRegressor, CatGBRegressor
+from Orange.regression import GBRegressor
+
+try:
+    from Orange.regression import XGBRegressor, XGBRFRegressor
+except ImportError:
+    XGBRegressor = XGBRFRegressor = None
+try:
+    from Orange.regression import CatGBRegressor
+except ImportError:
+    CatGBRegressor = None
 from Orange.widgets.model.owgradientboosting import OWGradientBoosting, \
     LearnerItemModel, GBLearnerEditor, XGBLearnerEditor, XGBRFLearnerEditor, \
     CatGBLearnerEditor
@@ -29,12 +45,15 @@ def create_parent(editor_class):
 
 class TestLearnerItemModel(GuiTest):
     def test_model(self):
+        classifiers = [GBClassifier, XGBClassifier,
+                       XGBRFClassifier, CatGBClassifier]
         widget = create_parent(CatGBLearnerEditor)
         model = LearnerItemModel(widget)
         n_items = 4
         self.assertEqual(model.rowCount(), n_items)
         for i in range(n_items):
-            self.assertTrue(model.item(i).isEnabled())
+            self.assertEqual(model.item(i).isEnabled(),
+                             classifiers[i] is not None)
 
     @patch("Orange.widgets.model.owgradientboosting.LearnerItemModel.LEARNERS",
            [(GBLearner, "", ""),
@@ -109,6 +128,7 @@ class TestXGBLearnerEditor(GuiTest):
                 "colsample_bynode": 1, "subsample": 1, "random_state": 0}
         self.assertDictEqual(self.editor.get_arguments(), args)
 
+    @unittest.skipIf(XGBClassifier is None, "Missing 'xgboost' package")
     def test_learner_parameters(self):
         params = (("Method", "Extreme Gradient Boosting (xgboost)"),
                   ("Number of trees", 100),
@@ -122,6 +142,7 @@ class TestXGBLearnerEditor(GuiTest):
                   ("Fraction of features for each split", 1))
         self.assertTupleEqual(self.editor.get_learner_parameters(), params)
 
+    @unittest.skipIf(XGBClassifier is None, "Missing 'xgboost' package")
     def test_default_parameters_cls(self):
         data = Table("heart_disease")
         booster = XGBClassifier()
@@ -140,6 +161,7 @@ class TestXGBLearnerEditor(GuiTest):
         self.assertEqual(params["colsample_bynode"],
                          self.editor.colsample_bynode)
 
+    @unittest.skipIf(XGBRegressor is None, "Missing 'xgboost' package")
     def test_default_parameters_reg(self):
         data = Table("housing")
         booster = XGBRegressor()
@@ -171,6 +193,7 @@ class TestXGBRFLearnerEditor(GuiTest):
                 "colsample_bynode": 1, "subsample": 1, "random_state": 0}
         self.assertDictEqual(self.editor.get_arguments(), args)
 
+    @unittest.skipIf(XGBRFClassifier is None, "Missing 'xgboost' package")
     def test_learner_parameters(self):
         params = (("Method",
                    "Extreme Gradient Boosting Random Forest (xgboost)"),
@@ -185,6 +208,7 @@ class TestXGBRFLearnerEditor(GuiTest):
                   ("Fraction of features for each split", 1))
         self.assertTupleEqual(self.editor.get_learner_parameters(), params)
 
+    @unittest.skipIf(XGBRFClassifier is None, "Missing 'xgboost' package")
     def test_default_parameters_cls(self):
         data = Table("heart_disease")
         booster = XGBRFClassifier()
@@ -203,6 +227,7 @@ class TestXGBRFLearnerEditor(GuiTest):
         self.assertEqual(params["colsample_bynode"],
                          self.editor.colsample_bynode)
 
+    @unittest.skipIf(XGBRFRegressor is None, "Missing 'xgboost' package")
     def test_default_parameters_reg(self):
         data = Table("housing")
         booster = XGBRFRegressor()
@@ -233,6 +258,7 @@ class TestCatGBLearnerEditor(GuiTest):
                 "reg_lambda": 3, "colsample_bylevel": 1, "random_state": 0}
         self.assertDictEqual(self.editor.get_arguments(), args)
 
+    @unittest.skipIf(CatGBClassifier is None, "Missing 'catboost' package")
     def test_learner_parameters(self):
         params = (("Method", "Gradient Boosting (catboost)"),
                   ("Number of trees", 100),
@@ -243,6 +269,7 @@ class TestCatGBLearnerEditor(GuiTest):
                   ("Fraction of features for each tree", 1))
         self.assertTupleEqual(self.editor.get_learner_parameters(), params)
 
+    @unittest.skipIf(CatGBClassifier is None, "Missing 'catboost' package")
     def test_default_parameters_cls(self):
         data = Table("heart_disease")
         booster = CatGBClassifier()
@@ -254,8 +281,9 @@ class TestCatGBLearnerEditor(GuiTest):
         self.assertEqual(params["l2_leaf_reg"], self.editor.lambda_)
         self.assertEqual(params["rsm"], self.editor.colsample_bylevel)
         self.assertEqual(self.editor.learning_rate, 0.3)
-        self.assertEqual(round(params["learning_rate"], 3), 0.006)
+        # params["learning_rate"] is automatically defined so don't test it
 
+    @unittest.skipIf(CatGBRegressor is None, "Missing 'catboost' package")
     def test_default_parameters_reg(self):
         data = Table("housing")
         booster = CatGBRegressor()
@@ -267,8 +295,7 @@ class TestCatGBLearnerEditor(GuiTest):
         self.assertEqual(params["l2_leaf_reg"], self.editor.lambda_)
         self.assertEqual(params["rsm"], self.editor.colsample_bylevel)
         self.assertEqual(self.editor.learning_rate, 0.3)
-        self.assertEqual(round(params["learning_rate"], 3), 0.035)
-
+        # params["learning_rate"] is automatically defined so don't test it
 
 class TestOWGradientBoosting(WidgetTest, WidgetLearnerTestMixin):
     def setUp(self):
@@ -293,6 +320,7 @@ class TestOWGradientBoosting(WidgetTest, WidgetLearnerTestMixin):
         for ds in datasets.datasets():
             self.send_signal(self.widget.Inputs.data, ds)
 
+    @unittest.skipIf(XGBClassifier is None, "Missing 'xgboost' package")
     def test_xgb_params(self):
         simulate.combobox_activate_index(self.widget.controls.method_index, 1)
         editor = self.widget.editor

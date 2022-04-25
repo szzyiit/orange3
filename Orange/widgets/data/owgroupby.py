@@ -56,41 +56,46 @@ def concatenate(x):
 
 
 AGGREGATIONS = {
-    "Mean": Aggregation("mean", {ContinuousVariable, TimeVariable}),
-    "Median": Aggregation("median", {ContinuousVariable, TimeVariable}),
-    "Mode": Aggregation(
-        lambda x: pd.Series.mode(x).get(0, nan), {ContinuousVariable, TimeVariable}
+    "平均值": Aggregation("mean", {ContinuousVariable, TimeVariable}),
+    "中位数": Aggregation("median", {ContinuousVariable, TimeVariable}),
+    "取模": Aggregation(
+        lambda x: pd.Series.mode(x).get(
+            0, nan), {ContinuousVariable, TimeVariable}
     ),
-    "Standard deviation": Aggregation("std", {ContinuousVariable, TimeVariable}),
-    "Variance": Aggregation("var", {ContinuousVariable, TimeVariable}),
-    "Sum": Aggregation("sum", {ContinuousVariable, TimeVariable}),
-    "Concatenate": Aggregation(
+    "标准差": Aggregation("std", {ContinuousVariable, TimeVariable}),
+    "方差": Aggregation("var", {ContinuousVariable, TimeVariable}),
+    "和": Aggregation("sum", {ContinuousVariable, TimeVariable}),
+    "串接(Concatenate)": Aggregation(
         concatenate,
         {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable},
     ),
-    "Min. value": Aggregation("min", {ContinuousVariable, TimeVariable}),
-    "Max. value": Aggregation("max", {ContinuousVariable, TimeVariable}),
-    "Span": Aggregation(
+    "最小值": Aggregation("min", {ContinuousVariable, TimeVariable}),
+    "最大值": Aggregation("max", {ContinuousVariable, TimeVariable}),
+    "跨度": Aggregation(
         lambda x: pd.Series.max(x) - pd.Series.min(x),
         {ContinuousVariable, TimeVariable},
     ),
-    "First value": Aggregation(
-        "first", {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable}
+    "首值": Aggregation(
+        "first", {ContinuousVariable, DiscreteVariable,
+                  StringVariable, TimeVariable}
     ),
-    "Last value": Aggregation(
-        "last", {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable}
+    "末值": Aggregation(
+        "last", {ContinuousVariable, DiscreteVariable,
+                 StringVariable, TimeVariable}
     ),
-    "Random value": Aggregation(
+    "随机值": Aggregation(
         lambda x: x.sample(1, random_state=0),
         {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable},
     ),
-    "Count defined": Aggregation(
-        "count", {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable}
+    "非缺失数量": Aggregation(
+        "count", {ContinuousVariable, DiscreteVariable,
+                  StringVariable, TimeVariable}
     ),
-    "Count": Aggregation(
-        "size", {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable}
+    "数量": Aggregation(
+        "size", {ContinuousVariable, DiscreteVariable,
+                 StringVariable, TimeVariable}
     ),
-    "Proportion defined": Aggregation(
+    "非缺失占比": Aggregation(
         lambda x: x.count() / x.size,
         {ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable},
     ),
@@ -148,7 +153,7 @@ class TabColumn:
     aggregations = 1
 
 
-TABLE_COLUMN_NAMES = ["Attributes", "Aggregations"]
+TABLE_COLUMN_NAMES = ["属性", "聚合方法"]
 
 
 class VarTableModel(QAbstractTableModel):
@@ -296,17 +301,19 @@ def block_signals(widget):
 
 
 class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
-    name = "Group by"
-    description = ""
-    category = "Transform"
+    name = "分组(Group by)"
+    description = "按所选变量对数据进行分组，并聚合列。"
+    category = "变换(Transform)"
     icon = "icons/GroupBy.svg"
-    keywords = ["aggregate", "group by"]
+    keywords = ["fenzu", "aggregate", "group by"]
 
     class Inputs:
-        data = Input("Data", Table, doc="Input data table")
+        data = Input("数据(Data)", Table,
+                     doc="Input data table", replaces=['Data'])
 
     class Outputs:
-        data = Output("Data", Table, doc="Aggregated data")
+        data = Output("数据(Data)", Table,
+                      doc="Aggregated data", replaces=['Data'])
 
     class Error(OWWidget.Error):
         unexpected_error = Msg("{}")
@@ -359,7 +366,8 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
 
         # aggregations checkboxes
         grid_layout = QGridLayout()
-        gui.widgetBox(self.mainArea, orientation=grid_layout, box="Aggregations")
+        gui.widgetBox(self.mainArea, orientation=grid_layout,
+                      box="Aggregations")
 
         col = 0
         row = 0
@@ -382,7 +390,8 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
         selected_attrs = self.get_selected_attributes()
 
         types = {type(attr) for attr in selected_attrs}
-        active_aggregations = [self.aggregations[attr] for attr in selected_attrs]
+        active_aggregations = [self.aggregations[attr]
+                               for attr in selected_attrs]
         for agg, cb in self.agg_checkboxes.items():
             cb.setDisabled(not types & AGGREGATIONS[agg].types)
 
@@ -465,7 +474,8 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
         self.Error.clear()
         self.Warning.clear()
         if self.data:
-            self.start(_run, self.data, self.gb_attrs, self.aggregations, self.result)
+            self.start(_run, self.data, self.gb_attrs,
+                       self.aggregations, self.result)
 
     def on_done(self, result: Result) -> None:
         self.result = result

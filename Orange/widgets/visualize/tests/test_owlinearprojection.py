@@ -25,7 +25,7 @@ class TestOWLinearProjection(WidgetTest, AnchorProjectionWidgetTestMixin,
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
         cls.same_input_output_domain = False
 
@@ -38,8 +38,9 @@ class TestOWLinearProjection(WidgetTest, AnchorProjectionWidgetTestMixin,
         simulate.combobox_run_through_all(self.widget.controls.attr_color)
         simulate.combobox_run_through_all(self.widget.controls.attr_size)
 
-        data.X[:, 0] = np.nan
-        data.Y[:] = np.nan
+        with data.unlocked():
+            data.X[:, 0] = np.nan
+            data.Y[:] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
         self.send_signal(self.widget.Inputs.data_subset, data[2:3])
         simulate.combobox_run_through_all(self.widget.controls.attr_color)
@@ -84,6 +85,8 @@ class TestOWLinearProjection(WidgetTest, AnchorProjectionWidgetTestMixin,
         self.send_signal(self.widget.Inputs.data, self.data)
         self.widget.radio_placement.buttons[Placement.LDA].click()
         self.assertTrue(buttons[Placement.LDA].isEnabled())
+        output = self.get_output(self.widget.Outputs.components)
+        self.assertTrue(output and len(output) == 2)
         self.send_signal(self.widget.Inputs.data, Table("housing"))
         self.assertFalse(buttons[Placement.LDA].isEnabled())
         self.send_signal(self.widget.Inputs.data, None)
@@ -107,8 +110,9 @@ class TestOWLinearProjection(WidgetTest, AnchorProjectionWidgetTestMixin,
             self.send_signal(self.widget.Inputs.data, data)
             self.assertEqual(is_shown, self.widget.Error.no_valid_data.is_shown())
 
-        data = Table("iris")[::30]
-        data[:, 0] = np.nan
+        data = Table("iris")[::30].copy()
+        with data.unlocked():
+            data[:, 0] = np.nan
         for data, is_shown in zip([None, data, Table("iris")[:30]], [False, True, False]):
             assertErrorShown(data, is_shown)
 

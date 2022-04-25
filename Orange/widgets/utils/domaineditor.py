@@ -107,7 +107,7 @@ class VarTableModel(QAbstractTableModel):
                 vartype = self.name2type[value]
                 row_data[col] = vartype
                 if not vartype.is_primitive() and \
-                                row_data[Column.place] < Place.meta:
+                        row_data[Column.place] < Place.meta:
                     row_data[Column.place] = Place.meta
             elif col == Column.place:
                 row_data[col] = self.places.index(value)
@@ -207,8 +207,10 @@ class DomainEditor(QTableView):
     def __init__(self, widget):
         super().__init__()
         widget.settingsHandler.initialize(self)
-        widget.contextAboutToBeOpened.connect(lambda args: self.set_domain(args[0]))
-        widget.contextOpened.connect(lambda: self.model().set_variables(self.variables))
+        widget.contextAboutToBeOpened.connect(
+            lambda args: self.set_domain(args[0]))
+        widget.contextOpened.connect(
+            lambda: self.model().set_variables(self.variables))
         widget.contextClosed.connect(lambda: self.model().set_variables([]))
 
         self.setModel(VarTableModel(self.variables, self))
@@ -313,9 +315,10 @@ class DomainEditor(QTableView):
         renamed = []
         for (name, tpe, place, _, may_be_numeric), (orig_var, orig_plc) in \
                 zip(variables,
-                        chain([(at, Place.feature) for at in domain.attributes],
-                              [(cl, Place.class_var) for cl in domain.class_vars],
-                              [(mt, Place.meta) for mt in domain.metas])):
+                    chain([(at, Place.feature) for at in domain.attributes],
+                          [(cl, Place.class_var)
+                           for cl in domain.class_vars],
+                          [(mt, Place.meta) for mt in domain.metas])):
             if place == Place.skip:
                 continue
 

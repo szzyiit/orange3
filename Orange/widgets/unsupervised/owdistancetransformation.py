@@ -1,5 +1,4 @@
 import numpy as np
-from AnyQt.QtCore import Qt
 
 from Orange.util import scale
 from Orange.misc import DistMatrix
@@ -13,7 +12,7 @@ class OWDistanceTransformation(widget.OWWidget):
     description = "根据所选标准变换距离。"
     icon = "icons/DistancesTransformation.svg"
     keywords = ['julibianhuan', 'bianhuan']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
@@ -23,7 +22,6 @@ class OWDistanceTransformation(widget.OWWidget):
 
     want_main_area = False
     resizing_enabled = False
-    buttons_area_orientation = Qt.Vertical
 
     normalization_method = settings.Setting(0)
     inversion_method = settings.Setting(0)
@@ -72,13 +70,14 @@ class OWDistanceTransformation(widget.OWWidget):
                          btnLabels=[x[0] for x in self.Chinese_inversion_options],
                          callback=self._invalidate)
 
-        gui.auto_apply(self.controlArea, self, "autocommit")
+        gui.auto_apply(self.buttonsArea, self, "autocommit")
 
     @Inputs.distances
     def set_data(self, data):
         self.data = data
-        self.unconditional_commit()
+        self.commit.now()
 
+    @gui.deferred
     def commit(self):
         distances = self.data
         if distances is not None:
@@ -104,7 +103,7 @@ class OWDistanceTransformation(widget.OWWidget):
             {'Transformation': ', '.join(parts).capitalize() or 'None'})
 
     def _invalidate(self):
-        self.commit()
+        self.commit.deferred()
 
 
 if __name__ == "__main__":  # pragma: no cover

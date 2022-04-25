@@ -1,8 +1,14 @@
 from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import (
-    QFormLayout, QCheckBox, QLineEdit, QWidget, QVBoxLayout, QLabel
+    QFormLayout,
+    QCheckBox,
+    QLineEdit,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
 )
 from orangecanvas.application.settings import UserSettingsDialog, FormLayout
+from orangecanvas.document.interactions import PluginDropHandler
 from orangecanvas.document.usagestatistics import UsageStatistics
 from orangecanvas.utils.overlay import NotificationOverlay
 
@@ -23,8 +29,7 @@ class OUserSettingsDialog(UserSettingsDialog):
 
         # Reporting Tab
         tab = QWidget()
-        self.addTab(tab, self.tr("Reporting"),
-                    toolTip="Settings related to reporting")
+        self.addTab(tab, self.tr("Reporting"), toolTip="Settings related to reporting")
 
         form = FormLayout()
         line_edit_mid = QLineEdit()
@@ -36,18 +41,19 @@ class OUserSettingsDialog(UserSettingsDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         cb1 = QCheckBox(
             self.tr("Share"),
-            toolTip=self.tr(
-                "Share anonymous usage statistics to improve Orange")
+            toolTip=self.tr("Share anonymous usage statistics to improve Orange"),
         )
         self.bind(cb1, "checked", "reporting/send-statistics")
         cb1.clicked.connect(UsageStatistics.set_enabled)
         layout.addWidget(cb1)
         box.setLayout(layout)
         form.addRow(self.tr("Anonymous Statistics"), box)
-        label = QLabel("<a "
-                       "href=\"https://orange.biolab.si/statistics-more-info\">"
-                       "More info..."
-                       "</a>")
+        label = QLabel(
+            "<a "
+            'href="https://orange.biolab.si/statistics-more-info">'
+            "More info..."
+            "</a>"
+        )
         label.setOpenExternalLinks(True)
         form.addRow(self.tr(""), label)
 
@@ -55,8 +61,9 @@ class OUserSettingsDialog(UserSettingsDialog):
 
         # Notifications Tab
         tab = QWidget()
-        self.addTab(tab, self.tr("Notifications"),
-                    toolTip="Settings related to notifications")
+        self.addTab(
+            tab, self.tr("Notifications"), toolTip="Settings related to notifications"
+        )
 
         form = FormLayout()
 
@@ -64,8 +71,9 @@ class OUserSettingsDialog(UserSettingsDialog):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         cb = QCheckBox(
-            self.tr("Enable notifications"), self,
-            toolTip="Pull and display a notification feed."
+            self.tr("Enable notifications"),
+            self,
+            toolTip="Pull and display a notification feed.",
         )
         self.bind(cb, "checked", "notifications/check-notifications")
 
@@ -77,18 +85,27 @@ class OUserSettingsDialog(UserSettingsDialog):
         notifs.setLayout(QVBoxLayout())
         notifs.layout().setContentsMargins(0, 0, 0, 0)
 
-        cb1 = QCheckBox(self.tr("Announcements"), self,
-                        toolTip="Show notifications about Biolab announcements.\n"
-                                "This entails events and courses hosted by the developers of "
-                                "Orange.")
+        cb1 = QCheckBox(
+            self.tr("Announcements"),
+            self,
+            toolTip="Show notifications about Biolab announcements.\n"
+            "This entails events and courses hosted by the developers of "
+            "Orange.",
+        )
 
-        cb2 = QCheckBox(self.tr("Blog posts"), self,
-                        toolTip="Show notifications about blog posts.\n"
-                                "We'll only send you the highlights.")
-        cb3 = QCheckBox(self.tr("New features"), self,
-                        toolTip="Show notifications about new features in Orange when a new "
-                                "version is downloaded and installed,\n"
-                                "should the new version entail notable updates.")
+        cb2 = QCheckBox(
+            self.tr("Blog posts"),
+            self,
+            toolTip="Show notifications about blog posts.\n"
+            "We'll only send you the highlights.",
+        )
+        cb3 = QCheckBox(
+            self.tr("New features"),
+            self,
+            toolTip="Show notifications about new features in Orange when a new "
+            "version is downloaded and installed,\n"
+            "should the new version entail notable updates.",
+        )
 
         self.bind(cb1, "checked", "notifications/announcements")
         self.bind(cb2, "checked", "notifications/blog")
@@ -107,13 +124,16 @@ class MainWindow(OWCanvasMainWindow):
         super().__init__(*args, **kwargs)
         self.notification_overlay = NotificationOverlay(self.scheme_widget)
         self.notification_server = None
+        self.scheme_widget.setDropHandlers(
+            [PluginDropHandler("orange.canvas.drophandler")]
+        )
 
     def open_canvas_settings(self):
         # type: () -> None
         """Reimplemented."""
         dlg = OUserSettingsDialog(self, windowTitle=self.tr("设置"))
         dlg.show()
-        status = dlg.exec_()
+        status = dlg.exec()
         if status == 0:
             self.user_preferences_changed_notify_all()
 

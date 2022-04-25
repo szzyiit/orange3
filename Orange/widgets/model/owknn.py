@@ -17,15 +17,16 @@ class OWKNNLearner(OWBaseLearner):
         "Orange.widgets.regression.owknnregression.OWKNNRegression",
     ]
     priority = 20
-    keywords = ["k nearest", "knearest", "neighbor", "neighbour", 'linjin', 'linju']
+    keywords = ["k nearest", "knearest"]
+    category = '模型(Model)'
 
     LEARNER = KNNLearner
-    category = 'model'
 
     weights = ["uniform", "distance"]
     Chinese_weights = ["统一的", "距离"]
     metrics = ["euclidean", "manhattan", "chebyshev", "mahalanobis"]
-    Chinese_metrics = ["欧几里德", "曼哈顿", "绝对最大差异", "马哈拉诺比斯(Mahalanobis)"]
+    Chinese_metrics = ["欧几里德", "曼哈顿",
+                       "绝对最大差异(chebyshev)", "马哈拉诺比斯(Mahalanobis)"]
 
     learner_name = Setting("k近邻(kNN)")
     n_neighbors = Setting(5)
@@ -34,9 +35,9 @@ class OWKNNLearner(OWBaseLearner):
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
-        box = gui.vBox(self.controlArea, "近邻(Neighbors)")
+        box = gui.vBox(self.controlArea, "邻近(Neighbors)")
         self.n_neighbors_spin = gui.spin(
-            box, self, "n_neighbors", 1, 100, label="近邻数(Number of neighbors):",
+            box, self, "n_neighbors", 1, 100, label="邻近数(Number of neighbors):",
             alignment=Qt.AlignRight, callback=self.settings_changed,
             controlWidth=80)
         self.metrics_combo = gui.comboBox(

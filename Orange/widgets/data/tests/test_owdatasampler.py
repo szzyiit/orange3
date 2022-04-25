@@ -1,14 +1,10 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring,unsubscriptable-object
 import unittest
-from unittest.mock import Mock
-
-from orangewidget.widget import StateInfo
 
 from Orange.data import Table
 from Orange.widgets.data.owdatasampler import OWDataSampler
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWDataSampler(WidgetTest):
@@ -89,25 +85,25 @@ class TestOWDataSampler(WidgetTest):
 
     def test_bigger_size_with_replacement(self):
         """Allow bigger output without replacement."""
-        self.send_signal("数据(Data)", self.iris[:2])
+        self.send_signal('数据(Data)', self.iris[:2])
         sample_size = self.set_fixed_sample_size(3, with_replacement=True)
         self.assertEqual(3, sample_size, 'Should be able to set a bigger size '
                          'with replacement')
 
     def test_bigger_size_without_replacement(self):
         """Lower output samples to match input's without replacement."""
-        self.send_signal("数据(Data)", self.iris[:2])
+        self.send_signal('数据(Data)', self.iris[:2])
         sample_size = self.set_fixed_sample_size(3)
         self.assertEqual(2, sample_size)
 
     def test_bigger_output_warning(self):
         """Should warn when sample size is bigger than input."""
-        self.send_signal("数据(Data)", self.iris[:2])
+        self.send_signal('数据(Data)', self.iris[:2])
         self.set_fixed_sample_size(3, with_replacement=True)
         self.assertTrue(self.widget.Warning.bigger_sample.is_shown())
 
     def test_shuffling(self):
-        self.send_signal("数据(Data)", self.iris)
+        self.send_signal('数据(Data)', self.iris)
 
         self.set_fixed_sample_size(150)
         self.assertFalse(self.widget.Warning.bigger_sample.is_shown())
@@ -121,26 +117,6 @@ class TestOWDataSampler(WidgetTest):
         sample = self.get_output("数据样本(Data Sample)")
         self.assertTrue((self.iris.ids != sample.ids).any())
         self.assertEqual(set(self.iris.ids), set(sample.ids))
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data = self.iris
-        input_sum = self.widget.info.set_input_summary = Mock()
-        output_sum = self.widget.info.set_output_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(len(data), format_summary_details(data))
-        output = self.get_output(self.widget.Outputs.data_sample)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-
-        input_sum.reset_mock()
-        output_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_once()
-        self.assertIsInstance(input_sum.call_args[0][0], StateInfo.Empty)
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
 
     def set_fixed_sample_size(self, sample_size, with_replacement=False):
         """Set fixed sample size and return the number of gui spin.

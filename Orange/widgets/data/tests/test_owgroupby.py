@@ -48,10 +48,10 @@ class TestOWGroupBy(WidgetTest):
 
     def test_data_domain_changed(self):
         self.send_signal(self.widget.Inputs.data, self.iris[:, -2:])
-        self.assert_aggregations_equal(["Mean", "Concatenate"])
+        self.assert_aggregations_equal(["平均值", "串接(Concatenate)"])
 
         self.send_signal(self.widget.Inputs.data, self.iris[:, -3:])
-        self.assert_aggregations_equal(["Mean", "Mean", "Concatenate"])
+        self.assert_aggregations_equal(["平均值", "平均值", "串接(Concatenate)"])
         self.select_table_rows(self.widget.agg_table_view, [0])
 
     @staticmethod
@@ -110,121 +110,121 @@ class TestOWGroupBy(WidgetTest):
         self.select_table_rows(table, [0])
         self.assert_enabled_cbs(
             {
-                "Mean",
-                "Median",
-                "Mode",
-                "Standard deviation",
-                "Variance",
-                "Sum",
-                "Min. value",
-                "Max. value",
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "Span",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "平均值",
+                "中位数",
+                "取模",
+                "标准差",
+                "方差",
+                "和",
+                "最小值",
+                "最大值",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "跨度",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [0, 1])
         self.assert_enabled_cbs(
             {
-                "Mean",
-                "Median",
-                "Mode",
-                "Standard deviation",
-                "Variance",
-                "Sum",
-                "Min. value",
-                "Max. value",
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "Span",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "平均值",
+                "中位数",
+                "取模",
+                "标准差",
+                "方差",
+                "和",
+                "最小值",
+                "最大值",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "跨度",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [2])
         self.assert_enabled_cbs(
             {
-                "Mean",
-                "Median",
-                "Mode",
-                "Standard deviation",
-                "Variance",
-                "Sum",
-                "Min. value",
-                "Max. value",
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "Span",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "平均值",
+                "中位数",
+                "取模",
+                "标准差",
+                "方差",
+                "和",
+                "最小值",
+                "最大值",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "跨度",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [3])  # discrete variable
         self.assert_enabled_cbs(
             {
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [4])  # string variable
         self.assert_enabled_cbs(
             {
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [3, 4])  # string variable
         self.assert_enabled_cbs(
             {
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
         self.select_table_rows(table, [2, 3, 4])  # string variable
         self.assert_enabled_cbs(
             {
-                "Mean",
-                "Median",
-                "Mode",
-                "Standard deviation",
-                "Variance",
-                "Sum",
-                "Min. value",
-                "Max. value",
-                "Count defined",
-                "Count",
-                "Concatenate",
-                "Span",
-                "First value",
-                "Last value",
-                "Random value",
-                "Proportion defined",
+                "平均值",
+                "中位数",
+                "取模",
+                "标准差",
+                "方差",
+                "和",
+                "最小值",
+                "最大值",
+                "非缺失数量",
+                "数量",
+                "串接(Concatenate)",
+                "跨度",
+                "首值",
+                "末值",
+                "随机值",
+                "非缺失占比",
             }
         )
 
@@ -240,47 +240,47 @@ class TestOWGroupBy(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.data)
 
         self.assert_aggregations_equal(
-            ["Mean", "Mean", "Mean", "Concatenate", "Concatenate"]
+            ["平均值", "平均值", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean"},
-                d["b"]: {"Mean"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值"},
+                d["b"]: {"平均值"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
         self.select_table_rows(table, [0])
-        self.widget.agg_checkboxes["Median"].click()
+        self.widget.agg_checkboxes["中位数"].click()
         self.assert_aggregations_equal(
-            ["Mean, Median", "Mean", "Mean", "Concatenate", "Concatenate"]
+            ["平均值, 中位数", "平均值", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median"},
-                d["b"]: {"Mean"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数"},
+                d["b"]: {"平均值"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
         self.select_table_rows(table, [0, 1])
-        self.widget.agg_checkboxes["Mode"].click()
+        self.widget.agg_checkboxes["取模"].click()
         self.assert_aggregations_equal(
-            ["Mean, Median, Mode", "Mean, Mode", "Mean", "Concatenate", "Concatenate"]
+            ["平均值, 中位数, 取模", "平均值, 取模", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median", "Mode"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数", "取模"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -288,44 +288,44 @@ class TestOWGroupBy(WidgetTest):
         self.select_table_rows(table, [0, 1])
         # median is partially checked and will become checked
         self.assertEqual(
-            Qt.PartiallyChecked, self.widget.agg_checkboxes["Median"].checkState()
+            Qt.PartiallyChecked, self.widget.agg_checkboxes["中位数"].checkState()
         )
-        self.widget.agg_checkboxes["Median"].click()
-        self.assertEqual(Qt.Checked, self.widget.agg_checkboxes["Median"].checkState())
+        self.widget.agg_checkboxes["中位数"].click()
+        self.assertEqual(Qt.Checked, self.widget.agg_checkboxes["中位数"].checkState())
         self.assert_aggregations_equal(
             [
-                "Mean, Median, Mode",
-                "Mean, Median, Mode",
-                "Mean",
-                "Concatenate",
-                "Concatenate",
+                "平均值, 中位数, 取模",
+                "平均值, 中位数, 取模",
+                "平均值",
+                "串接(Concatenate)",
+                "串接(Concatenate)",
             ]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median", "Mode"},
-                d["b"]: {"Mean", "Median", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数", "取模"},
+                d["b"]: {"平均值", "中位数", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
-        self.widget.agg_checkboxes["Median"].click()
+        self.widget.agg_checkboxes["中位数"].click()
         self.assertEqual(
-            Qt.Unchecked, self.widget.agg_checkboxes["Median"].checkState()
+            Qt.Unchecked, self.widget.agg_checkboxes["中位数"].checkState()
         )
         self.assert_aggregations_equal(
-            ["Mean, Mode", "Mean, Mode", "Mean", "Concatenate", "Concatenate"]
+            ["平均值, 取模", "平均值, 取模", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Mode"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "取模"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -333,62 +333,62 @@ class TestOWGroupBy(WidgetTest):
         self.select_table_rows(table, [0, 3])
         # median is unchecked and will change to partially checked
         self.assertEqual(
-            Qt.Unchecked, self.widget.agg_checkboxes["Median"].checkState()
+            Qt.Unchecked, self.widget.agg_checkboxes["中位数"].checkState()
         )
-        self.widget.agg_checkboxes["Median"].click()
+        self.widget.agg_checkboxes["中位数"].click()
         self.assertEqual(
-            Qt.PartiallyChecked, self.widget.agg_checkboxes["Median"].checkState()
+            Qt.PartiallyChecked, self.widget.agg_checkboxes["中位数"].checkState()
         )
         self.assert_aggregations_equal(
-            ["Mean, Median, Mode", "Mean, Mode", "Mean", "Concatenate", "Concatenate"]
+            ["平均值, 中位数, 取模", "平均值, 取模", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median", "Mode"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数", "取模"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
-        self.widget.agg_checkboxes["Median"].click()
+        self.widget.agg_checkboxes["中位数"].click()
         self.assertEqual(
-            Qt.Unchecked, self.widget.agg_checkboxes["Median"].checkState()
+            Qt.Unchecked, self.widget.agg_checkboxes["中位数"].checkState()
         )
         self.assert_aggregations_equal(
-            ["Mean, Mode", "Mean, Mode", "Mean", "Concatenate", "Concatenate"]
+            ["平均值, 取模", "平均值, 取模", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Mode"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "取模"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
-        self.widget.agg_checkboxes["Count"].click()
-        self.assertEqual(Qt.Checked, self.widget.agg_checkboxes["Count"].checkState())
+        self.widget.agg_checkboxes["数量"].click()
+        self.assertEqual(Qt.Checked, self.widget.agg_checkboxes["数量"].checkState())
         self.assert_aggregations_equal(
             [
-                "Mean, Mode, Count",
-                "Mean, Mode",
-                "Mean",
-                "Concatenate, Count",
-                "Concatenate",
+                "平均值, 取模, 数量",
+                "平均值, 取模",
+                "平均值",
+                "串接(Concatenate), 数量",
+                "串接(Concatenate)",
             ]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Mode", "Count"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Count", "Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "取模", "数量"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"数量", "串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -396,90 +396,90 @@ class TestOWGroupBy(WidgetTest):
         # test the most complicated scenario: numeric with mode, numeric without
         # mode and discrete
         self.select_table_rows(table, [0])
-        self.widget.agg_checkboxes["Mode"].click()
+        self.widget.agg_checkboxes["取模"].click()
         self.assert_aggregations_equal(
-            ["Mean, Count", "Mean, Mode", "Mean", "Concatenate, Count", "Concatenate"]
+            ["平均值, 数量", "平均值, 取模", "平均值", "串接(Concatenate), 数量", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Count"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Count", "Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "数量"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"数量", "串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
         self.select_table_rows(table, [0, 1, 3])
         self.assertEqual(
-            Qt.PartiallyChecked, self.widget.agg_checkboxes["Mode"].checkState()
+            Qt.PartiallyChecked, self.widget.agg_checkboxes["取模"].checkState()
         )
-        self.widget.agg_checkboxes["Mode"].click()
+        self.widget.agg_checkboxes["取模"].click()
         # must stay partially checked since one Continuous can still have mode
         # as a aggregation and discrete cannot have it
         self.assertEqual(
-            Qt.PartiallyChecked, self.widget.agg_checkboxes["Mode"].checkState()
+            Qt.PartiallyChecked, self.widget.agg_checkboxes["取模"].checkState()
         )
         self.assert_aggregations_equal(
             [
-                "Mean, Mode, Count",
-                "Mean, Mode",
-                "Mean",
-                "Concatenate, Count",
-                "Concatenate",
+                "平均值, 取模, 数量",
+                "平均值, 取模",
+                "平均值",
+                "串接(Concatenate), 数量",
+                "串接(Concatenate)",
             ]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Mode", "Count"},
-                d["b"]: {"Mean", "Mode"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Count", "Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "取模", "数量"},
+                d["b"]: {"平均值", "取模"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"数量", "串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
         # since now all that can have Mode have it as an aggregation it can be
         # unchecked on the next click
-        self.widget.agg_checkboxes["Mode"].click()
-        self.assertEqual(Qt.Unchecked, self.widget.agg_checkboxes["Mode"].checkState())
+        self.widget.agg_checkboxes["取模"].click()
+        self.assertEqual(Qt.Unchecked, self.widget.agg_checkboxes["取模"].checkState())
         self.assert_aggregations_equal(
-            ["Mean, Count", "Mean", "Mean", "Concatenate, Count", "Concatenate"]
+            ["平均值, 数量", "平均值", "平均值", "串接(Concatenate), 数量", "串接(Concatenate)"]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Count"},
-                d["b"]: {"Mean"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Count", "Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "数量"},
+                d["b"]: {"平均值"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"数量", "串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
 
-        self.widget.agg_checkboxes["Mode"].click()
-        self.widget.agg_checkboxes["Count defined"].click()
+        self.widget.agg_checkboxes["取模"].click()
+        self.widget.agg_checkboxes["非缺失数量"].click()
         self.assertEqual(
-            Qt.PartiallyChecked, self.widget.agg_checkboxes["Mode"].checkState()
+            Qt.PartiallyChecked, self.widget.agg_checkboxes["取模"].checkState()
         )
         self.assert_aggregations_equal(
             [
-                "Mean, Mode, Count defined and 1 more",
-                "Mean, Mode, Count defined",
-                "Mean",
-                "Concatenate, Count defined, Count",
-                "Concatenate",
+                "平均值, 取模, 非缺失数量 and 1 more",
+                "平均值, 取模, 非缺失数量",
+                "平均值",
+                "串接(Concatenate), 非缺失数量, 数量",
+                "串接(Concatenate)",
             ]
         )
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Mode", "Count", "Count defined"},
-                d["b"]: {"Mean", "Mode", "Count defined"},
-                d["cvar"]: {"Mean"},
-                d["dvar"]: {"Count", "Count defined", "Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "取模", "数量", "非缺失数量"},
+                d["b"]: {"平均值", "取模", "非缺失数量"},
+                d["cvar"]: {"平均值"},
+                d["dvar"]: {"数量", "非缺失数量", "串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -527,33 +527,33 @@ class TestOWGroupBy(WidgetTest):
                 cb.click()
 
         expected_columns = [
-            "cvar - Mean",
-            "cvar - Median",
-            "cvar - Mode",
-            "cvar - Standard deviation",
-            "cvar - Variance",
-            "cvar - Sum",
-            "cvar - Min. value",
-            "cvar - Max. value",
-            "cvar - Span",
-            "cvar - First value",
-            "cvar - Last value",
-            "cvar - Count defined",
-            "cvar - Count",
-            "cvar - Proportion defined",
-            "dvar - First value",
-            "dvar - Last value",
-            "dvar - Count defined",
-            "dvar - Count",
-            "dvar - Proportion defined",
-            "svar - First value",
-            "svar - Last value",
-            "svar - Count defined",
-            "svar - Count",
-            "svar - Proportion defined",
-            "cvar - Concatenate",
-            "dvar - Concatenate",
-            "svar - Concatenate",
+            "cvar - 平均值",
+            "cvar - 中位数",
+            "cvar - 取模",
+            "cvar - 标准差",
+            "cvar - 方差",
+            "cvar - 和",
+            "cvar - 最小值",
+            "cvar - 最大值",
+            "cvar - 跨度",
+            "cvar - 首值",
+            "cvar - 末值",
+            "cvar - 非缺失数量",
+            "cvar - 数量",
+            "cvar - 非缺失占比",
+            "dvar - 首值",
+            "dvar - 末值",
+            "dvar - 非缺失数量",
+            "dvar - 数量",
+            "dvar - 非缺失占比",
+            "svar - 首值",
+            "svar - 末值",
+            "svar - 非缺失数量",
+            "svar - 数量",
+            "svar - 非缺失占比",
+            "cvar - 串接(Concatenate)",
+            "dvar - 串接(Concatenate)",
+            "svar - 串接(Concatenate)",
             "a",  # groupby variables are last two in metas
             "b",
         ]
@@ -598,7 +598,7 @@ class TestOWGroupBy(WidgetTest):
             self.get_output(self.widget.Outputs.data), include_metas=True
         )
         # remove random since it is not possible to test
-        output_df = output_df.loc[:, ~output_df.columns.str.endswith("Random value")]
+        output_df = output_df.loc[:, ~output_df.columns.str.endswith("随机值")]
 
         pd.testing.assert_frame_equal(
             output_df,
@@ -622,24 +622,24 @@ class TestOWGroupBy(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.data)
 
         self.assert_aggregations_equal(
-            ["Mean", "Mean", "Mean", "Concatenate", "Concatenate"]
+            ["平均值", "平均值", "平均值", "串接(Concatenate)", "串接(Concatenate)"]
         )
 
         self.select_table_rows(self.widget.agg_table_view, [0, 2])
-        self.widget.agg_checkboxes["Median"].click()
+        self.widget.agg_checkboxes["中位数"].click()
         self.assert_aggregations_equal(
-            ["Mean, Median", "Mean", "Mean, Median", "Concatenate", "Concatenate"]
+            ["平均值, 中位数", "平均值", "平均值, 中位数", "串接(Concatenate)", "串接(Concatenate)"]
         )
 
         self._set_selection(self.widget.gb_attrs_view, [1, 2])
         self.assertListEqual([d["a"], d["b"]], self.widget.gb_attrs)
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median"},
-                d["b"]: {"Mean"},
-                d["cvar"]: {"Mean", "Median"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数"},
+                d["b"]: {"平均值"},
+                d["cvar"]: {"平均值", "中位数"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -649,17 +649,17 @@ class TestOWGroupBy(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.data)
 
         self.assert_aggregations_equal(
-            ["Mean, Median", "Mean", "Mean, Median", "Concatenate", "Concatenate"]
+            ["平均值, 中位数", "平均值", "平均值, 中位数", "串接(Concatenate)", "串接(Concatenate)"]
         )
         self._set_selection(self.widget.gb_attrs_view, [1, 2])
         self.assertListEqual([d["a"], d["b"]], self.widget.gb_attrs)
         self.assertDictEqual(
             {
-                d["a"]: {"Mean", "Median"},
-                d["b"]: {"Mean"},
-                d["cvar"]: {"Mean", "Median"},
-                d["dvar"]: {"Concatenate"},
-                d["svar"]: {"Concatenate"},
+                d["a"]: {"平均值", "中位数"},
+                d["b"]: {"平均值"},
+                d["cvar"]: {"平均值", "中位数"},
+                d["dvar"]: {"串接(Concatenate)"},
+                d["svar"]: {"串接(Concatenate)"},
             },
             self.widget.aggregations,
         )
@@ -721,22 +721,22 @@ class TestOWGroupBy(WidgetTest):
                 cb.click()
 
         expected_columns = [
-            "B - Mean",
-            "B - Median",
-            "B - Mode",
-            "B - Standard deviation",
-            "B - Variance",
-            "B - Sum",
-            "B - Min. value",
-            "B - Max. value",
-            "B - Span",
-            "B - First value",
-            "B - Last value",
-            "B - Random value",
-            "B - Count defined",
-            "B - Count",
-            "B - Proportion defined",
-            "B - Concatenate",
+            "B - 平均值",
+            "B - 中位数",
+            "B - 取模",
+            "B - 标准差",
+            "B - 方差",
+            "B - 和",
+            "B - 最小值",
+            "B - 最大值",
+            "B - 跨度",
+            "B - 首值",
+            "B - 末值",
+            "B - 随机值",
+            "B - 非缺失数量",
+            "B - 数量",
+            "B - 非缺失占比",
+            "B - 串接(Concatenate)",
             "A",
         ]
         n = np.nan

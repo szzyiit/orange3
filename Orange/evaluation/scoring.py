@@ -124,7 +124,7 @@ class RegressionScore(Score, abstract=True):
 # pylint: disable=invalid-name
 class CA(ClassificationScore):
     __wraps__ = skl_metrics.accuracy_score
-    long_name = "分类准确率"
+    long_name = "Classification accuracy"
 
 
 class PrecisionRecallFSupport(ClassificationScore):
@@ -173,13 +173,10 @@ class TargetScore(ClassificationScore):
 
 class Precision(TargetScore):
     __wraps__ = skl_metrics.precision_score
-    long_name = "精度"
 
 
 class Recall(TargetScore):
     __wraps__ = skl_metrics.recall_score
-    long_name = "召回"
-
 
 
 class F1(TargetScore):
@@ -201,7 +198,7 @@ class AUC(ClassificationScore):
     __wraps__ = skl_metrics.roc_auc_score
     separate_folds = True
     is_binary = True
-    long_name = "ROC曲线下面积(AUC)"
+    long_name = "Area under ROC curve"
 
     @staticmethod
     def calculate_weights(results):
@@ -273,7 +270,6 @@ class LogLoss(ClassificationScore):
 
     """
     __wraps__ = skl_metrics.log_loss
-    long_name = "log 损失"
 
     def compute_score(self, results, eps=1e-15, normalize=True,
                       sample_weight=None):
@@ -289,7 +285,6 @@ class LogLoss(ClassificationScore):
 
 class Specificity(ClassificationScore):
     is_binary = True
-    long_name = "特异度"
 
     @staticmethod
     def calculate_weights(results):
@@ -342,11 +337,11 @@ class Specificity(ClassificationScore):
 
 class MSE(RegressionScore):
     __wraps__ = skl_metrics.mean_squared_error
-    long_name = "均方差(MSE)"
+    long_name = "Mean square error"
 
 
 class RMSE(RegressionScore):
-    long_name = "均方根误差(RMSE)"
+    long_name = "Root mean square error"
 
     def compute_score(self, results):
         return np.sqrt(MSE(results))
@@ -354,17 +349,17 @@ class RMSE(RegressionScore):
 
 class MAE(RegressionScore):
     __wraps__ = skl_metrics.mean_absolute_error
-    long_name = "平均绝对误差(MAE)"
+    long_name = "Mean absolute error"
 
 
 # pylint: disable=invalid-name
 class R2(RegressionScore):
     __wraps__ = skl_metrics.r2_score
-    long_name = "决定系数 R2"
+    long_name = "Coefficient of determination"
 
 
 class CVRMSE(RegressionScore):
-    long_name = "RMSE 变异系数"
+    long_name = "Coefficient of variation of the RMSE"
 
     def compute_score(self, results):
         mean = np.nanmean(results.actual)

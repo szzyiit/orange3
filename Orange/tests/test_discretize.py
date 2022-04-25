@@ -1,13 +1,14 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring
 
+import sys
 import random
 from unittest import TestCase
 
 import numpy as np
 import scipy.sparse as sp
 
-from Orange.preprocess import discretize, Discretize
+from Orange.preprocess import discretize, Discretize, decimal_binnings
 from Orange import data
 from Orange.data import Table, Instance, Domain, ContinuousVariable, DiscreteVariable
 
@@ -43,6 +44,26 @@ class TestEqualFreq(TestCase):
         self.assertEqual(len(dvar.values), 4)
         self.assertEqual(dvar.compute_value.points, [1.5, 2.5, 3.5])
 
+    def test_below_precision(self):
+        eps = sys.float_info.epsilon
+
+        # Test with n >= number of distinct values
+        X = np.array([[1], [1 + eps], [1 + 2 * eps], [1 + 3 * eps]])
+        # Test the test: check that these are indeed distinct values
+        assert len(np.unique(X).flatten()) == 4
+        table = data.Table.from_numpy(None, X)
+        var = discretize.EqualFreq(n=4)(table, table.domain[0])
+        points = var.compute_value.points
+        self.assertEqual(len(np.unique(points)), len(points))
+
+        # Test with n < number of distinct values
+        X = np.array([[1 + i * eps] for i in range(10)])
+        # Test the test: check that these are indeed distinct values
+        assert len(np.unique(X).flatten()) == 10
+        table = data.Table.from_numpy(None, X)
+        var = discretize.EqualFreq(n=8)(table, table.domain[0])
+        points = var.compute_value.points
+        self.assertEqual(len(np.unique(points)), len(points))
 
 # noinspection PyPep8Naming
 class TestEqualWidth(TestCase):
@@ -72,6 +93,34 @@ class TestEqualWidth(TestCase):
         dvar = disc(table, table.domain[0])
         self.assertEqual(len(dvar.values), 1)
         self.assertEqual(dvar.compute_value.points, [])
+
+
+class TestBinning(TestCase):
+    def test_decimal_binnings(self):
+        values = np.array([
+            -0.2, -0.2, -0.6, 1.0, 0.2, -0.6, 0.6, 1.0, 0.4, -0.5, -0.4, -0.4,
+            -0.6, 0.6, 0.75, 0.4, -0.2, 0.2, 0.0, 0.0, -1.0, -0.6, -0.2, -0.6,
+        ])
+        binning = decimal_binnings(values, factors=[0.2, 0.25, 0.5])
+        self.assertEqual(len(binning), 3)
+
+        np.testing.assert_array_equal(
+            binning[0].thresholds,
+            [-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1]
+        )
+        self.assertEqual(binning[0].width, 0.2)
+
+        np.testing.assert_array_equal(
+            binning[1].thresholds,
+            [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+        )
+        self.assertEqual(binning[1].width, 0.25)
+
+        np.testing.assert_array_equal(
+            binning[2].thresholds,
+            [-1, -0.5, 0, 0.5, 1]
+        )
+        self.assertEqual(binning[2].width, 0.5)
 
 
 # noinspection PyPep8Naming
@@ -180,7 +229,8 @@ class TestDiscretizer(TestCase):
 
     def test_remove_constant(self):
         table = data.Table('iris')
-        table[:, 0] = 1
+        with table.unlocked():
+            table[:, 0] = 1
         discretize = Discretize(remove_const=True)
         new_table = discretize(table)
         self.assertNotEqual(len(table.domain.attributes),
@@ -188,7 +238,8 @@ class TestDiscretizer(TestCase):
 
     def test_keep_constant(self):
         table = data.Table('iris')
-        table[:, 0] = 1
+        with table.unlocked():
+            table[:, 0] = 1
         discretize = Discretize(remove_const=False)
         new_table = discretize(table)
         self.assertEqual(len(table.domain.attributes),

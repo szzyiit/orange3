@@ -1,37 +1,36 @@
 from typing import Optional
 
-from AnyQt.QtCore import Qt
-
 from Orange.data import Table
 from Orange.widgets import gui
 from Orange.widgets.report.report import describe_data
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_multiple_summaries, \
-    format_summary_details
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
 
 class OWTransform(OWWidget):
     name = "应用变换(Apply Domain)"
     description = "在数据表上应用模板域"
+    category = "变换(Transform)"
     icon = "icons/Transform.svg"
     priority = 2110
-    keywords = ["transform", 'yingyong', 'bianhuan', 'yingyongbianhuan']
-    category = "Data"
+    keywords = ["transform"]
 
     class Inputs:
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])
-        template_data = Input("模板数据(Template Data)", Table, replaces=['Template Data'])
+        template_data = Input("模板数据(Template Data)", Table,
+                              replaces=['Template Data'])
 
     class Outputs:
-        transformed_data = Output("转换的数据(Transformed Data)", Table, replaces=['Transformed Data'])
+        transformed_data = Output(
+            "转换的数据(Transformed Data)", Table, replaces=['Transformed Data'])
 
     class Error(OWWidget.Error):
         error = Msg("An error occurred while transforming data.\n{}")
 
     resizing_enabled = False
     want_main_area = False
+    buttons_area_orientation = None
 
     def __init__(self):
         super().__init__()
@@ -45,9 +44,6 @@ class OWTransform(OWWidget):
         self.output_label = gui.widgetLabel(info_box, "")
         self.set_input_label_text()
         self.set_template_label_text()
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
 
     def set_input_label_text(self):
         text = "没有输入数据。"
@@ -85,18 +81,6 @@ class OWTransform(OWWidget):
         self.template_data = data
 
     def handleNewSignals(self):
-        summary, details, kwargs = self.info.NoInput, "", {}
-        if self.data or self.template_data:
-            n_data = len(self.data) if self.data else 0
-            n_template = len(self.template_data) if self.template_data else 0
-            summary = f"{self.info.format_number(n_data)}, " \
-                      f"{self.info.format_number(n_template)}"
-            kwargs = {"format": Qt.RichText}
-            details = format_multiple_summaries([
-                ("Data", self.data),
-                ("Template data", self.template_data)
-            ])
-        self.info.set_input_summary(summary, details, **kwargs)
         self.apply()
 
     def apply(self):
@@ -104,14 +88,12 @@ class OWTransform(OWWidget):
         transformed_data = None
         if self.data and self.template_data:
             try:
-                transformed_data = self.data.transform(self.template_data.domain)
+                transformed_data = self.data.transform(
+                    self.template_data.domain)
             except Exception as ex:  # pylint: disable=broad-except
                 self.Error.error(ex)
 
         data = transformed_data
-        summary = len(data) if data else self.info.NoOutput
-        details = format_summary_details(data) if data else ""
-        self.info.set_output_summary(summary, details)
         self.transformed_info = describe_data(data)
         self.Outputs.transformed_data.send(data)
         self.set_template_label_text()

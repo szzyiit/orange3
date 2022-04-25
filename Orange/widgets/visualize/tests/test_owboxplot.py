@@ -8,11 +8,9 @@ from AnyQt.QtCore import QItemSelectionModel
 
 from Orange.data import Table, ContinuousVariable, StringVariable, Domain, \
     DiscreteVariable
-from Orange.widgets.visualize.owboxplot import (
-    OWBoxPlot, FilterGraphicsRectItem, _quantiles
-)
+from Orange.widgets.visualize.owboxplot import OWBoxPlot, FilterGraphicsRectItem
+
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.tests import test_filename
 
 
@@ -28,7 +26,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         cls.titanic = Table("titanic")
         cls.heart = Table("heart_disease")
         cls.data = cls.iris
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -67,25 +65,28 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
     def test_input_data_missings_cont_group_var(self):
         """Check widget with continuous data with missing values and group variable"""
         data = self.iris.copy()
-        data.X[:, 0] = np.nan
+        with data.unlocked():
+            data.X[:, 0] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
         # used to crash, see #1568
 
     def test_input_data_missings_cont_no_group_var(self):
         """Check widget with continuous data with missing values and no group variable"""
         data = self.housing
-        data.X[:, 0] = np.nan
+        with data.unlocked():
+            data.X[:, 0] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
         # used to crash, see #1568
 
     def test_input_data_missings_disc_group_var(self):
         """Check widget with discrete data with missing values and group variable"""
         data = self.zoo
-        data.X[:, 1] = np.nan
+        with data.unlocked():
+            data.X[:, 1] = np.nan
         # This is a test and does it at its own risk:
         # pylint: disable=protected-access
         data.domain.attributes[1]._values = []
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
         self.widget.controls.order_by_importance.setChecked(True)
         self._select_list_items(self.widget.attr_list)
         self._select_list_items(self.widget.group_list)
@@ -94,11 +95,12 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         """Check widget discrete data with missing values and no group variable"""
         data = self.zoo
         data.domain.class_var = ContinuousVariable("cls")
-        data.X[:, 1] = np.nan
+        with data.unlocked():
+            data.X[:, 1] = np.nan
         # This is a test and does it at its own risk:
         # pylint: disable=protected-access
         data.domain.attributes[1]._values = []
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
         self._select_list_items(self.widget.attr_list)
         self._select_list_items(self.widget.group_list)
 
@@ -129,7 +131,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
 
 
         data = self.titanic
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
 
         select_group(2)  # First attribute
 
@@ -147,7 +149,7 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
                          ['sex', 'status', 'age', 'survived'])
 
         data = self.heart
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
         select_group(1)  # Class
         order_check.setChecked(True)
         self.assertEqual(self.model_order(model),
@@ -180,31 +182,31 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
                 attr_selection.ClearAndSelect)
 
         data = self.titanic
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
 
         select_attr(1)  # First attribute
 
         order_check.setChecked(False)
         self.assertEqual(
             self.model_order(model),
-            ["无"] +
+            ["None"] +
             [var.name
              for var in data.domain.class_vars + data.domain.attributes])
         order_check.setChecked(True)
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['无', 'sex', 'survived', 'age', 'status'])
+                         ['None', 'sex', 'survived', 'age', 'status'])
         select_attr(0)  # Class
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['无', 'sex', 'status', 'age', 'survived'])
+                         ['None', 'sex', 'status', 'age', 'survived'])
 
         data = self.heart
-        self.send_signal("数据(Data)", data)
+        self.send_signal("Data", data)
         select_attr(0)  # Class
         self.assertIsNone(groups[0])
         self.assertEqual(self.model_order(model),
-                         ['无',
+                         ['None',
                           'thal',
                           'chest pain',
                           'exerc ind ang',
@@ -254,7 +256,8 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
 
         # select rows with US State equal to TX or MO
         use_indexes = np.array([0, 1, 25, 26, 27])
-        table.X = table.X[use_indexes]
+        with table.unlocked():
+            table.X = table.X[use_indexes]
         self.send_signal(self.widget.Inputs.data, table)
         self.assertEqual(2, len(self.widget.boxes))
 
@@ -277,8 +280,8 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
                  if isinstance(item, FilterGraphicsRectItem)]
         items[0].setSelected(True)
         return [100, 103, 104, 108, 110, 111, 112, 115, 116,
-                120, 123, 124, 126, 128, 132, 133, 136, 137,
-                139, 140, 141, 143, 144, 145, 146, 147, 148]
+                120, 123, 124, 128, 132, 133, 136, 137, 139,
+                140, 141, 143, 144, 145, 146, 147]
 
     def _select_list_items(self, _list):
         for name in _list.model().sourceModel():
@@ -354,67 +357,6 @@ class TestOWBoxPlot(WidgetTest, WidgetOutputsTestMixin):
         for box in self.widget.box_scene.items():
             if isinstance(box, FilterGraphicsRectItem):
                 box.setSelected(True)
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data, info = self.titanic, self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-
-class TestUtils(unittest.TestCase):
-    def test(self):
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 8 + 1), [1.] * 8, [0.0, 0.25, 0.5, 0.75, 1.0]),
-            [1., 2.5, 4.5, 6.5, 8.]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 8 + 1), [1.] * 8, [0.0, 0.25, 0.5, 0.75, 1.0]),
-            [1., 2.5, 4.5, 6.5, 8.]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 4 + 1), [1., 2., 1., 2],
-                       [0.0, 0.25, 0.5, 0.75, 1.0]),
-            [1.0, 2.0, 2.5, 4.0, 4.0]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 4 + 1), [2., 1., 1., 2.],
-                       [0.0, 0.25, 0.5, 0.75, 1.0]),
-            [1.0, 1.0, 2.5, 4.0, 4.0]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 4 + 1), [1., 1., 1., 1.],
-                       [0.0, 0.25, 0.5, 0.75, 1.0]),
-            [1.0, 1.5, 2.5, 3.5, 4.0]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 4 + 1), [1., 1., 1., 1.],
-                       [0.0, 0.25, 0.5, 0.75, 1.0], interpolation="higher"),
-            [1, 2, 3, 4, 4]
-        )
-        np.testing.assert_array_equal(
-            _quantiles(range(1, 4 + 1), [1., 1., 1., 1.],
-                       [0.0, 0.25, 0.5, 0.75, 1.0], interpolation="lower"),
-            [1, 1, 2, 3, 4]
-        )
 
 
 if __name__ == '__main__':

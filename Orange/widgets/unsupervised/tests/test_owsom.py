@@ -8,8 +8,8 @@ import scipy.sparse as sp
 
 from Orange.data import Table, Domain
 from Orange.widgets.tests.base import WidgetTest
+from Orange.widgets.tests.utils import simulate
 from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_FEATURE_NAME
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.unsupervised.owsom import OWSOM, SomView, SOM
 
 
@@ -81,8 +81,9 @@ class TestOWSOM(WidgetTest):
         self.send_signal(widget.Inputs.data, Table("heart_disease"))
         self.assertTrue(widget.Warning.ignoring_disc_variables.is_shown())
 
-        for i in range(150):
-            self.iris.X[i, i % 4] = np.nan
+        with self.iris.unlocked():
+            for i in range(150):
+                self.iris.X[i, i % 4] = np.nan
 
         self.send_signal(widget.Inputs.data, self.iris)
         self.assertTrue(widget.Error.no_defined_rows.is_shown())
@@ -95,7 +96,8 @@ class TestOWSOM(WidgetTest):
 
     def test_missing_some_data(self):
         widget = self.widget
-        self.iris.X[:50, 0] = np.nan
+        with self.iris.unlocked():
+            self.iris.X[:50, 0] = np.nan
 
         self.send_signal(widget.Inputs.data, self.iris)
         self.assertFalse(widget.Error.no_defined_rows.is_shown())
@@ -109,7 +111,8 @@ class TestOWSOM(WidgetTest):
 
     def test_missing_one_row_data(self):
         widget = self.widget
-        self.iris.X[5, 0] = np.nan
+        with self.iris.unlocked():
+            self.iris.X[5, 0] = np.nan
 
         self.send_signal(widget.Inputs.data, self.iris)
         self.assertFalse(widget.Error.no_defined_rows.is_shown())
@@ -121,7 +124,8 @@ class TestOWSOM(WidgetTest):
     @_patch_recompute_som
     def test_sparse_data(self):
         widget = self.widget
-        self.iris.X = sp.csc_matrix(self.iris.X)
+        with self.iris.unlocked():
+            self.iris.X = sp.csc_matrix(self.iris.X)
 
         # Table.from_table can decide to return dense data
         with patch.object(Table, "from_table", lambda _, x: x):
@@ -216,6 +220,42 @@ class TestOWSOM(WidgetTest):
         self.assertTrue(widget.controls.pie_charts.isEnabled())
         self.assertIsNotNone(widget.thresholds)
         widget._redraw.assert_called()
+
+    def test_colored_circles_with_constant(self):
+        domain = self.iris.domain
+        self.widget.pie_charts = False
+
+        with self.iris.unlocked():
+            self.iris.X[:, 0] = 1
+        self.send_signal(self.widget.Inputs.data, self.iris)
+        attr0 = domain.attributes[0]
+
+        combo = self.widget.controls.attr_color
+        simulate.combobox_activate_index(combo, combo.model().indexOf(attr0))
+        self.assertIsNotNone(self.widget.colors)
+        self.assertFalse(self.widget.Warning.no_defined_colors.is_shown())
+
+        dom1 = Domain(domain.attributes[1:], domain.class_var,
+                      domain.attributes[:1])
+        iris = self.iris.transform(dom1).copy()
+        with iris.unlocked(iris.metas):
+            iris.metas[::2, 0] = np.nan
+        self.send_signal(self.widget.Inputs.data, iris)
+        simulate.combobox_activate_index(combo, combo.model().indexOf(attr0))
+        self.assertIsNotNone(self.widget.colors)
+        self.assertFalse(self.widget.Warning.no_defined_colors.is_shown())
+
+        iris = self.iris.transform(dom1).copy()
+        with iris.unlocked(iris.metas):
+            iris.metas[:, 0] = np.nan
+        self.send_signal(self.widget.Inputs.data, iris)
+        simulate.combobox_activate_index(combo, combo.model().indexOf(attr0))
+        self.assertIsNone(self.widget.colors)
+        self.assertTrue(self.widget.Warning.no_defined_colors.is_shown())
+
+        simulate.combobox_activate_index(combo, 0)
+        self.assertIsNone(self.widget.colors)
+        self.assertFalse(self.widget.Warning.no_defined_colors.is_shown())
 
     @_patch_recompute_som
     def test_cell_sizes(self):
@@ -387,7 +427,8 @@ class TestOWSOM(WidgetTest):
             self.assertEqual(e.y(), y)
             self.assertEqual(e.r, r / 2)
 
-        self.iris.Y[:15] = np.nan
+        with self.iris.unlocked():
+            self.iris.Y[:15] = np.nan
         self.send_signal(widget.Inputs.data, self.iris)
         a = widget.elements.childItems()[0]
         np.testing.assert_equal(a.dist, [0.5, 0, 0, 0.5])
@@ -399,8 +440,9 @@ class TestOWSOM(WidgetTest):
         domain = table.domain
         new_domain = Domain(
             domain.attributes[3:], domain.class_var, domain.attributes[:3])
-        new_table = table.transform(new_domain)
-        new_table.metas = new_table.metas.astype(object)
+        new_table = table.transform(new_domain).copy()
+        with new_table.unlocked(new_table.metas):
+            new_table.metas = new_table.metas.astype(object)
         self.send_signal(widget.Inputs.data, new_table)
 
         # discrete attribute
@@ -442,15 +484,17 @@ class TestOWSOM(WidgetTest):
 
         # discrete meta with missing values
         widget.attr_color = domain["gender"]
-        col = widget.data.get_column_view("gender")[0]
-        col[:5] = np.nan
+        with widget.data.unlocked():
+            col = widget.data.get_column_view("gender")[0]
+            col[:5] = np.nan
         col = col.copy()
         col[:5] = 2
         np.testing.assert_equal(widget._get_color_column(), col)
 
     @_patch_recompute_som
     def test_colored_circles_with_missing_values(self):
-        self.iris.get_column_view("iris")[0][:5] = np.nan
+        with self.iris.unlocked():
+            self.iris.get_column_view("iris")[0][:5] = np.nan
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.assertTrue(self.widget.Warning.missing_colors.is_shown())
 
@@ -509,11 +553,6 @@ class TestOWSOM(WidgetTest):
     def test_output(self):
         widget = self.widget
         self.send_signal(self.widget.Inputs.data, self.iris)
-        summary, details = f"{len(self.iris)}", format_summary_details(
-            self.iris)
-        self.assertEqual(widget.info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(widget.info._StateInfo__input_summary.details,
-                         details)
 
         self.assertIsNone(self.get_output(widget.Outputs.selected_data))
         out = self.get_output(widget.Outputs.annotated_data)
@@ -526,10 +565,6 @@ class TestOWSOM(WidgetTest):
         widget.on_selection_change(m)
         out = self.get_output(widget.Outputs.selected_data)
         np.testing.assert_equal(out.ids, self.iris.ids[:30])
-        summary, details = f"{len(out)}", format_summary_details(out)
-        self.assertEqual(widget.info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(widget.info._StateInfo__output_summary.details,
-                         details)
 
         out = self.get_output(widget.Outputs.annotated_data)
         np.testing.assert_equal(
@@ -550,12 +585,42 @@ class TestOWSOM(WidgetTest):
         self.send_signal(self.widget.Inputs.data, None)
         self.assertIsNone(self.get_output(widget.Outputs.selected_data))
         self.assertIsNone(self.get_output(widget.Outputs.annotated_data))
-        self.assertEqual(widget.info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(widget.info._StateInfo__input_summary.details,
-                         "No data on input")
-        self.assertEqual(widget.info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(widget.info._StateInfo__output_summary.details,
-                         "No data on output")
+
+    def test_invalidated(self):
+        heart = Table("heart_disease")
+        self.widget._recompute_som = Mock()
+
+        # New data - replot
+        self.send_signal(self.widget.Inputs.data, heart)
+        self.widget._recompute_som.assert_called_once()
+
+        # Same data - no replot
+        self.widget._recompute_som.reset_mock()
+        self.send_signal(self.widget.Inputs.data, heart)
+        self.widget._recompute_som.assert_not_called()
+
+        # Same data.X - no replot
+        domain = heart.domain
+        domain = Domain(domain.attributes, metas=domain.class_vars)
+        heart_with_metas = self.iris.transform(domain)
+        self.widget._recompute_som.reset_mock()
+        self.send_signal(self.widget.Inputs.data, heart_with_metas)
+        self.widget._recompute_som.assert_not_called()
+
+        # Different data, same set of cont. vars - no replot
+        attrs = [a for a in heart.domain.attributes if a.is_continuous]
+        domain = Domain(attrs)
+        heart_with_cont_features = self.iris.transform(domain)
+        self.widget._recompute_som.reset_mock()
+        self.send_signal(self.widget.Inputs.data, heart_with_cont_features)
+        self.widget._recompute_som.assert_not_called()
+
+        # Different data.X - replot
+        domain = Domain(heart.domain.attributes[:5])
+        heart_with_less_features = heart.transform(domain)
+        self.widget._recompute_som.reset_mock()
+        self.send_signal(self.widget.Inputs.data, heart_with_less_features)
+        self.widget._recompute_som.assert_called_once()
 
 
 if __name__ == "__main__":

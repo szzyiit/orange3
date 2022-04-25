@@ -10,14 +10,12 @@ import numpy as np
 from AnyQt.QtCore import Qt, QSize, QRect
 from AnyQt.QtGui import QBrush
 
-from orangewidget.widget import StateInfo
 from orangewidget.tests.base import GuiTest
 
 from Orange.data import Table, ContinuousVariable, DiscreteVariable, Domain
 from Orange.preprocess.transformation import Identity
 from Orange.util import color_to_hex
 from Orange.widgets.utils import colorpalettes
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.data import owcolor
 from Orange.widgets.data.owcolor import ColorRole
 from Orange.widgets.tests.base import WidgetTest
@@ -641,7 +639,7 @@ class TestOWColor(WidgetTest):
             self.send_signal(self.widget.Inputs.data, t)
 
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_commit') as commit:
+        with patch.object(self.widget.commit, 'now') as commit:
             self.widget.auto_apply = False
             commit.reset_mock()
             self.send_signal(self.widget.Inputs.data, self.iris)
@@ -651,7 +649,7 @@ class TestOWColor(WidgetTest):
         widget = self.widget
         model = widget.cont_model
         self.send_signal(widget.Inputs.data, self.iris)
-        with patch.object(widget, 'commit') as commit:
+        with patch.object(widget.commit, 'deferred') as commit:
             commit.reset_mock()
             model.setData(model.index(0, 0), "y", Qt.EditRole)
             commit.assert_called()
@@ -702,25 +700,6 @@ class TestOWColor(WidgetTest):
 
     def test_string_variables(self):
         self.send_signal(self.widget.Inputs.data, Table("zoo"))
-
-    def test_summary(self):
-        """Check if the status bar is updated when data is received"""
-        data = self.iris
-        input_sum = self.widget.info.set_input_summary = Mock()
-        output_sum = self.widget.info.set_output_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(len(data), format_summary_details(data))
-        output = self.get_output(self.widget.Outputs.data)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-        input_sum.reset_mock()
-        output_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_once()
-        self.assertIsInstance(input_sum.call_args[0][0], StateInfo.Empty)
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
 
     def test_reset(self):
         self.send_signal(self.widget.Inputs.data, self.iris)
@@ -814,6 +793,32 @@ class TestOWColor(WidgetTest):
                 msg_box.reset_mock()
                 self.widget._parse_var_defs.assert_called_with(json.load.return_value)
 
+    @patch("Orange.widgets.data.owcolor.QMessageBox.warning")
+    def test_load_ignore_warning(self, msg_box):
+        self.widget._parse_var_defs(dict(categorical={}, numeric={}))
+        msg_box.assert_not_called()
+
+        no_change = dict(renamed_values={}, colors={})
+        for names, message in (
+                (("foo",),
+                 "'foo'"),
+                (("foo", "bar"),
+                 "'foo' and 'bar'"),
+                (("foo", "bar", "baz"),
+                 "'foo', 'bar' and 'baz'"),
+                (("foo", "bar", "baz", "qux"),
+                 "'foo', 'bar', 'baz' and 'qux'"),
+                (("foo", "bar", "baz", "qux", "quux"),
+                 "'foo', 'bar', 'baz', 'qux' and 'quux'"),
+                (("foo", "bar", "baz", "qux", "quux", "corge"),
+                 "'foo', 'bar', 'baz', 'qux' and 2 other"),
+                (("foo", "bar", "baz", "qux", "quux", "corge", "grault"),
+                 "'foo', 'bar', 'baz', 'qux' and 3 other")):
+            self.widget._parse_var_defs(dict(
+                categorical=dict.fromkeys(names, no_change),
+                numeric={}))
+            self.assertIn(message, msg_box.call_args[0][2])
+
     def _create_descs(self):
         disc_vars = [DiscreteVariable(f"var{c}", values=("a", "b", "c"))
                      for c in "AB"]
@@ -901,11 +906,6 @@ class TestOWColor(WidgetTest):
         self.widget._parse_var_defs(
             {"categorical": {"varA": {"rename": "varD"}},
              "numeric": {"varD": {"rename": "varA"}}})
-        msg_box.assert_not_called()
-
-        self.widget._parse_var_defs(
-            {"categorical": {"varA": {"rename": "X"}},
-             "numeric": {"var not": {"rename": "X"}}})
         msg_box.assert_not_called()
 
 

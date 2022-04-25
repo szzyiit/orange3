@@ -7,9 +7,8 @@ from scipy.spatial import distance
 from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from AnyQt.QtGui import QStandardItem, QColor
+from AnyQt.QtGui import QStandardItem, QColor, QPalette
 from AnyQt.QtCore import Qt, QRectF, QPoint, pyqtSignal as Signal
-from AnyQt.QtWidgets import qApp
 
 import pyqtgraph as pg
 from pyqtgraph.graphicsItems.ScatterPlotItem import ScatterPlotItem
@@ -20,8 +19,10 @@ from Orange.projection import RadViz
 from Orange.widgets import widget, gui
 from Orange.widgets.gui import OWComponent
 from Orange.widgets.settings import Setting, ContextSetting, SettingProvider
-from Orange.widgets.utils.plot.owplotgui import VariableSelectionModel, \
-    variables_selection
+from Orange.widgets.utils.plot.owplotgui import (
+    VariableSelectionModel,
+    variables_selection,
+)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.visualize.utils import VizRankDialog
 from Orange.widgets.visualize.utils.component import OWGraphWithAnchors
@@ -54,8 +55,16 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         box = gui.hBox(self)
         max_n_attrs = min(MAX_DISPLAYED_VARS, len(master.model_selected))
         self.n_attrs_spin = gui.spin(
-            box, self, "n_attrs", 3, max_n_attrs, label="最大变量个数(Maximum number of variables): ",
-            controlWidth=50, alignment=Qt.AlignRight, callback=self._n_attrs_changed)
+            box,
+            self,
+            "n_attrs",
+            3,
+            max_n_attrs,
+            label="最大变量个数: ",
+            controlWidth=50,
+            alignment=Qt.AlignRight,
+            callback=self._n_attrs_changed,
+        )
         gui.rubber(box)
         self.last_run_n_attrs = None
         self.attr_color = master.attr_color
@@ -64,8 +73,7 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         self.valid_data = None
 
         self.rank_table.clicked.connect(self.on_row_clicked)
-        self.rank_table.verticalHeader().sectionClicked.connect(
-            self.on_header_clicked)
+        self.rank_table.verticalHeader().sectionClicked.connect(self.on_header_clicked)
 
     def initialize(self):
         super().initialize()
@@ -76,11 +84,14 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         used by VizRank to evaluate attributes
         """
         master = self.master
-        attrs = [v for v in master.primitive_variables
-                 if v is not self.attr_color]
-        data = self.master.data.transform(Domain(attributes=attrs, class_vars=self.attr_color))
+        attrs = [v for v in master.primitive_variables if v is not self.attr_color]
+        data = self.master.data.transform(
+            Domain(attributes=attrs, class_vars=self.attr_color)
+        )
         self.data = data
-        self.valid_data = np.hstack((~np.isnan(data.X), ~np.isnan(data.Y.reshape(len(data.Y), 1))))
+        self.valid_data = np.hstack(
+            (~np.isnan(data.X), ~np.isnan(data.Y.reshape(len(data.Y), 1)))
+        )
         relief = ReliefF if self.attr_color.is_discrete else RReliefF
         weights = relief(n_iterations=100, k_nearest=self.minK)(data)
         attrs = sorted(zip(weights, attrs), key=lambda x: (-x[0], x[1].name))
@@ -100,12 +111,16 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         scores
         """
         if self.percent_data_used != 100:
-            rand = np.random.choice(len(x), int(len(x) * self.percent_data_used / 100),
-                                    replace=False)
+            rand = np.random.choice(
+                len(x), int(len(x) * self.percent_data_used / 100), replace=False
+            )
             x = x[rand]
             y = y[rand]
-        neigh = KNeighborsClassifier(n_neighbors=3) if self.attr_color.is_discrete else \
-            KNeighborsRegressor(n_neighbors=3)
+        neigh = (
+            KNeighborsClassifier(n_neighbors=3)
+            if self.attr_color.is_discrete
+            else KNeighborsRegressor(n_neighbors=3)
+        )
         assert ~(np.isnan(x).any(axis=None) | np.isnan(x).any(axis=None))
         neigh.fit(x, y)
         with warnings.catch_warnings():
@@ -124,10 +139,10 @@ class RadvizVizRank(VizRankDialog, OWComponent):
             self.button.setText("继续")
         self.button.setEnabled(self.check_preconditions())
 
-    def progressBarSet(self, value, processEvents=None):
-        self.setWindowTitle(self.captionTitle + " Evaluated {} permutations".format(value))
-        if processEvents is not None and processEvents is not False:
-            qApp.processEvents(processEvents)
+    def progressBarSet(self, value):
+        self.setWindowTitle(
+            self.captionTitle + " Evaluated {} permutations".format(value)
+        )
 
     def check_preconditions(self):
         master = self.master
@@ -135,9 +150,13 @@ class RadvizVizRank(VizRankDialog, OWComponent):
             return False
         elif not master.btn_vizrank.isEnabled():
             return False
-        self.n_attrs_spin.setMaximum(min(MAX_DISPLAYED_VARS,
-                                         len(master.model_selected)))
+        self.n_attrs_spin.setMaximum(
+            min(MAX_DISPLAYED_VARS, len(master.model_selected))
+        )
         return True
+
+    def on_selection_changed(self, selected, _):
+        self.on_row_clicked(selected.indexes()[0])
 
     def on_row_clicked(self, index):
         self.selectionChanged.emit(index.data(self._AttrRole))
@@ -176,7 +195,7 @@ class RadvizVizRank(VizRankDialog, OWComponent):
         data = self.data.transform(domain)
         projector = RadViz()
         projection = projector(data)
-        radviz_xy = projection(data)
+        radviz_xy = projection(data).X
         y = projector.preprocess(data).Y
         return -self._evaluate_projection(radviz_xy, y)
 
@@ -185,7 +204,9 @@ class RadvizVizRank(VizRankDialog, OWComponent):
 
     def row_for_state(self, score, state):
         attrs = [self.attrs[s] for s in state]
-        item = QStandardItem("[{:0.6f}] ".format(-score) + ", ".join(a.name for a in attrs))
+        item = QStandardItem(
+            "[{:0.6f}] ".format(-score) + ", ".join(a.name for a in attrs)
+        )
         item.setData(attrs, self._AttrRole)
         return [item]
 
@@ -244,29 +265,29 @@ class OWRadvizGraph(OWGraphWithAnchors):
 
         self.anchor_items = []
         label_len = 1
+        foreground = self.plot_widget.palette().color(QPalette.Text)
         for point, label in zip(points, labels):
-            anchor = TextItem()
+            anchor = TextItem(color=foreground)
             anchor.textItem.setToolTip(f"<b>{label}</b>")
 
             if len(label) > MAX_LABEL_LEN:
                 i = label.rfind(" ", 0, MAX_LABEL_LEN)
                 if i != -1:
                     first_row = label[:i] + "\n"
-                    second_row = label[i + 1:]
+                    second_row = label[i + 1 :]
                     if len(second_row) > MAX_LABEL_LEN:
                         j = second_row.rfind(" ", 0, MAX_LABEL_LEN)
                         if j != -1:
-                            second_row = second_row[:j + 1] + "..."
+                            second_row = second_row[: j + 1] + "..."
                         else:
-                            second_row = second_row[:MAX_LABEL_LEN - 3] + "..."
+                            second_row = second_row[: MAX_LABEL_LEN - 3] + "..."
                     label = first_row + second_row
                 else:
-                    label = label[:MAX_LABEL_LEN - 3] + "..."
+                    label = label[: MAX_LABEL_LEN - 3] + "..."
 
             anchor.setText(label)
             anchor.setFont(self.parameter_setter.anchor_font)
             label_len = min(MAX_LABEL_LEN, len(label))
-            anchor.setColor(QColor(0, 0, 0))
 
             x, y = point
             angle = np.rad2deg(np.arctan2(y, x))
@@ -294,8 +315,7 @@ class OWRadvizGraph(OWGraphWithAnchors):
         if self.anchors_scatter_item is not None:
             self.plot_widget.removeItem(self.anchors_scatter_item)
             self.anchors_scatter_item = None
-        self.anchors_scatter_item = ScatterPlotItem(x=points[:, 0],
-                                                    y=points[:, 1])
+        self.anchors_scatter_item = ScatterPlotItem(x=points[:, 0], y=points[:, 1])
         self.plot_widget.addItem(self.anchors_scatter_item)
 
     def _add_indicator_item(self, anchor_idx):
@@ -303,19 +323,21 @@ class OWRadvizGraph(OWGraphWithAnchors):
             return
         x, y = self.anchor_items[anchor_idx].get_xy()
         col = self.view_box.mouse_state
-        dx = (self.view_box.childGroup.mapToDevice(QPoint(1, 0)) -
-              self.view_box.childGroup.mapToDevice(QPoint(-1, 0))).x()
+        dx = (
+            self.view_box.childGroup.mapToDevice(QPoint(1, 0))
+            - self.view_box.childGroup.mapToDevice(QPoint(-1, 0))
+        ).x()
         self.indicator_item = MoveIndicator(np.arctan2(y, x), col, 6000 / dx)
         self.plot_widget.addItem(self.indicator_item)
 
 
 class OWRadviz(OWAnchorProjectionWidget):
-    name = "Radviz"
+    name = "雷达图(Radviz)"
     description = "显示RadViz投影"
     icon = "icons/Radviz.svg"
     priority = 241
-    keywords = ["viz"]
-    category = 'visualize'
+    keywords = ["viz", "leidatu"]
+    category = "可视化(Visualize)"
 
     settings_version = 3
 
@@ -326,30 +348,36 @@ class OWRadviz(OWAnchorProjectionWidget):
 
     class Warning(OWAnchorProjectionWidget.Warning):
         invalid_embedding = widget.Msg("No projection for selected features")
-        removed_vars = widget.Msg("Categorical variables with more than"
-                                  " two values are not shown.")
+        removed_vars = widget.Msg(
+            "Categorical variables with more than" " two values are not shown."
+        )
         max_vars_selected = widget.Msg("Maximum number of selected variables reached.")
 
     def _add_controls(self):
-        self.model_selected = VariableSelectionModel(self.selected_vars,
-                                                     max_vars=20)
-        variables_selection(self.controlArea, self, self.model_selected)
-        self.model_selected.selection_changed.connect(
-            self.__model_selected_changed)
+        box = gui.vBox(self.controlArea, box="特征")
+        self.model_selected = VariableSelectionModel(self.selected_vars, max_vars=20)
+        variables_selection(box, self, self.model_selected)
+        self.model_selected.selection_changed.connect(self.__model_selected_changed)
         self.vizrank, self.btn_vizrank = RadvizVizRank.add_vizrank(
-            None, self, "建议特征", self.vizrank_set_attrs)
-        self.controlArea.layout().addWidget(self.btn_vizrank)
+            None, self, "建议特征", self.vizrank_set_attrs
+        )
+        box.layout().addWidget(self.btn_vizrank)
         super()._add_controls()
-        self.controlArea.layout().removeWidget(self.control_area_stretch)
-        self.control_area_stretch.setParent(None)
+
+    def _add_buttons(self):
+        self.gui.box_zoom_select(self.buttonsArea)
+        gui.auto_send(self.buttonsArea, self, "auto_commit")
 
     @property
     def primitive_variables(self):
         if self.data is None or self.data.domain is None:
             return []
         dom = self.data.domain
-        return [v for v in chain(dom.variables, dom.metas)
-                if v.is_continuous or v.is_discrete and len(v.values) == 2]
+        return [
+            v
+            for v in chain(dom.variables, dom.metas)
+            if v.is_continuous or v.is_discrete and len(v.values) == 2
+        ]
 
     @property
     def effective_variables(self):
@@ -374,25 +402,29 @@ class OWRadviz(OWAnchorProjectionWidget):
             self.Warning.max_vars_selected.clear()
         self.init_projection()
         self.setup_plot()
-        self.commit()
+        self.commit.deferred()
 
     def colors_changed(self):
         super().colors_changed()
         self._init_vizrank()
 
+    @OWAnchorProjectionWidget.Inputs.data
     def set_data(self, data):
         super().set_data(data)
         self._init_vizrank()
         self.init_projection()
 
     def _init_vizrank(self):
-        is_enabled = self.data is not None and \
-            len(self.primitive_variables) > 3 and \
-            self.attr_color is not None and \
-            not np.isnan(self.data.get_column_view(
-                self.attr_color)[0].astype(float)).all() and \
-            np.sum(np.all(np.isfinite(self.data.X), axis=1)) > 1 and \
-            np.all(np.nan_to_num(np.nanstd(self.data.X, 0)) != 0)
+        is_enabled = (
+            self.data is not None
+            and len(self.primitive_variables) > 3
+            and self.attr_color is not None
+            and not np.isnan(
+                self.data.get_column_view(self.attr_color)[0].astype(float)
+            ).all()
+            and np.sum(np.all(np.isfinite(self.data.X), axis=1)) > 1
+            and np.all(np.nan_to_num(np.nanstd(self.data.X, 0)) != 0)
+        )
         self.btn_vizrank.setEnabled(is_enabled)
         if is_enabled:
             self.vizrank.initialize()
@@ -456,12 +488,14 @@ class MoveIndicator(pg.GraphicsObject):
         )
         arrow2.setPos(np.cos(angle + dangle), np.sin(angle + dangle))
         arc_x = np.fromfunction(
-            lambda i: np.cos((angle - dangle) + (2 * dangle) * i / 120.),
-            (121,), dtype=int
+            lambda i: np.cos((angle - dangle) + (2 * dangle) * i / 120.0),
+            (121,),
+            dtype=int,
         )
         arc_y = np.fromfunction(
-            lambda i: np.sin((angle - dangle) + (2 * dangle) * i / 120.),
-            (121,), dtype=int
+            lambda i: np.sin((angle - dangle) + (2 * dangle) * i / 120.0),
+            (121,),
+            dtype=int,
         )
         pg.PlotCurveItem(
             parent=self, x=arc_x, y=arc_y, pen=pg.mkPen(color), antialias=False

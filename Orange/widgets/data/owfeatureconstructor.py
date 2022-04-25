@@ -14,6 +14,7 @@ import random
 import logging
 import ast
 import types
+import unicodedata
 
 from traceback import format_exception_only
 from collections import namedtuple, OrderedDict
@@ -25,8 +26,8 @@ import numpy as np
 from AnyQt.QtWidgets import (
     QSizePolicy, QAbstractItemView, QComboBox, QFormLayout, QLineEdit,
     QHBoxLayout, QVBoxLayout, QStackedWidget, QStyledItemDelegate,
-    QPushButton, QMenu, QListView, QFrame, QLabel)
-from AnyQt.QtGui import QKeySequence, QColor
+    QPushButton, QMenu, QListView, QFrame, QLabel, QMessageBox)
+from AnyQt.QtGui import QKeySequence
 from AnyQt.QtCore import Qt, pyqtSignal as Signal, pyqtProperty as Property
 from orangewidget.utils.combobox import ComboBoxSearch
 
@@ -38,7 +39,6 @@ from Orange.widgets.utils import itemmodels, vartype
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets import report
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 FeatureDescriptor = \
@@ -57,6 +57,7 @@ DiscreteDescriptor = \
 StringDescriptor = namedtuple("StringDescriptor", ["name", "expression"])
 
 #warningIcon = gui.createAttributePixmap('!', QColor((202, 0, 32)))
+
 
 def make_variable(descriptor, compute_value):
     if isinstance(descriptor, ContinuousDescriptor):
@@ -101,6 +102,13 @@ def selected_row(view):
 
 
 class FeatureEditor(QFrame):
+    ExpressionTooltip = """
+Use variable names as values in expression.
+Categorical features are passed as strings
+(note the change in behaviour from Orange 3.30).
+
+""".lstrip()
+
     FUNCTIONS = dict(chain([(key, val) for key, val in math.__dict__.items()
                             if not key.startswith("_")],
                            [(key, val) for key, val in builtins.__dict__.items()
@@ -137,13 +145,11 @@ class FeatureEditor(QFrame):
         self.attributescb.setModel(self.attrs_model)
 
         sorted_funcs = sorted(self.FUNCTIONS)
-        self.funcs_model = itemmodels.PyListModelTooltip()
+        self.funcs_model = itemmodels.PyListModelTooltip(
+            chain(["选择函数"], sorted_funcs),
+            chain([''], [self.FUNCTIONS[func].__doc__ for func in sorted_funcs])
+        )
         self.funcs_model.setParent(self)
-
-        self.funcs_model[:] = chain(["选择函数"], sorted_funcs)
-        self.funcs_model.tooltips[:] = chain(
-            [''],
-            [self.FUNCTIONS[func].__doc__ for func in sorted_funcs])
 
         self.functionscb = ComboBoxSearch(
             minimumContentsLength=16,
@@ -231,7 +237,8 @@ class FeatureEditor(QFrame):
 
 
 class ContinuousFeatureEditor(FeatureEditor):
-    ExpressionTooltip = "A numeric expression"
+    ExpressionTooltip = "A numeric expression\n\n" \
+                        + FeatureEditor.ExpressionTooltip
 
     def editorData(self):
         return ContinuousDescriptor(
@@ -242,7 +249,7 @@ class ContinuousFeatureEditor(FeatureEditor):
 
 
 class DateTimeFeatureEditor(FeatureEditor):
-    ExpressionTooltip = \
+    ExpressionTooltip = FeatureEditor.ExpressionTooltip + \
         "Result must be a string in ISO-8601 format " \
         "(e.g. 2019-07-30T15:37:27 or a part thereof),\n" \
         "or a number of seconds since Jan 1, 1970."
@@ -255,7 +262,7 @@ class DateTimeFeatureEditor(FeatureEditor):
 
 
 class DiscreteFeatureEditor(FeatureEditor):
-    ExpressionTooltip = \
+    ExpressionTooltip = FeatureEditor.ExpressionTooltip + \
         "Result must be a string, if values are not explicitly given\n" \
         "or a zero-based integer indices into a list of values given below."
 
@@ -265,7 +272,8 @@ class DiscreteFeatureEditor(FeatureEditor):
         tooltip = \
             "If values are given, above expression must return zero-based " \
             "integer indices into that list."
-        self.valuesedit = QLineEdit(placeholderText="A, B ...", toolTip=tooltip)
+        self.valuesedit = QLineEdit(
+            placeholderText="A, B ...", toolTip=tooltip)
         self.valuesedit.textChanged.connect(self._invalidate)
 
         layout = self.layout()
@@ -282,7 +290,8 @@ class DiscreteFeatureEditor(FeatureEditor):
     def editorData(self):
         values = self.valuesedit.text()
         values = re.split(r"(?<!\\),", values)
-        values = tuple(filter(None, [v.replace(r"\,", ",").strip() for v in values]))
+        values = tuple(
+            filter(None, [v.replace(r"\,", ",").strip() for v in values]))
         return DiscreteDescriptor(
             name=self.nameedit.text(),
             values=values,
@@ -292,7 +301,8 @@ class DiscreteFeatureEditor(FeatureEditor):
 
 
 class StringFeatureEditor(FeatureEditor):
-    ExpressionTooltip = "A string expression"
+    ExpressionTooltip = "A string expression\n\n" \
+                        + FeatureEditor.ExpressionTooltip
 
     def editorData(self):
         return StringDescriptor(
@@ -328,397 +338,6 @@ class DescriptorModel(itemmodels.PyListModel):
             return variable_icon(type(value))
         else:
             return super().data(index, role)
-
-
-class FeatureConstructorHandler(DomainContextHandler):
-    """Context handler that filters descriptors"""
-
-    def is_valid_item(self, setting, item, attrs, metas):
-        """Check if descriptor `item` can be used with given domain.
-
-        Return True if descriptor's expression contains only
-        available variables and descriptors name does not clash with
-        existing variables.
-        """
-        if item.name in attrs or item.name in metas:
-            return False
-
-        try:
-            exp_ast = ast.parse(item.expression, mode="eval")
-        # ast.parse can return arbitrary errors, not only SyntaxError
-        # pylint: disable=broad-except
-        except Exception:
-            return False
-
-        available = dict(globals()["__GLOBALS"])
-        for var in attrs:
-            available[sanitized_name(var)] = None
-        for var in metas:
-            available[sanitized_name(var)] = None
-
-        if freevars(exp_ast, available):
-            return False
-        return True
-
-
-class OWFeatureConstructor(OWWidget):
-    name = "特征构造器(Feature Constructor)"
-    description = "用输入数据集中的现有特征构造新特征。"
-    icon = "icons/FeatureConstructor.svg"
-    keywords = ['tezheng', 'gouzao', 'tezhenggouzao']
-    category = "Data"
-
-    class Inputs:
-        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
-
-    class Outputs:
-        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
-
-    want_main_area = False
-
-    settingsHandler = FeatureConstructorHandler()
-    descriptors = ContextSetting([])
-    currentIndex = ContextSetting(-1)
-
-    EDITORS = [
-        (ContinuousDescriptor, ContinuousFeatureEditor),
-        (DateTimeDescriptor, DateTimeFeatureEditor),
-        (DiscreteDescriptor, DiscreteFeatureEditor),
-        (StringDescriptor, StringFeatureEditor)
-    ]
-
-    class Error(OWWidget.Error):
-        more_values_needed = Msg("Categorical feature {} needs more values.")
-        invalid_expressions = Msg("Invalid expressions: {}.")
-
-    class Warning(OWWidget.Warning):
-        renamed_var = Msg("Recently added variable has been renamed, "
-                           "to avoid duplicates.\n")
-
-    def __init__(self):
-        super().__init__()
-        self.data = None
-        self.editors = {}
-
-        box = gui.vBox(self.controlArea, "变量定义")
-
-        toplayout = QHBoxLayout()
-        toplayout.setContentsMargins(0, 0, 0, 0)
-        box.layout().addLayout(toplayout)
-
-        self.editorstack = QStackedWidget(
-            sizePolicy=QSizePolicy(QSizePolicy.MinimumExpanding,
-                                   QSizePolicy.MinimumExpanding)
-        )
-
-        for descclass, editorclass in self.EDITORS:
-            editor = editorclass()
-            editor.featureChanged.connect(self._on_modified)
-            self.editors[descclass] = editor
-            self.editorstack.addWidget(editor)
-
-        self.editorstack.setEnabled(False)
-
-        buttonlayout = QVBoxLayout(spacing=10)
-        buttonlayout.setContentsMargins(0, 0, 0, 0)
-
-        self.addbutton = QPushButton(
-            "新建", toolTip="Create a new variable",
-            minimumWidth=120,
-            shortcut=QKeySequence.New
-        )
-
-        def unique_name(fmt, reserved):
-            candidates = (fmt.format(i) for i in count(1))
-            return next(c for c in candidates if c not in reserved)
-
-        def generate_newname(fmt):
-            return unique_name(fmt, self.reserved_names())
-
-        menu = QMenu(self.addbutton)
-        cont = menu.addAction("数值数据")
-        cont.triggered.connect(
-            lambda: self.addFeature(
-                ContinuousDescriptor(generate_newname("X{}"), "", 3))
-        )
-        disc = menu.addAction("分类数据")
-        disc.triggered.connect(
-            lambda: self.addFeature(
-                DiscreteDescriptor(generate_newname("D{}"), "", (), False))
-        )
-        string = menu.addAction("文本")
-        string.triggered.connect(
-            lambda: self.addFeature(
-                StringDescriptor(generate_newname("S{}"), ""))
-        )
-        datetime = menu.addAction("日期/时间")
-        datetime.triggered.connect(
-            lambda: self.addFeature(
-                DateTimeDescriptor(generate_newname("T{}"), ""))
-        )
-
-        menu.addSeparator()
-        self.duplicateaction = menu.addAction("复制选中变量")
-        self.duplicateaction.triggered.connect(self.duplicateFeature)
-        self.duplicateaction.setEnabled(False)
-        self.addbutton.setMenu(menu)
-
-        self.removebutton = QPushButton(
-            "删除", toolTip="删除选中变量",
-            minimumWidth=120,
-            shortcut=QKeySequence.Delete
-        )
-        self.removebutton.clicked.connect(self.removeSelectedFeature)
-
-        buttonlayout.addWidget(self.addbutton)
-        buttonlayout.addWidget(self.removebutton)
-        buttonlayout.addStretch(10)
-
-        toplayout.addLayout(buttonlayout, 0)
-        toplayout.addWidget(self.editorstack, 10)
-
-        # Layout for the list view
-        layout = QVBoxLayout(spacing=1, margin=0)
-        self.featuremodel = DescriptorModel(parent=self)
-
-        self.featureview = QListView(
-            minimumWidth=200, minimumHeight=50,
-            sizePolicy=QSizePolicy(QSizePolicy.Minimum,
-                                   QSizePolicy.MinimumExpanding)
-        )
-
-        self.featureview.setItemDelegate(FeatureItemDelegate(self))
-        self.featureview.setModel(self.featuremodel)
-        self.featureview.selectionModel().selectionChanged.connect(
-            self._on_selectedVariableChanged
-        )
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
-        layout.addWidget(self.featureview)
-
-        box.layout().addLayout(layout, 1)
-
-        box = gui.hBox(self.controlArea)
-        gui.rubber(box)
-        commit = gui.button(box, self, "发送", callback=self.apply,
-                            default=True)
-        commit.setMinimumWidth(180)
-
-    def setCurrentIndex(self, index):
-        index = min(index, len(self.featuremodel) - 1)
-        self.currentIndex = index
-        if index >= 0:
-            itemmodels.select_row(self.featureview, index)
-            desc = self.featuremodel[min(index, len(self.featuremodel) - 1)]
-            editor = self.editors[type(desc)]
-            self.editorstack.setCurrentWidget(editor)
-            editor.setEditorData(desc, self.data.domain if self.data else None)
-        self.editorstack.setEnabled(index >= 0)
-        self.duplicateaction.setEnabled(index >= 0)
-        self.removebutton.setEnabled(index >= 0)
-
-    def _on_selectedVariableChanged(self, selected, *_):
-        index = selected_row(self.featureview)
-        if index is not None:
-            self.setCurrentIndex(index)
-        else:
-            self.setCurrentIndex(-1)
-
-    def _on_modified(self):
-        if self.currentIndex >= 0:
-            self.Warning.clear()
-            editor = self.editorstack.currentWidget()
-            proposed = editor.editorData().name
-            unique = get_unique_names(self.reserved_names(self.currentIndex),
-                                      proposed)
-
-            feature = editor.editorData()
-            if editor.editorData().name != unique:
-                self.Warning.renamed_var()
-                feature = feature.__class__(unique, *feature[1:])
-
-            self.featuremodel[self.currentIndex] = feature
-            self.descriptors = list(self.featuremodel)
-
-    def setDescriptors(self, descriptors):
-        """
-        Set a list of variable descriptors to edit.
-        """
-        self.descriptors = descriptors
-        self.featuremodel[:] = list(self.descriptors)
-
-    def reserved_names(self, idx_=None):
-        varnames = []
-        if self.data is not None:
-            varnames = [var.name for var in
-                        self.data.domain.variables + self.data.domain.metas]
-        varnames += [desc.name for idx, desc in enumerate(self.featuremodel)
-                     if idx != idx_]
-        return set(varnames)
-
-    @Inputs.data
-    @check_sql_input
-    def setData(self, data=None):
-        """Set the input dataset."""
-        self.closeContext()
-
-        self.data = data
-
-        self.info.set_input_summary(self.info.NoInput)
-        if self.data is not None:
-            descriptors = list(self.descriptors)
-            currindex = self.currentIndex
-            self.descriptors = []
-            self.currentIndex = -1
-            self.openContext(data)
-            self.info.set_input_summary(len(data), format_summary_details(data))
-
-            if descriptors != self.descriptors or \
-                    self.currentIndex != currindex:
-                # disconnect from the selection model while reseting the model
-                selmodel = self.featureview.selectionModel()
-                selmodel.selectionChanged.disconnect(
-                    self._on_selectedVariableChanged)
-
-                self.featuremodel[:] = list(self.descriptors)
-                self.setCurrentIndex(self.currentIndex)
-
-                selmodel.selectionChanged.connect(
-                    self._on_selectedVariableChanged)
-
-        self.editorstack.setEnabled(self.currentIndex >= 0)
-
-    def handleNewSignals(self):
-        if self.data is not None:
-            self.apply()
-        else:
-            self.info.set_output_summary(self.info.NoOutput)
-            self.Outputs.data.send(None)
-
-    def addFeature(self, descriptor):
-        self.featuremodel.append(descriptor)
-        self.setCurrentIndex(len(self.featuremodel) - 1)
-        editor = self.editorstack.currentWidget()
-        editor.nameedit.setFocus()
-        editor.nameedit.selectAll()
-
-    def removeFeature(self, index):
-        del self.featuremodel[index]
-        index = selected_row(self.featureview)
-        if index is not None:
-            self.setCurrentIndex(index)
-        elif index is None and self.featuremodel.rowCount():
-            # Deleting the last item clears selection
-            self.setCurrentIndex(self.featuremodel.rowCount() - 1)
-
-    def removeSelectedFeature(self):
-        if self.currentIndex >= 0:
-            self.removeFeature(self.currentIndex)
-
-    def duplicateFeature(self):
-        desc = self.featuremodel[self.currentIndex]
-        self.addFeature(copy.deepcopy(desc))
-
-    @staticmethod
-    def check_attrs_values(attr, data):
-        for i in range(len(data)):
-            for var in attr:
-                if not math.isnan(data[i, var]) \
-                        and int(data[i, var]) >= len(var.values):
-                    return var.name
-        return None
-
-    def _validate_descriptors(self, desc):
-
-        def validate(source):
-            try:
-                return validate_exp(ast.parse(source, mode="eval"))
-            # ast.parse can return arbitrary errors, not only SyntaxError
-            # pylint: disable=broad-except
-            except Exception:
-                return False
-
-        final = []
-        invalid = []
-        for d in desc:
-            if validate(d.expression):
-                final.append(d)
-            else:
-                final.append(d._replace(expression=""))
-                invalid.append(d)
-
-        if invalid:
-            self.Error.invalid_expressions(", ".join(s.name for s in invalid))
-
-        return final
-
-    def apply(self):
-        def report_error(err):
-            log = logging.getLogger(__name__)
-            log.error("", exc_info=True)
-            self.error("".join(format_exception_only(type(err), err)).rstrip())
-
-        self.Error.clear()
-
-        if self.data is None:
-            return
-
-        desc = list(self.featuremodel)
-        desc = self._validate_descriptors(desc)
-        try:
-            new_variables = construct_variables(desc, self.data)
-        # user's expression can contain arbitrary errors
-        except Exception as err:  # pylint: disable=broad-except
-            report_error(err)
-            return
-
-        attrs = [var for var in new_variables if var.is_primitive()]
-        metas = [var for var in new_variables if not var.is_primitive()]
-        new_domain = Orange.data.Domain(
-            self.data.domain.attributes + tuple(attrs),
-            self.data.domain.class_vars,
-            metas=self.data.domain.metas + tuple(metas)
-        )
-
-        try:
-            for variable in new_variables:
-                variable.compute_value.mask_exceptions = False
-            data = self.data.transform(new_domain)
-        # user's expression can contain arbitrary errors
-        # pylint: disable=broad-except
-        except Exception as err:
-            report_error(err)
-            return
-        finally:
-            for variable in new_variables:
-                variable.compute_value.mask_exceptions = True
-
-        disc_attrs_not_ok = self.check_attrs_values(
-            [var for var in attrs if var.is_discrete], data)
-        if disc_attrs_not_ok:
-            self.Error.more_values_needed(disc_attrs_not_ok)
-            return
-
-        self.info.set_output_summary(len(data), format_summary_details(data))
-        self.Outputs.data.send(data)
-
-    def send_report(self):
-        items = OrderedDict()
-        for feature in self.featuremodel:
-            if isinstance(feature, DiscreteDescriptor):
-                items[feature.name] = "{} (categorical with values {}{})".format(
-                    feature.expression, feature.values,
-                    "; ordered" * feature.ordered)
-            elif isinstance(feature, ContinuousDescriptor):
-                items[feature.name] = "{} (numeric)".format(feature.expression)
-            elif isinstance(feature, DateTimeDescriptor):
-                items[feature.name] = "{} (date/time)".format(feature.expression)
-            else:
-                items[feature.name] = "{} (text)".format(feature.expression)
-        self.report_items(
-            report.plural("Constructed feature{s}", len(items)), items)
 
 
 def freevars(exp, env):
@@ -826,6 +445,451 @@ def freevars(exp, env):
         raise ValueError(exp)
 
 
+class FeatureConstructorHandler(DomainContextHandler):
+    """Context handler that filters descriptors"""
+
+    def is_valid_item(self, setting, item, attrs, metas):
+        """Check if descriptor `item` can be used with given domain.
+
+        Return True if descriptor's expression contains only
+        available variables and descriptors name does not clash with
+        existing variables.
+        """
+        if item.name in attrs or item.name in metas:
+            return False
+
+        try:
+            exp_ast = ast.parse(item.expression, mode="eval")
+        # ast.parse can return arbitrary errors, not only SyntaxError
+        # pylint: disable=broad-except
+        except Exception:
+            return False
+
+        available = dict(globals()["__GLOBALS"])
+        for var in attrs:
+            available[sanitized_name(var)] = None
+        for var in metas:
+            available[sanitized_name(var)] = None
+
+        if freevars(exp_ast, available):
+            return False
+        return True
+
+
+class OWFeatureConstructor(OWWidget):
+    name = "特征构造器(Feature Constructor)"
+    description = "用输入数据集中的现有特征构造新特征。"
+    icon = "icons/FeatureConstructor.svg"
+    keywords = ['tezheng', 'gouzao', 'tezhenggouzao']
+    category = "变换(Transform)"
+    icon = "icons/FeatureConstructor.svg"
+
+    class Inputs:
+        data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
+
+    class Outputs:
+        data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
+
+    want_main_area = False
+
+    settingsHandler = FeatureConstructorHandler()
+    descriptors = ContextSetting([])
+    currentIndex = ContextSetting(-1)
+    expressions_with_values = ContextSetting(False)
+    settings_version = 2
+
+    EDITORS = [
+        (ContinuousDescriptor, ContinuousFeatureEditor),
+        (DateTimeDescriptor, DateTimeFeatureEditor),
+        (DiscreteDescriptor, DiscreteFeatureEditor),
+        (StringDescriptor, StringFeatureEditor)
+    ]
+
+    class Error(OWWidget.Error):
+        more_values_needed = Msg("Categorical feature {} needs more values.")
+        invalid_expressions = Msg("Invalid expressions: {}.")
+
+    class Warning(OWWidget.Warning):
+        renamed_var = Msg("Recently added variable has been renamed, "
+                          "to avoid duplicates.\n")
+
+    def __init__(self):
+        super().__init__()
+        self.data = None
+        self.editors = {}
+
+        box = gui.vBox(self.controlArea, "变量定义")
+
+        toplayout = QHBoxLayout()
+        toplayout.setContentsMargins(0, 0, 0, 0)
+        box.layout().addLayout(toplayout)
+
+        self.editorstack = QStackedWidget(
+            sizePolicy=QSizePolicy(QSizePolicy.MinimumExpanding,
+                                   QSizePolicy.MinimumExpanding)
+        )
+
+        for descclass, editorclass in self.EDITORS:
+            editor = editorclass()
+            editor.featureChanged.connect(self._on_modified)
+            self.editors[descclass] = editor
+            self.editorstack.addWidget(editor)
+
+        self.editorstack.setEnabled(False)
+
+        buttonlayout = QVBoxLayout(spacing=10)
+        buttonlayout.setContentsMargins(0, 0, 0, 0)
+
+        self.addbutton = QPushButton(
+            "新建", toolTip="Create a new variable",
+            minimumWidth=120,
+            shortcut=QKeySequence.New
+        )
+
+        def unique_name(fmt, reserved):
+            candidates = (fmt.format(i) for i in count(1))
+            return next(c for c in candidates if c not in reserved)
+
+        def generate_newname(fmt):
+            return unique_name(fmt, self.reserved_names())
+
+        menu = QMenu(self.addbutton)
+        cont = menu.addAction("数值数据")
+        cont.triggered.connect(
+            lambda: self.addFeature(
+                ContinuousDescriptor(generate_newname("X{}"), "", 3))
+        )
+        disc = menu.addAction("分类数据")
+        disc.triggered.connect(
+            lambda: self.addFeature(
+                DiscreteDescriptor(generate_newname("D{}"), "", (), False))
+        )
+        string = menu.addAction("文本")
+        string.triggered.connect(
+            lambda: self.addFeature(
+                StringDescriptor(generate_newname("S{}"), ""))
+        )
+        datetime = menu.addAction("日期/时间")
+        datetime.triggered.connect(
+            lambda: self.addFeature(
+                DateTimeDescriptor(generate_newname("T{}"), ""))
+        )
+
+        menu.addSeparator()
+        self.duplicateaction = menu.addAction("复制选中变量")
+        self.duplicateaction.triggered.connect(self.duplicateFeature)
+        self.duplicateaction.setEnabled(False)
+        self.addbutton.setMenu(menu)
+
+        self.removebutton = QPushButton(
+            "删除", toolTip="删除选中变量",
+            minimumWidth=120,
+            shortcut=QKeySequence.Delete
+        )
+        self.removebutton.clicked.connect(self.removeSelectedFeature)
+
+        buttonlayout.addWidget(self.addbutton)
+        buttonlayout.addWidget(self.removebutton)
+        buttonlayout.addStretch(10)
+
+        toplayout.addLayout(buttonlayout, 0)
+        toplayout.addWidget(self.editorstack, 10)
+
+        # Layout for the list view
+        layout = QVBoxLayout(spacing=1, margin=0)
+        self.featuremodel = DescriptorModel(parent=self)
+
+        self.featureview = QListView(
+            minimumWidth=200, minimumHeight=50,
+            sizePolicy=QSizePolicy(QSizePolicy.Minimum,
+                                   QSizePolicy.MinimumExpanding)
+        )
+
+        self.featureview.setItemDelegate(FeatureItemDelegate(self))
+        self.featureview.setModel(self.featuremodel)
+        self.featureview.selectionModel().selectionChanged.connect(
+            self._on_selectedVariableChanged
+        )
+
+        layout.addWidget(self.featureview)
+
+        box.layout().addLayout(layout, 1)
+
+        self.fix_button = gui.button(
+            self.buttonsArea, self, "Upgrade Expressions",
+            callback=self.fix_expressions)
+        self.fix_button.setHidden(True)
+        gui.button(self.buttonsArea, self, "Send",
+                   callback=self.apply, default=True)
+
+    def setCurrentIndex(self, index):
+        index = min(index, len(self.featuremodel) - 1)
+        self.currentIndex = index
+        if index >= 0:
+            itemmodels.select_row(self.featureview, index)
+            desc = self.featuremodel[min(index, len(self.featuremodel) - 1)]
+            editor = self.editors[type(desc)]
+            self.editorstack.setCurrentWidget(editor)
+            editor.setEditorData(desc, self.data.domain if self.data else None)
+        self.editorstack.setEnabled(index >= 0)
+        self.duplicateaction.setEnabled(index >= 0)
+        self.removebutton.setEnabled(index >= 0)
+
+    def _on_selectedVariableChanged(self, selected, *_):
+        index = selected_row(self.featureview)
+        if index is not None:
+            self.setCurrentIndex(index)
+        else:
+            self.setCurrentIndex(-1)
+
+    def _on_modified(self):
+        if self.currentIndex >= 0:
+            self.Warning.clear()
+            editor = self.editorstack.currentWidget()
+            proposed = editor.editorData().name
+            uniq = get_unique_names(self.reserved_names(self.currentIndex),
+                                    proposed)
+
+            feature = editor.editorData()
+            if editor.editorData().name != uniq:
+                self.Warning.renamed_var()
+                feature = feature.__class__(uniq, *feature[1:])
+
+            self.featuremodel[self.currentIndex] = feature
+            self.descriptors = list(self.featuremodel)
+
+    def setDescriptors(self, descriptors):
+        """
+        Set a list of variable descriptors to edit.
+        """
+        self.descriptors = descriptors
+        self.featuremodel[:] = list(self.descriptors)
+
+    def reserved_names(self, idx_=None):
+        varnames = []
+        if self.data is not None:
+            varnames = [var.name for var in
+                        self.data.domain.variables + self.data.domain.metas]
+        varnames += [desc.name for idx, desc in enumerate(self.featuremodel)
+                     if idx != idx_]
+        return set(varnames)
+
+    @Inputs.data
+    @check_sql_input
+    def setData(self, data=None):
+        """Set the input dataset."""
+        self.closeContext()
+
+        self.data = data
+        self.expressions_with_values = False
+
+        self.descriptors = []
+        self.currentIndex = -1
+        if self.data is not None:
+            self.openContext(data)
+
+        # disconnect from the selection model while reseting the model
+        selmodel = self.featureview.selectionModel()
+        selmodel.selectionChanged.disconnect(self._on_selectedVariableChanged)
+
+        self.featuremodel[:] = list(self.descriptors)
+        self.setCurrentIndex(self.currentIndex)
+
+        selmodel.selectionChanged.connect(self._on_selectedVariableChanged)
+        self.fix_button.setHidden(not self.expressions_with_values)
+        self.editorstack.setEnabled(self.currentIndex >= 0)
+
+    def handleNewSignals(self):
+        if self.data is not None:
+            self.apply()
+        else:
+            self.Outputs.data.send(None)
+            self.fix_button.setHidden(True)
+
+    def addFeature(self, descriptor):
+        self.featuremodel.append(descriptor)
+        self.setCurrentIndex(len(self.featuremodel) - 1)
+        editor = self.editorstack.currentWidget()
+        editor.nameedit.setFocus()
+        editor.nameedit.selectAll()
+
+    def removeFeature(self, index):
+        del self.featuremodel[index]
+        index = selected_row(self.featureview)
+        if index is not None:
+            self.setCurrentIndex(index)
+        elif index is None and self.featuremodel.rowCount():
+            # Deleting the last item clears selection
+            self.setCurrentIndex(self.featuremodel.rowCount() - 1)
+
+    def removeSelectedFeature(self):
+        if self.currentIndex >= 0:
+            self.removeFeature(self.currentIndex)
+
+    def duplicateFeature(self):
+        desc = self.featuremodel[self.currentIndex]
+        self.addFeature(copy.deepcopy(desc))
+
+    @staticmethod
+    def check_attrs_values(attr, data):
+        for i in range(len(data)):
+            for var in attr:
+                if not math.isnan(data[i, var]) \
+                        and int(data[i, var]) >= len(var.values):
+                    return var.name
+        return None
+
+    def _validate_descriptors(self, desc):
+
+        def validate(source):
+            try:
+                return validate_exp(ast.parse(source, mode="eval"))
+            # ast.parse can return arbitrary errors, not only SyntaxError
+            # pylint: disable=broad-except
+            except Exception:
+                return False
+
+        final = []
+        invalid = []
+        for d in desc:
+            if validate(d.expression):
+                final.append(d)
+            else:
+                final.append(d._replace(expression=""))
+                invalid.append(d)
+
+        if invalid:
+            self.Error.invalid_expressions(", ".join(s.name for s in invalid))
+
+        return final
+
+    def apply(self):
+        def report_error(err):
+            log = logging.getLogger(__name__)
+            log.error("", exc_info=True)
+            self.error("".join(format_exception_only(type(err), err)).rstrip())
+
+        self.Error.clear()
+
+        if self.data is None:
+            return
+
+        desc = list(self.featuremodel)
+        desc = self._validate_descriptors(desc)
+        try:
+            new_variables = construct_variables(
+                desc, self.data, self.expressions_with_values)
+        # user's expression can contain arbitrary errors
+        except Exception as err:  # pylint: disable=broad-except
+            report_error(err)
+            return
+
+        attrs = [var for var in new_variables if var.is_primitive()]
+        metas = [var for var in new_variables if not var.is_primitive()]
+        new_domain = Orange.data.Domain(
+            self.data.domain.attributes + tuple(attrs),
+            self.data.domain.class_vars,
+            metas=self.data.domain.metas + tuple(metas)
+        )
+
+        try:
+            for variable in new_variables:
+                variable.compute_value.mask_exceptions = False
+            data = self.data.transform(new_domain)
+        # user's expression can contain arbitrary errors
+        # pylint: disable=broad-except
+        except Exception as err:
+            report_error(err)
+            return
+        finally:
+            for variable in new_variables:
+                variable.compute_value.mask_exceptions = True
+
+        disc_attrs_not_ok = self.check_attrs_values(
+            [var for var in attrs if var.is_discrete], data)
+        if disc_attrs_not_ok:
+            self.Error.more_values_needed(disc_attrs_not_ok)
+            return
+
+        self.Outputs.data.send(data)
+
+    def send_report(self):
+        items = OrderedDict()
+        for feature in self.featuremodel:
+            if isinstance(feature, DiscreteDescriptor):
+                desc = "categorical"
+                if feature.values:
+                    desc += " with values " \
+                            + ", ".join(f"'{val}'" for val in feature.values)
+                if feature.ordered:
+                    desc += "; ordered"
+            elif isinstance(feature, ContinuousDescriptor):
+                desc = "numeric"
+            elif isinstance(feature, DateTimeDescriptor):
+                desc = "date/time"
+            else:
+                desc = "text"
+            items[feature.name] = f"{feature.expression} ({desc})"
+        self.report_items(
+            report.plural("Constructed feature{s}", len(items)), items)
+
+    def fix_expressions(self):
+        dlg = QMessageBox(
+            QMessageBox.Question,
+            "Fix Expressions",
+            "This widget's behaviour has changed. Values of categorical "
+            "variables are now inserted as their textual representations "
+            "(strings); previously they appeared as integer numbers, with an "
+            "attribute '.value' that contained the text.\n\n"
+            "The widget currently runs in compatibility mode. After "
+            "expressions are updated, manually check for their correctness.")
+        dlg.addButton("Update", QMessageBox.ApplyRole)
+        dlg.addButton("Cancel", QMessageBox.RejectRole)
+        if dlg.exec() == QMessageBox.RejectRole:
+            return
+
+        def fixer(mo):
+            var = domain[mo.group(2)]
+            if mo.group(3) == ".value":  # uses string; remove `.value`
+                return "".join(mo.group(1, 2, 4))
+            # Uses ints: get them by indexing
+            return mo.group(1) + "{" + \
+                ", ".join(f"'{val}': {i}"
+                          for i, val in enumerate(var.values)) + \
+                f"}}[{var.name}]" + mo.group(4)
+
+        domain = self.data.domain
+        disc_vars = "|".join(f"{var.name}"
+                             for var in chain(domain.variables, domain.metas)
+                             if var.is_discrete)
+        expr = re.compile(r"(^|\W)(" + disc_vars + r")(\.value)?(\W|$)")
+        self.descriptors[:] = [
+            descriptor._replace(
+                expression=expr.sub(fixer, descriptor.expression))
+            for descriptor in self.descriptors]
+
+        self.expressions_with_values = False
+        self.fix_button.hide()
+        index = self.currentIndex
+        self.featuremodel[:] = list(self.descriptors)
+        self.setCurrentIndex(index)
+        self.apply()
+
+    @classmethod
+    def migrate_context(cls, context, version):
+        if version is None or version < 2:
+            used_vars = set(chain(*(
+                freevars(ast.parse(descriptor.expression, mode="eval"), [])
+                for descriptor in context.values["descriptors"]
+                if descriptor.expression)))
+            disc_vars = {name
+                         for (name, vtype) in chain(context.attributes.items(),
+                                                    context.metas.items())
+                         if vtype == 1}
+            if used_vars & disc_vars:
+                context.values["expressions_with_values"] = True
+
+
 def validate_exp(exp):
     """
     Validate an `ast.AST` expression.
@@ -893,12 +957,12 @@ def validate_exp(exp):
         raise ValueError(exp)
 
 
-def construct_variables(descriptions, data):
+def construct_variables(descriptions, data, use_values=False):
     # subs
     variables = []
     source_vars = data.domain.variables + data.domain.metas
     for desc in descriptions:
-        desc, func = bind_variable(desc, source_vars, data)
+        desc, func = bind_variable(desc, source_vars, data, use_values)
         var = make_variable(desc, func)
         variables.append(var)
     return variables
@@ -911,7 +975,7 @@ def sanitized_name(name):
     return sanitized
 
 
-def bind_variable(descriptor, env, data):
+def bind_variable(descriptor, env, data, use_values):
     """
     (descriptor, env) ->
         (descriptor, (instance -> value) | (table -> value list))
@@ -921,7 +985,8 @@ def bind_variable(descriptor, env, data):
 
     exp_ast = ast.parse(descriptor.expression, mode="eval")
     freev = unique(freevars(exp_ast, []))
-    variables = {sanitized_name(v.name): v for v in env}
+    variables = {unicodedata.normalize("NFKC", sanitized_name(v.name)): v
+                 for v in env}
     source_vars = [(name, variables[name]) for name in freev
                    if name in variables]
 
@@ -931,7 +996,8 @@ def bind_variable(descriptor, env, data):
 
     if isinstance(descriptor, DiscreteDescriptor):
         if not descriptor.values:
-            str_func = FeatureFunc(descriptor.expression, source_vars)
+            str_func = FeatureFunc(descriptor.expression, source_vars,
+                                   use_values=use_values)
             values = sorted({str(x) for x in str_func(data)})
             values = {name: i for i, name in enumerate(values)}
             descriptor = descriptor._replace(values=values)
@@ -953,7 +1019,8 @@ def bind_variable(descriptor, env, data):
                 return np.nan
             return parse(e)
 
-    func = FeatureFunc(descriptor.expression, source_vars, values, cast)
+    func = FeatureFunc(descriptor.expression, source_vars, values, cast,
+                       use_values=use_values)
     return descriptor, func
 
 
@@ -1088,7 +1155,8 @@ class FeatureFunc:
         A function for casting the expressions result to the appropriate
         type (e.g. string representation of date/time variables to floats)
     """
-    def __init__(self, expression, args, extra_env=None, cast=None):
+
+    def __init__(self, expression, args, extra_env=None, cast=None, use_values=False):
         self.expression = expression
         self.args = args
         self.extra_env = dict(extra_env or {})
@@ -1096,14 +1164,16 @@ class FeatureFunc:
                                 [name for name, _ in args], self.extra_env)
         self.cast = cast
         self.mask_exceptions = True
+        self.use_values = use_values
 
     def __call__(self, instance, *_):
         if isinstance(instance, Orange.data.Table):
             return [self(inst) for inst in instance]
         else:
             try:
-                args = [str(instance[var])
-                        if instance.domain[var].is_string else instance[var]
+                args = [str(instance[var]) if var.is_string
+                        else var.values[int(instance[var])] if var.is_discrete and not self.use_values
+                        else instance[var]
                         for _, var in self.args]
                 y = self.func(*args)
             # user's expression can contain arbitrary errors

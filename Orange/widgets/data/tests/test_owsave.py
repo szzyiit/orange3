@@ -7,15 +7,12 @@ import sys
 import scipy.sparse as sp
 from AnyQt.QtWidgets import QFileDialog
 
-from orangewidget.widget import StateInfo
-
 from Orange.data import Table
 from Orange.data.io import TabReader, PickleReader, ExcelReader, FileFormat
 from Orange.tests import named_file
 from Orange.widgets.data.owsave import OWSave, OWSaveBase
 from Orange.widgets.utils.save.tests.test_owsavebase import \
     SaveWidgetsTestBaseMixin
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.tests.base import WidgetTest, open_widget_classes
 
 
@@ -53,31 +50,21 @@ class TestOWSave(OWSaveTestBase):
     def test_dataset(self):
         widget = self.widget
         widget.auto_save = True
-        insum = widget.info.set_input_summary = Mock()
         savefile = widget.save_file = Mock()
 
         datasig = widget.Inputs.data
         self.send_signal(datasig, self.iris)
-        insum.assert_called_with(len(self.iris), format_summary_details(self.iris))
-        insum.reset_mock()
         savefile.reset_mock()
 
         widget.filename = "foo.tab"
         widget.writer = TabReader
         widget.auto_save = False
         self.send_signal(datasig, self.iris)
-        insum.assert_called_with(len(self.iris), format_summary_details(self.iris))
         savefile.assert_not_called()
 
         widget.auto_save = True
         self.send_signal(datasig, self.iris)
-        insum.assert_called_with(len(self.iris), format_summary_details(self.iris))
         savefile.assert_called()
-
-        insum.reset_mock()
-        self.send_signal(datasig, None)
-        insum.assert_called_once()
-        self.assertIsInstance(insum.call_args[0][0], StateInfo.Empty)
 
     def test_initial_start_dir(self):
         widget = self.widget
@@ -180,7 +167,8 @@ class TestOWSave(OWSaveTestBase):
         widget.writer.write.assert_called()
         widget.writer.reset_mock()
 
-        self.iris.X = sp.csr_matrix(self.iris.X)
+        with self.iris.unlocked():
+            self.iris.X = sp.csr_matrix(self.iris.X)
         widget.save_file()
         widget.writer.write.assert_not_called()
 
@@ -252,7 +240,8 @@ class TestOWSave(OWSaveTestBase):
         widget.update_messages()
         self.assertFalse(err.is_shown())
 
-        widget.data.X = sp.csr_matrix(widget.data.X)
+        with self.iris.unlocked():
+            widget.data.X = sp.csr_matrix(widget.data.X)
         widget.update_messages()
         self.assertTrue(err.is_shown())
 
@@ -277,7 +266,8 @@ class TestOWSave(OWSaveTestBase):
         widget.data = self.iris
         self.assertEqual(widget.get_filters(), widget.valid_filters())
 
-        widget.data.X = sp.csr_matrix(widget.data.X)
+        with self.iris.unlocked():
+            widget.data.X = sp.csr_matrix(widget.data.X)
         valid = widget.valid_filters()
         self.assertNotEqual(widget.get_filters(), {})
         # false positive, pylint: disable=no-member
@@ -295,7 +285,8 @@ class TestOWSave(OWSaveTestBase):
         widget.data = self.iris
         self.assertIs(widget.filter, widget.default_valid_filter())
 
-        widget.data.X = sp.csr_matrix(widget.data.X)
+        with self.iris.unlocked():
+            widget.data.X = sp.csr_matrix(widget.data.X)
         self.assertTrue(
             widget.get_filters()[widget.default_valid_filter()]
             .SUPPORT_SPARSE_DATA)
@@ -376,12 +367,37 @@ class TestOWSave(OWSaveTestBase):
         OWSave.migrate_settings(settings)
         self.assertTrue(settings["filter"] in OWSave.get_filters())
 
-        # Unsupported file format (is this possible?)
+        # Unsupported file format
         settings = {**const_settings,
                     'compress': True, 'compression': 'lzma (.xz)',
                     'filetype': 'Bar file (.bar)'}
         OWSave.migrate_settings(settings)
         self.assertTrue(settings["filter"] in OWSave.get_filters())
+
+    def test_migration_to_version_3(self):
+        settings = {"add_type_annotations": True,
+                    "stored_name": "zoo.xlsx",
+                    "__version__": 2}
+        widget = self.create_widget(OWSave, stored_settings=settings)
+        self.assertFalse(widget.add_type_annotations)
+
+        settings = {"add_type_annotations": True,
+                    "stored_name": "zoo.tab",
+                    "__version__": 2}
+        widget = self.create_widget(OWSave, stored_settings=settings)
+        self.assertTrue(widget.add_type_annotations)
+
+        settings = {"add_type_annotations": False,
+                    "stored_name": "zoo.xlsx",
+                    "__version__": 2}
+        widget = self.create_widget(OWSave, stored_settings=settings)
+        self.assertFalse(widget.add_type_annotations)
+
+        settings = {"add_type_annotations": False,
+                    "stored_name": "zoo.tab",
+                    "__version__": 2}
+        widget = self.create_widget(OWSave, stored_settings=settings)
+        self.assertFalse(widget.add_type_annotations)
 
 
 class TestFunctionalOWSave(WidgetTest):
@@ -394,7 +410,8 @@ class TestFunctionalOWSave(WidgetTest):
         widget.auto_save = False
 
         spiris = Table("iris")
-        spiris.X = sp.csr_matrix(spiris.X)
+        with spiris.unlocked():
+            spiris.X = sp.csr_matrix(spiris.X)
 
         for selected_filter, writer in widget.get_filters().items():
             widget.write = writer
@@ -413,6 +430,33 @@ class TestFunctionalOWSave(WidgetTest):
                     widget.save_file()
                     if hasattr(writer, "read"):
                         self.assertEqual(len(writer(filename).read()), 150)
+
+    def test_unsupported_file_format(self):
+        widget = self.create_widget(
+            OWSave,
+            stored_settings=dict(
+                filter="Unsupported filter (*.foo)", stored_name="test.foo",
+                __version__=2)
+        )
+        filters = widget.get_filters()
+        def_filter = filters[widget.default_filter()]
+
+        iris = Table("iris")
+        self.send_signal(widget.Inputs.data, iris)
+
+        # With unsupported format from settings, the widget should indicate
+        # an error
+        with patch.object(def_filter, "write"):
+            widget.save_file()
+            self.assertTrue(widget.Error.unsupported_format.is_shown())
+            def_filter.write.assert_not_called()
+
+        # Without file name, if `filter` is set to unsupported format,
+        # initial_start_dir should choose the default filter
+        widget.stored_name = ""
+        widget.initial_start_dir()
+        self.assertIs(filters[widget.filter], def_filter)
+        self.assertIs(widget.writer, def_filter)
 
 
 @unittest.skipUnless(sys.platform == "linux", "Tests for dialog on Linux")

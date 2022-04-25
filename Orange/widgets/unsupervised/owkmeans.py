@@ -2,6 +2,8 @@ from concurrent.futures import Future
 from typing import Optional, List, Dict
 
 import numpy as np
+import scipy.sparse as sp
+
 from AnyQt.QtCore import Qt, QTimer, QAbstractTableModel, QModelIndex, QThread, \
     pyqtSlot as Slot
 from AnyQt.QtGui import QIntValidator
@@ -17,11 +19,10 @@ from Orange.preprocess.impute import ReplaceUnknowns
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.annotated_data import \
-    ANNOTATED_DATA_SIGNAL_Chinese_NAME, add_columns
+    ANNOTATED_DATA_SIGNAL_NAME, add_columns
 from Orange.widgets.utils.concurrent import ThreadExecutor, FutureSetWatcher
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
@@ -103,14 +104,14 @@ class OWKMeans(widget.OWWidget):
     icon = "icons/KMeans.svg"
     priority = 2100
     keywords = ["kmeans", "clustering", 'kjunzhi']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
         annotated_data = Output(
-            ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True,
+            "数据(Data)", Table, default=True,
             replaces=["Annotated Data", 'Data']
         )
         centroids = Output("质心(Centroids)", Table, replaces=['Centroids'])
@@ -130,12 +131,12 @@ class OWKMeans(widget.OWWidget):
         not_enough_data = widget.Msg(
             "Too few ({}) unique data instances for {} clusters"
         )
+        no_sparse_normalization = widget.Msg("Sparse data cannot be normalized")
 
     INIT_METHODS = (("使用 KMeans++ 初始化", "k-means++"),
                     ("随机初始化", "random"))
 
     resizing_enabled = False
-    buttons_area_orientation = Qt.Vertical
 
     k = Setting(3)
     k_from = Setting(2)
@@ -168,13 +169,10 @@ class OWKMeans(widget.OWWidget):
         self.__executor = ThreadExecutor(parent=self)
         self.__task = None  # type: Optional[Task]
 
-        self._set_input_summary()
-        self._set_output_summary(None)
-
         layout = QGridLayout()
         bg = gui.radioButtonsInBox(
             self.controlArea, self, "optimize_k", orientation=layout,
-            box="聚类数量", callback=self.update_method,
+            box="簇数量", callback=self.update_method,
         )
 
         layout.addWidget(
@@ -227,12 +225,13 @@ class OWKMeans(widget.OWWidget):
             sb, self, "max_iterations", controlWidth=60, valueType=int,
             validator=QIntValidator(), callback=self.invalidate)
 
-        self.apply_button = gui.auto_apply(self.buttonsArea, self, "auto_commit", box=None,
-                                           commit=self.commit)
-        gui.rubber(self.controlArea)
-
-        box = gui.vBox(self.mainArea, box="轮廓系数(Silhouette Scores)")
-        self.mainArea.setVisible(self.optimize_k)
+        box = gui.vBox(self.mainArea, box="轮廓系数")
+        if self.optimize_k:
+            self.mainArea.setVisible(True)
+            self.left_side.setContentsMargins(0, 0, 0, 0)
+        else:
+            self.mainArea.setVisible(False)
+            self.left_side.setContentsMargins(0, 0, 4, 0)
         self.table_model = ClusterTableModel(self)
         table = self.table_view = QTableView(self.mainArea)
         table.setModel(self.table_model)
@@ -246,6 +245,9 @@ class OWKMeans(widget.OWWidget):
         table.setShowGrid(False)
         box.layout().addWidget(table)
 
+        self.apply_button = gui.auto_apply(self.buttonsArea, self, "auto_commit",
+                                           commit=self.commit)
+
     def adjustSize(self):
         self.ensurePolished()
         s = self.sizeHint()
@@ -253,24 +255,24 @@ class OWKMeans(widget.OWWidget):
 
     def update_method(self):
         self.table_model.clear_scores()
-        self.commit()
+        self.commit.deferred()
 
     def update_k(self):
         self.optimize_k = False
         self.table_model.clear_scores()
-        self.commit()
+        self.commit.deferred()
 
     def update_from(self):
         self.k_to = max(self.k_from + 1, self.k_to)
         self.optimize_k = True
         self.table_model.clear_scores()
-        self.commit()
+        self.commit.deferred()
 
     def update_to(self):
         self.k_from = min(self.k_from, self.k_to - 1)
         self.optimize_k = True
         self.table_model.clear_scores()
-        self.commit()
+        self.commit.deferred()
 
     def enough_data_instances(self, k):
         """k cannot be larger than the number of data instances."""
@@ -419,6 +421,7 @@ class OWKMeans(widget.OWWidget):
 
         self.__launch_tasks([self.k])
 
+    @gui.deferred
     def commit(self):
         self.cancel()
         self.clear_messages()
@@ -428,8 +431,12 @@ class OWKMeans(widget.OWWidget):
         # cause flickering when the clusters are computed quickly, so this is
         # the better alternative
         self.table_model.clear_scores()
-        self.mainArea.setVisible(self.optimize_k and self.data is not None and
-                                 self.has_attributes)
+        if self.optimize_k and self.data is not None and self.has_attributes:
+            self.mainArea.setVisible(True)
+            self.left_side.setContentsMargins(0, 0, 0, 0)
+        else:
+            self.mainArea.setVisible(False)
+            self.left_side.setContentsMargins(0, 0, 4, 0)
 
         if self.data is None:
             self.send_data()
@@ -455,9 +462,9 @@ class OWKMeans(widget.OWWidget):
         self.table_model.clear_scores()
 
         if unconditional:
-            self.unconditional_commit()
+            self.commit.now()
         else:
-            self.commit()
+            self.commit.deferred()
 
     def update_results(self):
         scores = [mk if isinstance(mk, str) else mk.silhouette for mk in
@@ -490,7 +497,10 @@ class OWKMeans(widget.OWWidget):
 
     def preproces(self, data):
         if self.normalize:
-            data = Normalize()(data)
+            if sp.issparse(data.X):
+                self.Warning.no_sparse_normalization()
+            else:
+                data = Normalize()(data)
         for preprocessor in KMeans.preprocessors:  # use same preprocessors than
             data = preprocessor(data)
         return data
@@ -504,7 +514,6 @@ class OWKMeans(widget.OWWidget):
 
         km = self.clusterings.get(k)
         if self.data is None or km is None or isinstance(km, str):
-            self._set_output_summary(None)
             self.Outputs.annotated_data.send(None)
             self.Outputs.centroids.send(None)
             return
@@ -535,8 +544,9 @@ class OWKMeans(widget.OWWidget):
 
         new_domain = add_columns(domain, metas=[cluster_var, silhouette_var])
         new_table = self.data.transform(new_domain)
-        new_table.get_column_view(cluster_var)[0][:] = clust_ids
-        new_table.get_column_view(silhouette_var)[0][:] = scores
+        with new_table.unlocked(new_table.metas):
+            new_table.get_column_view(cluster_var)[0][:] = clust_ids
+            new_table.get_column_view(silhouette_var)[0][:] = scores
 
         domain_attributes = set(domain.attributes)
         centroid_attributes = [
@@ -548,8 +558,12 @@ class OWKMeans(widget.OWWidget):
         centroid_domain = add_columns(
             Domain(centroid_attributes, [], domain.metas),
             metas=[cluster_var, silhouette_var])
+        # Table is constructed from a copy of centroids: if data is stored in
+        # the widget, it can be modified, so the widget should preferrably
+        # output a copy. The number of centroids is small, hence copying it is
+        # cheap.
         centroids = Table(
-            centroid_domain, km.centroids, None,
+            centroid_domain, km.centroids.copy(), None,
             np.hstack((np.full((km.k, len(domain.metas)), np.nan),
                        np.arange(km.k).reshape(km.k, 1),
                        clust_scores))
@@ -559,7 +573,6 @@ class OWKMeans(widget.OWWidget):
         else:
             centroids.name = f"{self.data.name} centroids"
 
-        self._set_output_summary(new_table)
         self.Outputs.annotated_data.send(new_table)
         self.Outputs.centroids.send(centroids)
 
@@ -568,7 +581,8 @@ class OWKMeans(widget.OWWidget):
     def set_data(self, data):
         self.data, old_data = data, self.data
         self.selection = None
-        self._set_input_summary()
+        self.controls.normalize.setDisabled(
+            bool(self.data) and sp.issparse(self.data.X))
 
         # Do not needlessly recluster the data if X hasn't changed
         if old_data and self.data and array_equal(self.data.X, old_data.X):
@@ -576,16 +590,6 @@ class OWKMeans(widget.OWWidget):
                 self.send_data()
         else:
             self.invalidate(unconditional=True)
-
-    def _set_input_summary(self):
-        summary = len(self.data) if self.data else self.info.NoInput
-        details = format_summary_details(self.data) if self.data else ""
-        self.info.set_input_summary(summary, details)
-
-    def _set_output_summary(self, output):
-        summary = len(output) if output else self.info.NoOutput
-        details = format_summary_details(output) if output else ""
-        self.info.set_output_summary(summary, details)
 
     def send_report(self):
         # False positives (Setting is not recognized as int)

@@ -58,7 +58,7 @@ class OWConcurrentWidget(OWDataProjectionWidget, ConcurrentWidgetMixin):
             items=["Param A", "Param B"], labelWidth=80,
             callback=self.__param_combo_changed
         )
-        self.run_button = gui.button(box, self, "开始", self._toggle_run)
+        self.run_button = gui.button(box, self, "Start", self._toggle_run)
         super()._add_controls()
 
     def __param_combo_changed(self):
@@ -96,13 +96,14 @@ class OWConcurrentWidget(OWDataProjectionWidget, ConcurrentWidgetMixin):
         assert isinstance(result.embedding, np.ndarray)
         assert len(result.embedding) == len(self.data)
         self.embedding = result.embedding
-        self.run_button.setText("开始")
-        self.commit()
+        self.run_button.setText("Start")
+        self.commit.deferred()
 
     def on_exception(self, ex: Exception):
         raise ex
 
     # OWDataProjectionWidget
+    @OWDataProjectionWidget.Inputs.data
     def set_data(self, data: Table):
         super().set_data(data)
         if self._invalidated:

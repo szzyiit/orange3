@@ -56,12 +56,12 @@ class TestOWAggregateColumn(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.data1)
         self.widget.variables = [domain[n] for n in "c1 c2 t2".split()]
 
-        self.widget.operation = "Sum"
+        self.widget.operation = "和"
         output = self.widget._compute_data()
         self.assertEqual(output.domain.attributes[:-1], domain.attributes)
         np.testing.assert_equal(output.X[:, -1], [4, 8])
 
-        self.widget.operation = "Max"
+        self.widget.operation = "最大"
         output = self.widget._compute_data()
         self.assertEqual(output.domain.attributes[:-1], domain.attributes)
         np.testing.assert_equal(output.X[:, -1], [3, 4])
@@ -94,7 +94,7 @@ class TestOWAggregateColumn(WidgetTest):
             self.assertIsInstance(
                 self.widget._new_var(),
                 TimeVariable
-                if self.widget.operation in ("Min", "Max", "Mean", "Median")
+                if self.widget.operation in ("最小", "最大", "平均", "中位数")
                 else ContinuousVariable)
 
     def test_operations(self):
@@ -104,12 +104,12 @@ class TestOWAggregateColumn(WidgetTest):
 
         m1, m2 = 4 / 3, 8 / 3
         for self.widget.operation, expected in {
-                "Sum": [4, 8], "Product": [0, 12],
-                "Min": [0, 1], "Max": [3, 4],
-                "Mean": [m1, m2],
-                "Variance": [(m1 ** 2 + (m1 - 1) ** 2 + (m1 - 3) ** 2) / 3,
+                "和": [4, 8], "积": [0, 12],
+                "最小": [0, 1], "最大": [3, 4],
+                "平均": [m1, m2],
+                "方差": [(m1 ** 2 + (m1 - 1) ** 2 + (m1 - 3) ** 2) / 3,
                              ((m2 - 3) ** 2 + (m2 - 1) ** 2 + (m2 - 4) ** 2) / 3],
-                "Median": [1, 3]}.items():
+                "中位数": [1, 3]}.items():
             np.testing.assert_equal(
                 self.widget._compute_column(), expected,
                 err_msg=f"error in '{self.widget.operation}'")
@@ -123,12 +123,12 @@ class TestOWAggregateColumn(WidgetTest):
 
         m1, m2 = 4 / 3, 5 / 2
         for self.widget.operation, expected in {
-                "Sum": [4, 5], "Product": [0, 4],
-                "Min": [0, 1], "Max": [3, 4],
-                "Mean": [m1, m2],
-                "Variance": [(m1 ** 2 + (m1 - 1) ** 2 + (m1 - 3) ** 2) / 3,
+                "和": [4, 5], "积": [0, 4],
+                "最小": [0, 1], "最大": [3, 4],
+                "平均": [m1, m2],
+                "方差": [(m1 ** 2 + (m1 - 1) ** 2 + (m1 - 3) ** 2) / 3,
                              ((m2 - 1) ** 2 + (m2 - 4) ** 2) / 2],
-                "Median": [1, 2.5]}.items():
+                "中位数": [1, 2.5]}.items():
             np.testing.assert_equal(
                 self.widget._compute_column(), expected,
                 err_msg=f"error in '{self.widget.operation}'")

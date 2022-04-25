@@ -11,8 +11,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import r2_score
 
-from AnyQt.QtWidgets import QSizePolicy
-from AnyQt.QtGui import QStandardItem, QColor
+from AnyQt.QtGui import QStandardItem, QPalette
 from AnyQt.QtCore import Qt, QRectF, QLineF, pyqtSignal as Signal
 
 import pyqtgraph as pg
@@ -54,8 +53,16 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
         box = gui.hBox(self)
         max_n_attrs = len(master.model_selected)
         self.n_attrs_spin = gui.spin(
-            box, self, "n_attrs", 3, max_n_attrs, label="变量数量: ",
-            controlWidth=50, alignment=Qt.AlignRight, callback=self._n_attrs_changed)
+            box,
+            self,
+            "n_attrs",
+            3,
+            max_n_attrs,
+            label="变量数量: ",
+            controlWidth=50,
+            alignment=Qt.AlignRight,
+            callback=self._n_attrs_changed,
+        )
         gui.rubber(box)
         self.last_run_n_attrs = None
         self.attr_color = master.attr_color
@@ -89,8 +96,9 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
             return False
         elif not master.btn_vizrank.isEnabled():
             return False
-        n_cont_var = len([v for v in master.continuous_variables
-                          if v is not master.attr_color])
+        n_cont_var = len(
+            [v for v in master.continuous_variables if v is not master.attr_color]
+        )
         self.n_attrs_spin.setMaximum(n_cont_var)
         return True
 
@@ -99,7 +107,9 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
         if not n_all_attrs:
             return 0
         n_attrs = self.n_attrs
-        return factorial(n_all_attrs) // (2 * factorial(n_all_attrs - n_attrs) * n_attrs)
+        return factorial(n_all_attrs) // (
+            2 * factorial(n_all_attrs - n_attrs) * n_attrs
+        )
 
     def iterate_states(self, state):
         if state is None:  # on the first call, compute order
@@ -121,7 +131,7 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
 
         for c in combinations(len(self.attrs), state):
             for p in islice(permutations(c[1:]), factorial(len(c) - 1) // 2):
-                yield (c[0], ) + p
+                yield (c[0],) + p
 
     def compute_score(self, state):
         master = self.master
@@ -152,15 +162,21 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
         domain = self.master.data.domain
         attr_color = self.master.attr_color
         domain = Domain(
-            attributes=[v for v in chain(domain.variables, domain.metas)
-                        if v.is_continuous and v is not attr_color],
-            class_vars=attr_color
+            attributes=[
+                v
+                for v in chain(domain.variables, domain.metas)
+                if v.is_continuous and v is not attr_color
+            ],
+            class_vars=attr_color,
         )
-        data = self.master.data.transform(domain)
-        data.X = normalized(data.X)
+        data = self.master.data.transform(domain).copy()
+        with data.unlocked():
+            data.X = normalized(data.X)
         relief = ReliefF if attr_color.is_discrete else RReliefF
         weights = relief(n_iterations=100, k_nearest=self.minK)(data)
-        results = sorted(zip(weights, domain.attributes), key=lambda x: (-x[0], x[1].name))
+        results = sorted(
+            zip(weights, domain.attributes), key=lambda x: (-x[0], x[1].name)
+        )
         return [attr for _, attr in results]
 
     def row_for_state(self, score, state):
@@ -177,9 +193,9 @@ class LinearProjectionVizRank(VizRankDialog, OWComponent):
 
     def _n_attrs_changed(self):
         if self.n_attrs != self.last_run_n_attrs or self.saved_state is None:
-            self.button.setText("开始")
+            self.button.setText("Start")
         else:
-            self.button.setText("继续")
+            self.button.setText("Continue")
         self.button.setEnabled(self.check_preconditions())
 
 
@@ -200,8 +216,10 @@ class OWLinProjGraph(OWGraphWithAnchors):
 
     def set_view_box_range(self):
         def min_max(a, b):
-            return (min(np.amin(a), np.amin(b), -1.05),
-                    max(np.amax(a), np.amax(b), 1.05))
+            return (
+                min(np.amin(a), np.amin(b), -1.05),
+                max(np.amax(a), np.amax(b), 1.05),
+            )
 
         points, _ = self.master.get_anchors()
         coords = self.master.get_coordinates_data()
@@ -223,7 +241,11 @@ class OWLinProjGraph(OWGraphWithAnchors):
             for point, label in zip(points, labels):
                 anchor = AnchorItem(line=QLineF(0, 0, *point))
                 anchor._label.setToolTip(f"<b>{label}</b>")
-                label = label[:MAX_LABEL_LEN - 3] + "..." if len(label) > MAX_LABEL_LEN else label
+                label = (
+                    label[: MAX_LABEL_LEN - 3] + "..."
+                    if len(label) > MAX_LABEL_LEN
+                    else label
+                )
                 anchor.setText(label)
                 anchor.setFont(self.parameter_setter.anchor_font)
 
@@ -253,12 +275,14 @@ class OWLinProjGraph(OWGraphWithAnchors):
 
             r = self.scaled_radius * np.max(np.linalg.norm(points, axis=1))
             self.circle_item.setRect(QRectF(-r, -r, 2 * r, 2 * r))
-            pen = pg.mkPen(QColor(Qt.lightGray), width=1, cosmetic=True)
+            color = self.plot_widget.palette().color(QPalette.Disabled, QPalette.Text)
+            pen = pg.mkPen(color, width=1, cosmetic=True)
             self.circle_item.setPen(pen)
 
 
-Placement = Enum("Placement", dict(Circular=0, LDA=1, PCA=2), type=int,
-                 qualname="Placement")
+Placement = Enum(
+    "Placement", dict(Circular=0, LDA=1, PCA=2), type=int, qualname="Placement"
+)
 
 
 class OWLinearProjection(OWAnchorProjectionWidget):
@@ -266,12 +290,14 @@ class OWLinearProjection(OWAnchorProjectionWidget):
     description = "数据在二维平面上的多轴投影。"
     icon = "icons/LinearProjection.svg"
     priority = 240
-    keywords = ['xianxingtouying', 'touying']
-    category = 'visualize'
+    keywords = []
+    category = "可视化(Visualize)"
 
-    Projection_name = {Placement.Circular: "圆形布局",
-                       Placement.LDA: "线性判别分析(Linear Discriminant Analysis)",
-                       Placement.PCA: "主成分分析(Principal Component Analysis)"}
+    Projection_name = {
+        Placement.Circular: "圆形布局",
+        Placement.LDA: "线性判别分析(Linear Discriminant Analysis)",
+        Placement.PCA: "主成分分析(Principal Component Analysis)",
+    }
 
     settings_version = 6
 
@@ -285,36 +311,44 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         no_cont_features = Msg("Plotting requires numeric features")
 
     def _add_controls(self):
-        self._add_controls_variables()
-        self._add_controls_placement()
+        box = gui.vBox(self.controlArea, box="特征")
+        self._add_controls_variables(box)
+        self._add_controls_placement(box)
         super()._add_controls()
         self.gui.add_control(
-            self._effects_box, gui.hSlider, "隐藏半径:", master=self.graph,
-            value="hide_radius", minValue=0, maxValue=100, step=10,
-            createLabel=False, callback=self.__radius_slider_changed
+            self._effects_box,
+            gui.hSlider,
+            "隐藏半径:",
+            master=self.graph,
+            value="hide_radius",
+            minValue=0,
+            maxValue=100,
+            step=10,
+            createLabel=False,
+            callback=self.__radius_slider_changed,
         )
-        self.controlArea.layout().removeWidget(self.control_area_stretch)
-        self.control_area_stretch.setParent(None)
 
-    def _add_controls_variables(self):
+    def _add_controls_variables(self, box):
         self.model_selected = VariableSelectionModel(self.selected_vars)
-        variables_selection(self.controlArea, self, self.model_selected)
-        self.model_selected.selection_changed.connect(
-            self.__model_selected_changed)
+        variables_selection(box, self, self.model_selected)
+        self.model_selected.selection_changed.connect(self.__model_selected_changed)
         self.vizrank, self.btn_vizrank = LinearProjectionVizRank.add_vizrank(
-            None, self, "建议特征", self.__vizrank_set_attrs)
-        self.controlArea.layout().addWidget(self.btn_vizrank)
+            None, self, "建议特征", self.__vizrank_set_attrs
+        )
+        box.layout().addWidget(self.btn_vizrank)
 
-    def _add_controls_placement(self):
-        box = gui.widgetBox(
-            self.controlArea, True,
-            sizePolicy=(QSizePolicy.Minimum, QSizePolicy.Maximum)
-        )
+    def _add_controls_placement(self, box):
         self.radio_placement = gui.radioButtonsInBox(
-            box, self, "placement",
+            box,
+            self,
+            "placement",
             btnLabels=[self.Projection_name[x] for x in Placement],
-            callback=self.__placement_radio_changed
+            callback=self.__placement_radio_changed,
         )
+
+    def _add_buttons(self):
+        self.gui.box_zoom_select(self.buttonsArea)
+        gui.auto_send(self.buttonsArea, self, "auto_commit")
 
     @property
     def continuous_variables(self):
@@ -329,7 +363,10 @@ class OWLinearProjection(OWAnchorProjectionWidget):
 
     @property
     def effective_data(self):
-        return self.data.transform(Domain(self.effective_variables))
+        cvs = None
+        if self.placement == Placement.LDA:
+            cvs = self.data.domain.class_vars
+        return self.data.transform(Domain(self.effective_variables, cvs))
 
     def __vizrank_set_attrs(self, attrs):
         if not attrs:
@@ -344,16 +381,15 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         self._check_options()
         self.init_projection()
         self.setup_plot()
-        self.commit()
+        self.commit.deferred()
 
     def __placement_radio_changed(self):
-        self.controls.graph.hide_radius.setEnabled(
-            self.placement != Placement.Circular)
+        self.controls.graph.hide_radius.setEnabled(self.placement != Placement.Circular)
         self.projection = self.projector = None
         self._init_vizrank()
         self.init_projection()
         self.setup_plot()
-        self.commit()
+        self.commit.deferred()
 
     def __radius_slider_changed(self):
         self.graph.update_radius()
@@ -362,6 +398,7 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         super().colors_changed()
         self._init_vizrank()
 
+    @OWAnchorProjectionWidget.Inputs.data
     def set_data(self, data):
         super().set_data(data)
         self._check_options()
@@ -380,8 +417,7 @@ class OWLinearProjection(OWAnchorProjectionWidget):
                 if self.placement == Placement.LDA:
                     self.placement = Placement.Circular
 
-        self.controls.graph.hide_radius.setEnabled(
-            self.placement != Placement.Circular)
+        self.controls.graph.hide_radius.setEnabled(self.placement != Placement.Circular)
 
     def _init_vizrank(self):
         is_enabled, msg = False, ""
@@ -389,19 +425,22 @@ class OWLinearProjection(OWAnchorProjectionWidget):
             msg = "There is no data."
         elif self.attr_color is None:
             msg = "Color variable has to be selected"
-        elif self.attr_color.is_continuous and \
-                self.placement == Placement.LDA:
-            msg = "Suggest Features does not work for Linear " \
-                  "Discriminant Analysis Projection when " \
-                  "continuous color variable is selected."
-        elif len([v for v in self.continuous_variables
-                  if v is not self.attr_color]) < 3:
+        elif self.attr_color.is_continuous and self.placement == Placement.LDA:
+            msg = (
+                "Suggest Features does not work for Linear "
+                "Discriminant Analysis Projection when "
+                "continuous color variable is selected."
+            )
+        elif (
+            len([v for v in self.continuous_variables if v is not self.attr_color]) < 3
+        ):
             msg = "Not enough available continuous variables"
         elif np.sum(np.all(np.isfinite(self.data.X), axis=1)) < 2:
             msg = "Not enough valid data instances"
         else:
-            is_enabled = not np.isnan(self.data.get_column_view(
-                self.attr_color)[0].astype(float)).all()
+            is_enabled = not np.isnan(
+                self.data.get_column_view(self.attr_color)[0].astype(float)
+            ).all()
         self.btn_vizrank.setToolTip(msg)
         self.btn_vizrank.setEnabled(is_enabled)
         if is_enabled:
@@ -444,21 +483,30 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         if embedding is None:
             return None, None
         norm_emb = normalized(embedding[self.valid_data])
-        return (norm_emb.ravel(), np.zeros(len(norm_emb), dtype=float)) \
-            if embedding.shape[1] == 1 else norm_emb.T
+        return (
+            (norm_emb.ravel(), np.zeros(len(norm_emb), dtype=float))
+            if embedding.shape[1] == 1
+            else norm_emb.T
+        )
 
     def _get_send_report_caption(self):
         def projection_name():
             return self.Projection_name[self.placement]
 
-        return report.render_items_vert((
-            ("Projection", projection_name()),
-            ("Color", self._get_caption_var_name(self.attr_color)),
-            ("Label", self._get_caption_var_name(self.attr_label)),
-            ("Shape", self._get_caption_var_name(self.attr_shape)),
-            ("Size", self._get_caption_var_name(self.attr_size)),
-            ("Jittering", self.graph.jitter_size != 0 and
-             "{} %".format(self.graph.jitter_size))))
+        return report.render_items_vert(
+            (
+                ("Projection", projection_name()),
+                ("Color", self._get_caption_var_name(self.attr_color)),
+                ("Label", self._get_caption_var_name(self.attr_label)),
+                ("Shape", self._get_caption_var_name(self.attr_shape)),
+                ("Size", self._get_caption_var_name(self.attr_size)),
+                (
+                    "Jittering",
+                    self.graph.jitter_size != 0
+                    and "{} %".format(self.graph.jitter_size),
+                ),
+            )
+        )
 
     @classmethod
     def migrate_settings(cls, settings_, version):
@@ -474,14 +522,16 @@ class OWLinearProjection(OWAnchorProjectionWidget):
         if version < 4:
             if "radius" in settings_:
                 settings_["graph"]["hide_radius"] = settings_["radius"]
-            if "selection_indices" in settings_ and \
-                    settings_["selection_indices"] is not None:
+            if (
+                "selection_indices" in settings_
+                and settings_["selection_indices"] is not None
+            ):
                 selection = settings_["selection_indices"]
-                settings_["selection"] = [(i, 1) for i, selected in
-                                          enumerate(selection) if selected]
+                settings_["selection"] = [
+                    (i, 1) for i, selected in enumerate(selection) if selected
+                ]
         if version < 5:
-            if "placement" in settings_ and \
-                    settings_["placement"] not in Placement:
+            if "placement" in settings_ and settings_["placement"] not in Placement:
                 settings_["placement"] = Placement.Circular
 
     @classmethod
@@ -491,17 +541,20 @@ class OWLinearProjection(OWAnchorProjectionWidget):
             domain = context.ordered_domain
             c_domain = [t for t in context.ordered_domain if t[1] == 2]
             d_domain = [t for t in context.ordered_domain if t[1] == 1]
-            for d, old_val, new_val in ((domain, "color_index", "attr_color"),
-                                        (d_domain, "shape_index", "attr_shape"),
-                                        (c_domain, "size_index", "attr_size")):
+            for d, old_val, new_val in (
+                (domain, "color_index", "attr_color"),
+                (d_domain, "shape_index", "attr_shape"),
+                (c_domain, "size_index", "attr_size"),
+            ):
                 index = context.values[old_val][0] - 1
-                values[new_val] = (d[index][0], d[index][1] + 100) \
-                    if 0 <= index < len(d) else None
+                values[new_val] = (
+                    (d[index][0], d[index][1] + 100) if 0 <= index < len(d) else None
+                )
         if version < 3:
             values["graph"] = {
                 "attr_color": values["attr_color"],
                 "attr_shape": values["attr_shape"],
-                "attr_size": values["attr_size"]
+                "attr_size": values["attr_size"],
             }
         if version == 3:
             values["attr_color"] = values["graph"]["attr_color"]
@@ -540,12 +593,10 @@ class CircularPlacement(LinearProjector):
         elif n_axes == 2:
             axes_angle = [0, np.pi / 2]
         else:
-            axes_angle = np.linspace(0, 2 * np.pi, n_axes,
-                                     endpoint=False)
+            axes_angle = np.linspace(0, 2 * np.pi, n_axes, endpoint=False)
         return np.vstack((np.cos(axes_angle), np.sin(axes_angle)))
 
 
 if __name__ == "__main__":  # pragma: no cover
     iris = Table("iris")
-    WidgetPreview(OWLinearProjection).run(set_data=iris,
-                                          set_subset_data=iris[::10])
+    WidgetPreview(OWLinearProjection).run(set_data=iris, set_subset_data=iris[::10])

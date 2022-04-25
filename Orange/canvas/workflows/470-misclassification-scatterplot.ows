@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="例如，逻辑回归的交叉验证可以揭示错误分类的数据实例。 Iris数据集和脊线正则化逻辑回归有六个这样的实例。 我们可以在混淆矩阵选择不同类型的错误分类，并在散点图上标记出来。 毫不奇怪：错误分类的实例靠近散点图投影中的类邻接区域。" title="哪里分类错了?" version="2.0">
+<scheme description="Cross-validation of, say, logistic regression can expose the data instances which were misclassified. There are six such instances for Iris Dataset and ridge-regularized logistic regression. We can select different types of misclassification in Confusion Matrix and highlight them in the Scatter Plot. No surprise: the misclassified instances are close to the class-bordering regions in the scatter plot projection." title="Where are Misclassifications?" version="2.0">
 	<nodes>
-		<node id="0" name="文件(File)" position="(77.0, 71.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
-		<node id="1" name="测试和评分(Test and Score)" position="(196.0, 149.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owtestlearners.OWTestLearners" title="测试和评分" version="" />
-		<node id="2" name="逻辑回归(Logistic Regression)" position="(69.0, 228.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owlogisticregression.OWLogisticRegression" title="逻辑回归" version="" />
-		<node id="3" name="混淆矩阵(Confusion Matrix)" position="(339.0, 148.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owconfusionmatrix.OWConfusionMatrix" title="混淆矩阵" version="" />
-		<node id="4" name="散点图(Scatter Plot)" position="(490.0, 44.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="散点图" version="" />
+		<node id="0" name="File" position="(77.0, 71.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
+		<node id="1" name="Test &amp; Score" position="(196.0, 149.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owtestlearners.OWTestLearners" title="Test &amp; Score" version="" />
+		<node id="2" name="Logistic Regression" position="(69.0, 228.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owlogisticregression.OWLogisticRegression" title="Logistic Regression" version="" />
+		<node id="3" name="Confusion Matrix" position="(339.0, 148.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owconfusionmatrix.OWConfusionMatrix" title="Confusion Matrix" version="" />
+		<node id="4" name="Scatter Plot" position="(490.0, 44.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot" version="" />
 	</nodes>
 	<links>
 		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
@@ -15,9 +15,9 @@
 		<link enabled="true" id="4" sink_channel="Data Subset" sink_node_id="4" source_channel="Selected Data" source_node_id="3" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="12" id="0" rect="(266.0, 236.0, 150.0, 72.0)" type="text/plain">显示不同类型的错误分类。 对于Iris数据集，Iris virginica与versicolor混淆，反之亦然。</text>
-		<text font-family="Helvetica" font-size="12" id="1" rect="(469.0, 146.0, 150.0, 60.0)" type="text/plain">Iris数据集的误分类最好见于花瓣长度 - 花瓣宽度投影。</text>
-		<text font-family="Helvetica" font-size="12" id="2" rect="(36.0, 319.0, 150.0, 48.0)" type="text/plain">可用任何其他分类器替换逻辑回归。</text>
+		<text font-family="Helvetica" font-size="12" id="0" rect="(266.0, 236.0, 150.0, 72.0)" type="text/plain">Shows different types of misclassifications. For Iris dataset, Iris virginica are confused with versicolor and vice versa.</text>
+		<text font-family="Helvetica" font-size="12" id="1" rect="(469.0, 146.0, 150.0, 60.0)" type="text/plain">Misclassifications for Iris datasets are best seen in petal length-petal width projection.</text>
+		<text font-family="Helvetica" font-size="12" id="2" rect="(36.0, 319.0, 150.0, 48.0)" type="text/plain">Replace logistic regression with any other classification method.</text>
 		<arrow end="(494.0, 98.0)" fill="#C1272D" id="3" start="(522.0, 142.0)" />
 		<arrow end="(337.0, 199.0)" fill="#C1272D" id="4" start="(335.0, 233.0)" />
 		<arrow end="(82.0, 283.0)" fill="#39B54A" id="5" start="(99.0, 316.0)" />

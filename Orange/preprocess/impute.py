@@ -21,6 +21,7 @@ class ReplaceUnknowns(Transformation):
     value : int or float
         The value with which to replace the unknown values
     """
+
     def __init__(self, variable, value=0):
         super().__init__(variable)
         self.value = value
@@ -183,6 +184,7 @@ class ReplaceUnknownsModel(Reprable):
     model : Orange.base.Model
         A fitted model predicting `variable`.
     """
+
     def __init__(self, variable, model):
         assert model.domain.class_var == variable
         self.variable = variable
@@ -212,7 +214,8 @@ class Model(BaseImputeMethod):
     _name = "基于模型的填充器"
     short_name = "model"
     description = ""
-    format = BaseImputeMethod.format + "{self.learner.name}"
+    format = BaseImputeMethod.format + " ({self.learner.name})"
+
     @property
     def name(self):
         return "{} ({})".format(self._name, getattr(self.learner, 'name', ''))
@@ -267,7 +270,7 @@ class IsDefined(Transformation):
 
 
 class AsValue(BaseImputeMethod):
-    name = "独特的值(As a distinct value)"
+    name = "不同的值"
     short_name = "new value"
     description = ""
 
@@ -284,7 +287,7 @@ class AsValue(BaseImputeMethod):
                     np.arange(len(variable.values), dtype=int),
                     unknown=len(variable.values)),
                 sparse=variable.sparse,
-                )
+            )
             return var
 
         elif variable.is_continuous:
@@ -306,6 +309,7 @@ class AsValue(BaseImputeMethod):
     def supports_variable(variable):
         return variable.is_primitive()
 
+
 class ReplaceUnknownsRandom(Transformation):
     """
     A column transformation replacing unknowns with values drawn randomly from
@@ -318,6 +322,7 @@ class ReplaceUnknownsRandom(Transformation):
     distribution : Orange.statistics.distribution.Distribution
         The corresponding sampling distribution
     """
+
     def __init__(self, variable, distribution):
         assert distribution.size > 0
         assert distribution.variable == variable

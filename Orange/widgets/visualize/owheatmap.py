@@ -2,23 +2,36 @@ import enum
 from collections import defaultdict
 from itertools import islice
 from typing import (
-    Iterable, Mapping, Any, TypeVar, NamedTuple, Sequence, Optional,
-    Union, Tuple, List, Callable
+    Iterable,
+    Mapping,
+    Any,
+    TypeVar,
+    NamedTuple,
+    Sequence,
+    Optional,
+    Union,
+    Tuple,
+    List,
+    Callable,
 )
 
 import numpy as np
 import scipy.sparse as sp
 
 from AnyQt.QtWidgets import (
-    QGraphicsScene, QGraphicsView, QFormLayout, QComboBox, QGroupBox,
-    QMenu, QAction, QSizePolicy
+    QGraphicsView,
+    QFormLayout,
+    QComboBox,
+    QGroupBox,
+    QMenu,
+    QAction,
+    QSizePolicy,
 )
 from AnyQt.QtGui import QStandardItemModel, QStandardItem, QFont, QKeySequence
 from AnyQt.QtCore import Qt, QSize, QRectF, QObject
 
 from orangewidget.utils.combobox import ComboBox, ComboBoxSearch
-from Orange.data import Domain, Table, Variable, DiscreteVariable, \
-    ContinuousVariable
+from Orange.data import Domain, Table, Variable, DiscreteVariable, ContinuousVariable
 from Orange.data.sql.table import SqlTable
 import Orange.distance
 
@@ -27,20 +40,25 @@ from Orange.widgets.utils import colorpalettes, apply_all, enum_get, itemmodels
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.stickygraphicsview import StickyGraphicsView
 from Orange.widgets.utils.graphicsview import GraphicsWidgetView
+from Orange.widgets.utils.graphicsscene import GraphicsScene
 from Orange.widgets.utils.colorpalettes import Palette
 
-from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                ANNOTATED_DATA_SIGNAL_Chinese_NAME,
-                                                ANNOTATED_DATA_SIGNAL_NAME)
+from Orange.widgets.utils.annotated_data import (
+    create_annotated_table,
+    ANNOTATED_DATA_SIGNAL_NAME,
+)
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.widget import Msg, Input, Output
 
 from Orange.widgets.data.oweditdomain import table_column_data
-from Orange.widgets.visualize.utils.heatmap import HeatmapGridWidget, \
-    ColorMap, CategoricalColorMap, GradientColorMap
+from Orange.widgets.visualize.utils.heatmap import (
+    HeatmapGridWidget,
+    ColorMap,
+    CategoricalColorMap,
+    GradientColorMap,
+)
 from Orange.widgets.utils.colorgradientselection import ColorGradientSelection
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 __all__ = []
@@ -52,8 +70,7 @@ def kmeans_compress(X, k=50):
 
 
 def split_domain(domain: Domain, split_label: str):
-    """Split the domain based on values of `split_label` value.
-    """
+    """Split the domain based on values of `split_label` value."""
     groups = defaultdict(list)
     for var in domain.attributes:
         val = var.attributes.get(split_label)
@@ -95,16 +112,17 @@ ClusteringModelData = [
         Qt.DisplayRole: "None",
         Qt.ToolTipRole: "No clustering",
         ClusteringRole: Clustering.None_,
-    }, {
+    },
+    {
         Qt.DisplayRole: "Clustering",
         Qt.ToolTipRole: "Apply hierarchical clustering",
         ClusteringRole: Clustering.Clustering,
-    }, {
+    },
+    {
         Qt.DisplayRole: "Clustering (opt. ordering)",
-        Qt.ToolTipRole: "Apply hierarchical clustering with optimal leaf "
-                        "ordering.",
+        Qt.ToolTipRole: "Apply hierarchical clustering with optimal leaf " "ordering.",
         ClusteringRole: Clustering.OrderedClustering,
-    }
+    },
 ]
 
 ColumnLabelsPosData = [
@@ -113,15 +131,17 @@ ColumnLabelsPosData = [
         ("None", HeatmapGridWidget.NoPosition),
         ("Top", HeatmapGridWidget.PositionTop),
         ("Bottom", HeatmapGridWidget.PositionBottom),
-        ("Top and Bottom", (HeatmapGridWidget.PositionTop |
-                            HeatmapGridWidget.PositionBottom)),
+        (
+            "Top and Bottom",
+            (HeatmapGridWidget.PositionTop | HeatmapGridWidget.PositionBottom),
+        ),
     ]
 ]
 
 
 def create_list_model(
-        items: Iterable[Mapping[Qt.ItemDataRole, Any]],
-        parent: Optional[QObject] = None,
+    items: Iterable[Mapping[Qt.ItemDataRole, Any]],
+    parent: Optional[QObject] = None,
 ) -> QStandardItemModel:
     """Create list model from an item date iterable."""
     model = QStandardItemModel(parent)
@@ -138,15 +158,17 @@ class OWHeatMap(widget.OWWidget):
     description = "为一对属性绘制热图。"
     icon = "icons/Heatmap.svg"
     priority = 260
-    keywords = ['retu', 'relitu']
-    category = 'visualize'
+    keywords = ["retu", "relitu"]
+    category = "可视化(Visualize)"
 
     class Inputs:
-        data = Input("数据(Data)", Table, replaces=['Data'])
+        data = Input("数据(Data)", Table, replaces=["Data"])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
+        selected_data = Output(
+            "选定的数据(Selected Data)", Table, default=True, replaces=["Selected Data"]
+        )
+        annotated_data = Output("数据(Data)", Table, replaces=["Data"])
 
     settings_version = 3
 
@@ -173,7 +195,9 @@ class OWHeatMap(widget.OWWidget):
     annotation_var = settings.ContextSetting(None)
     #: color row annotation
     annotation_color_var = settings.ContextSetting(None)
-    column_annotation_color_key: Optional[Tuple[str, str]] = settings.ContextSetting(None)
+    column_annotation_color_key: Optional[Tuple[str, str]] = settings.ContextSetting(
+        None
+    )
 
     # Discrete variable used to split that data/heatmaps (vertically)
     split_by_var = settings.ContextSetting(None)
@@ -191,8 +215,6 @@ class OWHeatMap(widget.OWWidget):
 
     graph_name = "scene"
 
-    left_side_scrolling = True
-
     class Information(widget.OWWidget.Information):
         sampled = Msg("Data has been sampled")
         discrete_ignored = Msg("{} categorical feature{} ignored")
@@ -204,8 +226,7 @@ class OWHeatMap(widget.OWWidget):
         no_continuous = Msg("No numeric features")
         not_enough_features = Msg("Not enough features for column clustering")
         not_enough_instances = Msg("Not enough instances for clustering")
-        not_enough_instances_k_means = Msg(
-            "Not enough instances for k-means merging")
+        not_enough_instances_k_means = Msg("Not enough instances for k-means merging")
         not_enough_memory = Msg("Not enough memory to show this data")
 
     class Warning(widget.OWWidget.Warning):
@@ -215,7 +236,9 @@ class OWHeatMap(widget.OWWidget):
         widget.Message(
             "For data with a meaningful mid-point, "
             "choose one of diverging palettes.",
-            "diverging_palette")]
+            "diverging_palette",
+        )
+    ]
 
     def __init__(self):
         super().__init__()
@@ -223,9 +246,11 @@ class OWHeatMap(widget.OWWidget):
 
         # A kingdom for a save_state/restore_state
         self.col_clustering = enum_get(
-            Clustering, self.col_clustering_method, Clustering.None_)
+            Clustering, self.col_clustering_method, Clustering.None_
+        )
         self.row_clustering = enum_get(
-            Clustering, self.row_clustering_method, Clustering.None_)
+            Clustering, self.row_clustering_method, Clustering.None_
+        )
 
         self.settingsAboutToBePacked.connect(self._save_state_for_serialization)
         self.keep_aspect = False
@@ -249,15 +274,12 @@ class OWHeatMap(widget.OWWidget):
         self.__rows_cache = {}
         self.__columns_cache = {}
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
         # GUI definition
         colorbox = gui.vBox(self.controlArea, "颜色")
 
         self.color_map_widget = cmw = ColorGradientSelection(
             thresholds=(self.threshold_low, self.threshold_high),
-            center=self.color_center
+            center=self.color_center,
         )
         model = itemmodels.ContinuousPalettesModel(parent=self)
         cmw.setModel(model)
@@ -270,22 +292,40 @@ class OWHeatMap(widget.OWWidget):
         def _set_thresholds(low, high):
             self.threshold_low, self.threshold_high = low, high
             self.update_color_schema()
+
         cmw.thresholdsChanged.connect(_set_thresholds)
 
         def _set_centering(center):
             self.color_center = center
             self.update_color_schema()
+
         cmw.centerChanged.connect(_set_centering)
 
         colorbox.layout().addWidget(self.color_map_widget)
 
-        mergebox = gui.vBox(self.controlArea, "合并",)
-        gui.checkBox(mergebox, self, "merge_kmeans", "以k-均值方式合并",
-                     callback=self.__update_row_clustering)
+        mergebox = gui.vBox(
+            self.controlArea,
+            "合并",
+        )
+        gui.checkBox(
+            mergebox,
+            self,
+            "merge_kmeans",
+            "以k-均值方式合并",
+            callback=self.__update_row_clustering,
+        )
         ibox = gui.indentedBox(mergebox)
-        gui.spin(ibox, self, "merge_kmeans_k", minv=5, maxv=500,
-                 label="聚类:", keyboardTracking=False,
-                 callbackOnReturn=True, callback=self.update_merge)
+        gui.spin(
+            ibox,
+            self,
+            "merge_kmeans_k",
+            minv=5,
+            maxv=500,
+            label="聚类:",
+            keyboardTracking=False,
+            callbackOnReturn=True,
+            callback=self.update_merge,
+        )
 
         cluster_box = gui.vBox(self.controlArea, "聚类")
         # Row clustering
@@ -293,9 +333,9 @@ class OWHeatMap(widget.OWWidget):
         cb.setModel(create_list_model(ClusteringModelData, self))
         cbselect(cb, self.row_clustering, ClusteringRole)
         self.connect_control(
-            "row_clustering",
-            lambda value, cb=cb: cbselect(cb, value, ClusteringRole)
+            "row_clustering", lambda value, cb=cb: cbselect(cb, value, ClusteringRole)
         )
+
         @cb.activated.connect
         def _(idx, cb=cb):
             self.set_row_clustering(cb.itemData(idx, ClusteringRole))
@@ -305,15 +345,16 @@ class OWHeatMap(widget.OWWidget):
         cb.setModel(create_list_model(ClusteringModelData, self))
         cbselect(cb, self.col_clustering, ClusteringRole)
         self.connect_control(
-            "col_clustering",
-            lambda value, cb=cb: cbselect(cb, value, ClusteringRole)
+            "col_clustering", lambda value, cb=cb: cbselect(cb, value, ClusteringRole)
         )
+
         @cb.activated.connect
         def _(idx, cb=cb):
             self.set_col_clustering(cb.itemData(idx, ClusteringRole))
 
         form = QFormLayout(
-            labelAlignment=Qt.AlignLeft, formAlignment=Qt.AlignLeft,
+            labelAlignment=Qt.AlignLeft,
+            formAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
         )
         form.addRow("行:", self.row_cluster_cb)
@@ -321,7 +362,8 @@ class OWHeatMap(widget.OWWidget):
         cluster_box.layout().addLayout(form)
         box = gui.vBox(self.controlArea, "以...划分")
         form = QFormLayout(
-            formAlignment=Qt.AlignLeft, labelAlignment=Qt.AlignLeft,
+            formAlignment=Qt.AlignLeft,
+            labelAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
         )
         box.layout().addLayout(form)
@@ -335,20 +377,14 @@ class OWHeatMap(widget.OWWidget):
             enabled=not self.merge_kmeans,
             sizeAdjustPolicy=ComboBox.AdjustToMinimumContentsLengthWithIcon,
             minimumContentsLength=14,
-            toolTip="Split the heatmap vertically by a categorical column"
+            toolTip="Split the heatmap vertically by a categorical column",
         )
         self.row_split_cb.setModel(self.row_split_model)
-        self.connect_control(
-            "split_by_var", lambda value, cb=cb: cbselect(cb, value)
-        )
-        self.connect_control(
-            "merge_kmeans", self.row_split_cb.setDisabled
-        )
+        self.connect_control("split_by_var", lambda value, cb=cb: cbselect(cb, value))
+        self.connect_control("merge_kmeans", self.row_split_cb.setDisabled)
         self.split_by_var = None
 
-        self.row_split_cb.activated.connect(
-            self.__on_split_rows_activated
-        )
+        self.row_split_cb.activated.connect(self.__on_split_rows_activated)
         self.col_split_model = DomainModel(
             placeholder="(None)",
             order=DomainModel.MIXED,
@@ -356,9 +392,9 @@ class OWHeatMap(widget.OWWidget):
             parent=self,
         )
         self.col_split_cb = cb = ComboBoxSearch(
-            sizeAdjustPolicy=ComboBox.AdjustToMinimumContentsLength,
+            sizeAdjustPolicy=ComboBox.AdjustToMinimumContentsLengthWithIcon,
             minimumContentsLength=14,
-            toolTip="Split the heatmap horizontally by column annotation"
+            toolTip="Split the heatmap horizontally by column annotation",
         )
         self.col_split_cb.setModel(self.col_split_model)
         self.connect_control(
@@ -369,39 +405,44 @@ class OWHeatMap(widget.OWWidget):
         form.addRow("行:", self.row_split_cb)
         form.addRow("列:", self.col_split_cb)
 
-        box = gui.vBox(self.controlArea, '注释和图例')
+        box = gui.vBox(self.controlArea, "标注和图例")
 
-        gui.checkBox(box, self, 'legend', '显示图例',
-                     callback=self.update_legend)
+        gui.checkBox(box, self, "legend", "显示图例", callback=self.update_legend)
 
-        gui.checkBox(box, self, 'averages', '带平均线的条纹',
-                     callback=self.update_averages_stripe)
-        annotbox = QGroupBox("行注释", flat=True)
+        gui.checkBox(
+            box,
+            self,
+            "averages",
+            "带平均线的条纹",
+            callback=self.update_averages_stripe,
+        )
+        gui.separator(box)
+        annotbox = QGroupBox("行标注")
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
             labelAlignment=Qt.AlignLeft,
-            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
+            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
         )
         self.annotation_model = DomainModel(placeholder="(无)")
         self.annotation_text_cb = ComboBoxSearch(
             minimumContentsLength=12,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
         )
         self.annotation_text_cb.setModel(self.annotation_model)
         self.annotation_text_cb.activated.connect(self.set_annotation_var)
         self.connect_control("annotation_var", self.annotation_var_changed)
 
         self.row_side_color_model = DomainModel(
-            order=(DomainModel.CLASSES, DomainModel.Separator,
-                   DomainModel.METAS),
-            placeholder="(无)", valid_types=DomainModel.PRIMITIVE,
+            order=(DomainModel.CLASSES, DomainModel.Separator, DomainModel.METAS),
+            placeholder="(无)",
+            valid_types=DomainModel.PRIMITIVE,
             flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled,
             parent=self,
         )
         self.row_side_color_cb = ComboBoxSearch(
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
-            minimumContentsLength=12
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
+            minimumContentsLength=12,
         )
         self.row_side_color_cb.setModel(self.row_side_color_model)
         self.row_side_color_cb.activated.connect(self.set_annotation_color_var)
@@ -409,48 +450,56 @@ class OWHeatMap(widget.OWWidget):
         form.addRow("文本", self.annotation_text_cb)
         form.addRow("颜色", self.row_side_color_cb)
         box.layout().addWidget(annotbox)
-        annotbox = QGroupBox("列注释", flat=True)
+        annotbox = QGroupBox("列标注")
         form = QFormLayout(
             annotbox,
             formAlignment=Qt.AlignLeft,
             labelAlignment=Qt.AlignLeft,
-            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
+            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
         )
         self.col_side_color_model = DomainModel(
             placeholder="(无)",
             valid_types=(DiscreteVariable, ContinuousVariable),
-            parent=self
+            parent=self,
         )
         self.col_side_color_cb = cb = ComboBoxSearch(
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
-            minimumContentsLength=12
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
+            minimumContentsLength=12,
         )
         self.col_side_color_cb.setModel(self.col_side_color_model)
         self.connect_control(
-            "column_annotation_color_var", self.column_annotation_color_var_changed,
+            "column_annotation_color_var",
+            self.column_annotation_color_var_changed,
         )
         self.column_annotation_color_var = None
         self.col_side_color_cb.activated.connect(
-            self.__set_column_annotation_color_var_index)
+            self.__set_column_annotation_color_var_index
+        )
 
         cb = gui.comboBox(
-            None, self, "column_label_pos",
-            callback=self.update_column_annotations)
+            None, self, "column_label_pos", callback=self.update_column_annotations
+        )
         cb.setModel(create_list_model(ColumnLabelsPosData, parent=self))
         cb.setCurrentIndex(self.column_label_pos)
         form.addRow("颜色", self.col_side_color_cb)
         form.addRow("标签位置", cb)
         box.layout().addWidget(annotbox)
 
-        gui.checkBox(self.controlArea, self, "keep_aspect",
-                     "保持纵横比", box="调整大小",
-                     callback=self.__aspect_mode_changed)
+        gui.checkBox(
+            self.controlArea,
+            self,
+            "keep_aspect",
+            "保持纵横比",
+            box="调整大小",
+            callback=self.__aspect_mode_changed,
+        )
 
         gui.rubber(self.controlArea)
-        gui.auto_send(self.controlArea, self, "auto_commit")
+
+        gui.auto_send(self.buttonsArea, self, "auto_commit")
 
         # Scene with heatmap
-        class HeatmapScene(QGraphicsScene):
+        class HeatmapScene(GraphicsScene):
             widget: Optional[HeatmapGridWidget] = None
 
         self.scene = self.scene = HeatmapScene(parent=self)
@@ -462,21 +511,17 @@ class OWHeatMap(widget.OWWidget):
             widgetResizable=True,
         )
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.view.customContextMenuRequested.connect(
-            self._on_view_context_menu
-        )
+        self.view.customContextMenuRequested.connect(self._on_view_context_menu)
         self.mainArea.layout().addWidget(self.view)
         self.selected_rows = []
-        self.__font_inc = QAction(
-            "增大字体", self, shortcut=QKeySequence("ctrl+>"))
-        self.__font_dec = QAction(
-            "减小字体", self, shortcut=QKeySequence("ctrl+<"))
+        self.__font_inc = QAction("增大字体", self, shortcut=QKeySequence("ctrl+>"))
+        self.__font_dec = QAction("减小字体", self, shortcut=QKeySequence("ctrl+<"))
         self.__font_inc.triggered.connect(lambda: self.__adjust_font_size(1))
         self.__font_dec.triggered.connect(lambda: self.__adjust_font_size(-1))
         if hasattr(QAction, "setShortcutVisibleInContextMenu"):
             apply_all(
                 [self.__font_inc, self.__font_dec],
-                lambda a: a.setShortcutVisibleInContextMenu(True)
+                lambda a: a.setShortcutVisibleInContextMenu(True),
             )
         self.addActions([self.__font_inc, self.__font_dec])
 
@@ -530,8 +575,9 @@ class OWHeatMap(widget.OWWidget):
 
     def color_map(self) -> GradientColorMap:
         return GradientColorMap(
-            self.color_palette(), (self.threshold_low, self.threshold_high),
-            self.color_map_widget.center() if self.center_palette else None
+            self.color_palette(),
+            (self.threshold_low, self.threshold_high),
+            self.color_map_widget.center() if self.center_palette else None,
         )
 
     def clear(self):
@@ -559,12 +605,8 @@ class OWHeatMap(widget.OWWidget):
 
     def clear_scene(self):
         if self.scene.widget is not None:
-            self.scene.widget.layoutDidActivate.disconnect(
-                self.__on_layout_activate
-            )
-            self.scene.widget.selectionFinished.disconnect(
-                self.on_selection_finished
-            )
+            self.scene.widget.layoutDidActivate.disconnect(self.__on_layout_activate)
+            self.scene.widget.selectionFinished.disconnect(self.on_selection_finished)
         self.scene.widget = None
         self.scene.clear()
 
@@ -578,7 +620,6 @@ class OWHeatMap(widget.OWWidget):
         self.closeContext()
         self.clear()
         self.clear_messages()
-        self._set_input_summary(data)
 
         if isinstance(data, SqlTable):
             if data.approx_len() < 4000:
@@ -609,20 +650,20 @@ class OWHeatMap(widget.OWWidget):
             input_data = data = None
 
         # Data contains some discrete attributes which must be filtered
-        if data is not None and \
-                any(var.is_discrete for var in data.domain.attributes):
+        if data is not None and any(var.is_discrete for var in data.domain.attributes):
             ndisc = sum(var.is_discrete for var in data.domain.attributes)
             data = data.transform(
-                Domain([var for var in data.domain.attributes
-                        if var.is_continuous],
-                       data.domain.class_vars,
-                       data.domain.metas))
+                Domain(
+                    [var for var in data.domain.attributes if var.is_continuous],
+                    data.domain.class_vars,
+                    data.domain.metas,
+                )
+            )
             if not data.domain.attributes:
                 self.Error.no_continuous()
                 input_data = data = None
             else:
-                self.Information.discrete_ignored(
-                    ndisc, "s" if ndisc > 1 else "")
+                self.Information.discrete_ignored(ndisc, "s" if ndisc > 1 else "")
 
         self.data = data
         self.input_data = input_data
@@ -633,7 +674,9 @@ class OWHeatMap(widget.OWWidget):
             self.annotation_var = None
             self.annotation_color_var = None
             self.row_split_model.set_domain(data.domain)
-            self.col_annot_data = data.transpose(data[:0].transform(Domain(data.domain.attributes)))
+            self.col_annot_data = data.transpose(
+                data[:0].transform(Domain(data.domain.attributes))
+            )
             self.col_split_model.set_domain(self.col_annot_data.domain)
             self.col_side_color_model.set_domain(self.col_annot_data.domain)
             if data.domain.has_discrete_class:
@@ -657,29 +700,23 @@ class OWHeatMap(widget.OWWidget):
 
             if self.split_columns_key is not None:
                 self.split_columns_var = match(
-                    self.split_columns_key,
-                    filter(is_variable, self.col_split_model)
+                    self.split_columns_key, filter(is_variable, self.col_split_model)
                 )
 
             if self.column_annotation_color_key is not None:
                 self.column_annotation_color_var = match(
                     self.column_annotation_color_key,
-                    filter(is_variable, self.col_side_color_model)
+                    filter(is_variable, self.col_side_color_model),
                 )
 
         self.update_heatmaps()
         if data is not None and self.__pending_selection is not None:
-            assert self.scene.widget is not None
-            self.scene.widget.selectRows(self.__pending_selection)
+            if self.scene.widget is not None:
+                self.scene.widget.selectRows(self.__pending_selection)
             self.selected_rows = self.__pending_selection
             self.__pending_selection = None
 
-        self.unconditional_commit()
-
-    def _set_input_summary(self, data):
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
+        self.commit.now()
 
     def __on_split_rows_activated(self):
         self.set_split_variable(self.row_split_cb.currentData(Qt.EditRole))
@@ -701,17 +738,22 @@ class OWHeatMap(widget.OWWidget):
         if self.data is not None:
             self.clear_scene()
             self.clear_messages()
-            if self.col_clustering != Clustering.None_ and \
-                    len(self.data.domain.attributes) < 2:
+            if (
+                self.col_clustering != Clustering.None_
+                and len(self.data.domain.attributes) < 2
+            ):
                 self.Error.not_enough_features()
-            elif (self.col_clustering != Clustering.None_ or
-                  self.row_clustering != Clustering.None_) and \
-                    len(self.data) < 2:
+            elif (
+                self.col_clustering != Clustering.None_
+                or self.row_clustering != Clustering.None_
+            ) and len(self.data) < 2:
                 self.Error.not_enough_instances()
             elif self.merge_kmeans and len(self.data) < 3:
                 self.Error.not_enough_instances_k_means()
             else:
-                parts = self.construct_heatmaps(self.data, self.split_by_var, self.split_columns_var)
+                parts = self.construct_heatmaps(
+                    self.data, self.split_by_var, self.split_columns_var
+                )
                 self.construct_heatmaps_scene(parts, self.effective_data)
                 self.selected_rows = []
         else:
@@ -722,7 +764,7 @@ class OWHeatMap(widget.OWWidget):
         self.merge_indices = None
         if self.data is not None and self.merge_kmeans:
             self.update_heatmaps()
-            self.commit()
+            self.commit.deferred()
 
     def _make_parts(self, data, group_var=None, column_split_key=None):
         """
@@ -731,40 +773,65 @@ class OWHeatMap(widget.OWWidget):
         if group_var is not None:
             assert group_var.is_discrete
             _col_data = table_column_data(data, group_var)
-            row_indices = [np.flatnonzero(_col_data == i)
-                           for i in range(len(group_var.values))]
+            row_indices = [
+                np.flatnonzero(_col_data == i) for i in range(len(group_var.values))
+            ]
 
-            row_groups = [RowPart(title=name, indices=ind,
-                                  cluster=None, cluster_ordered=None)
-                          for name, ind in zip(group_var.values, row_indices)]
+            row_groups = [
+                RowPart(title=name, indices=ind, cluster=None, cluster_ordered=None)
+                for name, ind in zip(group_var.values, row_indices)
+            ]
             if np.any(_col_data.mask):
-                row_groups.append(RowPart(
-                    title="N/A", indices=np.flatnonzero(_col_data.mask),
-                    cluster=None, cluster_ordered=None
-                ))
+                row_groups.append(
+                    RowPart(
+                        title="N/A",
+                        indices=np.flatnonzero(_col_data.mask),
+                        cluster=None,
+                        cluster_ordered=None,
+                    )
+                )
         else:
-            row_groups = [RowPart(title=None, indices=range(0, len(data)),
-                                  cluster=None, cluster_ordered=None)]
+            row_groups = [
+                RowPart(
+                    title=None,
+                    indices=range(0, len(data)),
+                    cluster=None,
+                    cluster_ordered=None,
+                )
+            ]
 
         if column_split_key is not None:
             col_groups = split_domain(data.domain, column_split_key)
             assert len(col_groups) > 0
-            col_indices = [np.array([data.domain.index(var) for var in group])
-                           for _, group in col_groups]
-            col_groups = [ColumnPart(title=str(name), domain=d, indices=ind,
-                                     cluster=None, cluster_ordered=None)
-                          for (name, d), ind in zip(col_groups, col_indices)]
+            col_indices = [
+                np.array([data.domain.index(var) for var in group])
+                for _, group in col_groups
+            ]
+            col_groups = [
+                ColumnPart(
+                    title=str(name),
+                    domain=d,
+                    indices=ind,
+                    cluster=None,
+                    cluster_ordered=None,
+                )
+                for (name, d), ind in zip(col_groups, col_indices)
+            ]
         else:
             col_groups = [
                 ColumnPart(
-                    title=None, indices=range(0, len(data.domain.attributes)),
-                    domain=data.domain.attributes, cluster=None, cluster_ordered=None)
+                    title=None,
+                    indices=range(0, len(data.domain.attributes)),
+                    domain=data.domain.attributes,
+                    cluster=None,
+                    cluster_ordered=None,
+                )
             ]
 
         minv, maxv = np.nanmin(data.X), np.nanmax(data.X)
         return Parts(row_groups, col_groups, span=(minv, maxv))
 
-    def cluster_rows(self, data: Table, parts: 'Parts', ordered=False) -> 'Parts':
+    def cluster_rows(self, data: Table, parts: "Parts", ordered=False) -> "Parts":
         row_groups = []
         for row in parts.rows:
             if row.cluster is not None:
@@ -789,13 +856,16 @@ class OWHeatMap(widget.OWWidget):
                     )
                 if ordered and cluster_ord is None:
                     cluster_ord = hierarchical.optimal_leaf_ordering(
-                        cluster, matrix,
+                        cluster,
+                        matrix,
                     )
-            row_groups.append(row._replace(cluster=cluster, cluster_ordered=cluster_ord))
+            row_groups.append(
+                row._replace(cluster=cluster, cluster_ordered=cluster_ord)
+            )
 
         return parts._replace(rows=row_groups)
 
-    def cluster_columns(self, data, parts: 'Parts', ordered=False):
+    def cluster_columns(self, data, parts: "Parts", ordered=False):
         assert all(var.is_continuous for var in data.domain.attributes)
         col_groups = []
         for col in parts.columns:
@@ -825,32 +895,43 @@ class OWHeatMap(widget.OWWidget):
                 if ordered and cluster_ord is None:
                     cluster_ord = hierarchical.optimal_leaf_ordering(cluster, matrix)
 
-            col_groups.append(col._replace(cluster=cluster, cluster_ordered=cluster_ord))
+            col_groups.append(
+                col._replace(cluster=cluster, cluster_ordered=cluster_ord)
+            )
         return parts._replace(columns=col_groups)
 
-    def construct_heatmaps(self, data, group_var=None, column_split_key=None) -> 'Parts':
+    def construct_heatmaps(
+        self, data, group_var=None, column_split_key=None
+    ) -> "Parts":
         if self.merge_kmeans:
             if self.kmeans_model is None:
                 effective_data = self.input_data.transform(
                     Orange.data.Domain(
-                        [var for var in self.input_data.domain.attributes
-                         if var.is_continuous],
+                        [
+                            var
+                            for var in self.input_data.domain.attributes
+                            if var.is_continuous
+                        ],
                         self.input_data.domain.class_vars,
-                        self.input_data.domain.metas))
+                        self.input_data.domain.metas,
+                    )
+                )
                 nclust = min(self.merge_kmeans_k, len(effective_data) - 1)
                 self.kmeans_model = kmeans_compress(effective_data, k=nclust)
                 effective_data.domain = self.kmeans_model.domain
-                merge_indices = [np.flatnonzero(self.kmeans_model.labels == ind)
-                                 for ind in range(nclust)]
-                not_empty_indices = [i for i, x in enumerate(merge_indices)
-                                     if len(x) > 0]
-                self.merge_indices = \
-                    [merge_indices[i] for i in not_empty_indices]
+                merge_indices = [
+                    np.flatnonzero(self.kmeans_model.labels == ind)
+                    for ind in range(nclust)
+                ]
+                not_empty_indices = [
+                    i for i, x in enumerate(merge_indices) if len(x) > 0
+                ]
+                self.merge_indices = [merge_indices[i] for i in not_empty_indices]
                 if len(merge_indices) != len(self.merge_indices):
                     self.Warning.empty_clusters()
                 effective_data = Orange.data.Table(
                     Orange.data.Domain(effective_data.domain.attributes),
-                    self.kmeans_model.centroids[not_empty_indices]
+                    self.kmeans_model.centroids[not_empty_indices],
                 )
             else:
                 effective_data = self.effective_data
@@ -864,37 +945,41 @@ class OWHeatMap(widget.OWWidget):
         self.effective_data = effective_data
 
         parts = self._make_parts(
-            effective_data, group_var,
-            column_split_key.name if column_split_key is not None else None)
+            effective_data,
+            group_var,
+            column_split_key.name if column_split_key is not None else None,
+        )
 
         self.__update_clustering_enable_state(parts)
         # Restore/update the row/columns items descriptions from cache if
         # available
-        rows_cache_key = (group_var,
-                          self.merge_kmeans_k if self.merge_kmeans else None)
+        rows_cache_key = (group_var, self.merge_kmeans_k if self.merge_kmeans else None)
         if rows_cache_key in self.__rows_cache:
             parts = parts._replace(rows=self.__rows_cache[rows_cache_key].rows)
 
         if column_split_key in self.__columns_cache:
             parts = parts._replace(
-                columns=self.__columns_cache[column_split_key].columns)
+                columns=self.__columns_cache[column_split_key].columns
+            )
 
         if self.row_clustering != Clustering.None_:
             parts = self.cluster_rows(
-                effective_data, parts,
-                ordered=self.row_clustering == Clustering.OrderedClustering
+                effective_data,
+                parts,
+                ordered=self.row_clustering == Clustering.OrderedClustering,
             )
         if self.col_clustering != Clustering.None_:
             parts = self.cluster_columns(
-                effective_data, parts,
-                ordered=self.col_clustering == Clustering.OrderedClustering
+                effective_data,
+                parts,
+                ordered=self.col_clustering == Clustering.OrderedClustering,
             )
 
         # Cache the updated parts
         self.__rows_cache[rows_cache_key] = parts
         return parts
 
-    def construct_heatmaps_scene(self, parts: 'Parts', data: Table) -> None:
+    def construct_heatmaps_scene(self, parts: "Parts", data: Table) -> None:
         _T = TypeVar("_T", bound=Union[RowPart, ColumnPart])
 
         def select_cluster(clustering: Clustering, item: _T) -> _T:
@@ -907,10 +992,10 @@ class OWHeatMap(widget.OWWidget):
             else:  # pragma: no cover
                 raise TypeError()
 
-        rows = [select_cluster(self.row_clustering, rowitem)
-                for rowitem in parts.rows]
-        cols = [select_cluster(self.col_clustering, colitem)
-                for colitem in parts.columns]
+        rows = [select_cluster(self.row_clustering, rowitem) for rowitem in parts.rows]
+        cols = [
+            select_cluster(self.col_clustering, colitem) for colitem in parts.columns
+        ]
         parts = Parts(columns=cols, rows=rows, span=parts.span)
 
         self.setup_scene(parts, data)
@@ -989,15 +1074,15 @@ class OWHeatMap(widget.OWWidget):
             sp.setVerticalPolicy(QSizePolicy.Preferred)
         widget.setSizePolicy(sp)
 
-    def __update_clustering_enable_state(self, parts: Optional['Parts']):
+    def __update_clustering_enable_state(self, parts: Optional["Parts"]):
         def c_cost(sizes: Iterable[int]) -> int:
             """Estimated cost for clustering of `sizes`"""
-            return sum(n ** 2 for n in sizes)
+            return sum(n**2 for n in sizes)
 
         def co_cost(sizes: Iterable[int]) -> int:
             """Estimated cost for cluster ordering of `sizes`"""
             # ~O(N ** 3) but O(N ** 4) worst case.
-            return sum(n ** 4 for n in sizes)
+            return sum(n**4 for n in sizes)
 
         if parts is not None:
             Ns = [len(p.indices) for p in parts.rows]
@@ -1016,21 +1101,25 @@ class OWHeatMap(widget.OWWidget):
 
         if not rco_enabled and row_clust == Clustering.OrderedClustering:
             row_clust = Clustering.Clustering
-            row_clust_msg = "Row cluster ordering was disabled due to the " \
-                            "estimated runtime cost"
+            row_clust_msg = (
+                "Row cluster ordering was disabled due to the " "estimated runtime cost"
+            )
         if not rc_enabled and row_clust == Clustering.Clustering:
             row_clust = Clustering.None_
-            row_clust_msg = "Row clustering was was disabled due to the " \
-                            "estimated runtime cost"
+            row_clust_msg = (
+                "Row clustering was was disabled due to the " "estimated runtime cost"
+            )
 
         if not cco_enabled and col_clust == Clustering.OrderedClustering:
             col_clust = Clustering.Clustering
-            col_clust_msg = "Column cluster ordering was disabled due to " \
-                            "estimated runtime cost"
+            col_clust_msg = (
+                "Column cluster ordering was disabled due to " "estimated runtime cost"
+            )
         if not cc_enabled and col_clust == Clustering.Clustering:
             col_clust = Clustering.None_
-            col_clust_msg = "Column clustering was disabled due to the " \
-                            "estimated runtime cost"
+            col_clust_msg = (
+                "Column clustering was disabled due to the " "estimated runtime cost"
+            )
 
         self.col_clustering = col_clust
         self.row_clustering = row_clust
@@ -1053,8 +1142,7 @@ class OWHeatMap(widget.OWWidget):
         setenabled(self.col_cluster_cb, cc_enabled, cco_enabled)
 
     def update_averages_stripe(self):
-        """Update the visibility of the averages stripe.
-        """
+        """Update the visibility of the averages stripe."""
         widget = self.scene.widget
         if widget is not None:
             widget.setShowAverages(self.averages)
@@ -1067,11 +1155,11 @@ class OWHeatMap(widget.OWWidget):
 
     def __update_column_clustering(self):
         self.update_heatmaps()
-        self.commit()
+        self.commit.deferred()
 
     def __update_row_clustering(self):
         self.update_heatmaps()
-        self.commit()
+        self.commit.deferred()
 
     def update_legend(self):
         widget = self.scene.widget
@@ -1127,7 +1215,7 @@ class OWHeatMap(widget.OWWidget):
         if var.is_continuous:
             span = (np.nanmin(column_data), np.nanmax(column_data))
             if np.any(np.isnan(span)):
-                span = 0., 1.
+                span = 0.0, 1.0
             colormap.span = span
         return data, colormap, var
 
@@ -1162,7 +1250,9 @@ class OWHeatMap(widget.OWWidget):
             colors = self.column_side_colors()
             if colors is not None:
                 self.scene.widget.setColumnSideColorAnnotations(
-                    colors[0], colors[1], colors[2].name,
+                    colors[0],
+                    colors[1],
+                    colors[2].name,
                 )
             else:
                 self.scene.widget.setColumnSideColorAnnotations(None)
@@ -1210,6 +1300,7 @@ class OWHeatMap(widget.OWWidget):
         def ontoggled(state):
             self.keep_aspect = state
             self.__aspect_mode_changed()
+
         a.toggled.connect(ontoggled)
         menu.addAction(a)
         menu.popup(self.view.viewport().mapToGlobal(pos))
@@ -1219,8 +1310,9 @@ class OWHeatMap(widget.OWWidget):
             self.selected_rows = list(self.scene.widget.selectedRows())
         else:
             self.selected_rows = []
-        self.commit()
+        self.commit.deferred()
 
+    @gui.deferred
     def commit(self):
         data = None
         indices = None
@@ -1237,33 +1329,35 @@ class OWHeatMap(widget.OWWidget):
 
             data = self.input_data[indices]
 
-        summary = len(data) if data else self.info.NoOutput
-        details = format_summary_details(data) if data else ""
-        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(data)
-        self.Outputs.annotated_data.send(create_annotated_table(self.input_data, indices))
+        self.Outputs.annotated_data.send(
+            create_annotated_table(self.input_data, indices)
+        )
 
     def onDeleteWidget(self):
         self.clear()
         super().onDeleteWidget()
 
     def send_report(self):
-        self.report_items((
-            ("Columns:", "Clustering" if self.col_clustering else "No sorting"),
-            ("Rows:", "Clustering" if self.row_clustering else "No sorting"),
-            ("Split:",
-             self.split_by_var is not None and self.split_by_var.name),
-            ("Row annotation",
-             self.annotation_var is not None and self.annotation_var.name),
-        ))
+        self.report_items(
+            (
+                ("Columns:", "Clustering" if self.col_clustering else "No sorting"),
+                ("Rows:", "Clustering" if self.row_clustering else "No sorting"),
+                ("Split:", self.split_by_var is not None and self.split_by_var.name),
+                (
+                    "Row annotation",
+                    self.annotation_var is not None and self.annotation_var.name,
+                ),
+            )
+        )
         self.report_plot()
 
     @classmethod
     def migrate_settings(cls, settings, version):
         if version is not None and version < 3:
+
             def st2cl(state: bool) -> Clustering:
-                return Clustering.OrderedClustering if state else \
-                    Clustering.None_
+                return Clustering.OrderedClustering if state else Clustering.None_
 
             rc = settings.pop("row_clustering", False)
             cc = settings.pop("col_clustering", False)
@@ -1290,6 +1384,7 @@ class RowPart(NamedTuple):
     cluster : hierarchical.Tree optional
     cluster_ordered : hierarchical.Tree optional
     """
+
     title: str
     indices: Sequence[int]
     cluster: Optional[hierarchical.Tree] = None
@@ -1318,6 +1413,7 @@ class ColumnPart(NamedTuple):
     cluster : hierarchical.Tree optional
     cluster_ordered : hierarchical.Tree optional
     """
+
     title: str
     indices: Sequence[int]
     domain: Sequence[int]
@@ -1362,8 +1458,8 @@ def join_elided(sep, maxlen, values, elidetemplate="..."):
 
 
 def column_str_from_table(
-        table: Orange.data.Table,
-        column: Union[int, Orange.data.Variable],
+    table: Orange.data.Table,
+    column: Union[int, Orange.data.Variable],
 ) -> np.ndarray:
     var = table.domain[column]
     data, _ = table.get_column_view(column)
@@ -1371,8 +1467,8 @@ def column_str_from_table(
 
 
 def column_data_from_table(
-        table: Orange.data.Table,
-        column: Union[int, Orange.data.Variable],
+    table: Orange.data.Table,
+    column: Union[int, Orange.data.Variable],
 ) -> np.ndarray:
     var = table.domain[column]
     data, _ = table.get_column_view(column)
@@ -1382,7 +1478,7 @@ def column_data_from_table(
 
 
 def color_annotation_data(
-        table: Table, var: Union[int, str, Variable]
+    table: Table, var: Union[int, str, Variable]
 ) -> Tuple[np.ndarray, ColorMap, Variable]:
     var = table.domain[var]
     column_data = column_data_from_table(table, var)
@@ -1404,19 +1500,21 @@ def colorize(var: Variable, data: np.ndarray) -> Tuple[np.ndarray, ColorMap]:
             values = (*var.values, "N/A")
         else:
             values = var.values
-            colors = colors[: -1]
+            colors = colors[:-1]
         return data, CategoricalColorMap(colors, values)
     elif var.is_continuous:
         span = np.nanmin(data), np.nanmax(data)
         if np.any(np.isnan(span)):
-            span = 0, 1.
+            span = 0, 1.0
         return data, GradientColorMap(colors[:-1], span=span)
     else:
         raise TypeError
 
 
 def aggregate(
-        var: Variable, data: np.ndarray, groupindices: Sequence[Sequence[int]],
+    var: Variable,
+    data: np.ndarray,
+    groupindices: Sequence[Sequence[int]],
 ) -> np.ndarray:
     if var.is_string:
         join = lambda values: (join_elided(", ", 42, values, " ({} more)"))
@@ -1425,13 +1523,18 @@ def aggregate(
         data = [join(list(map(var.str_val, vals))) for vals in values]
         return np.array(data, dtype=object)
     elif var.is_continuous:
-        data = [np.nanmean(data[indices]) if len(indices) else np.nan
-                for indices in groupindices]
+        data = [
+            np.nanmean(data[indices]) if len(indices) else np.nan
+            for indices in groupindices
+        ]
         return np.array(data, dtype=float)
     elif var.is_discrete:
         from Orange.statistics.util import nanmode
-        data = [nanmode(data[indices])[0] if len(indices) else np.nan
-                for indices in groupindices]
+
+        data = [
+            nanmode(data[indices])[0] if len(indices) else np.nan
+            for indices in groupindices
+        ]
         return np.asarray(data, dtype=float)
     else:
         raise TypeError(type(var))
@@ -1449,9 +1552,7 @@ _T = TypeVar("_T")
 
 
 def aggregate_apply(
-        f: Callable[[Sequence], _T],
-        data: np.ndarray,
-        groupindices: Sequence[Sequence[int]]
+    f: Callable[[Sequence], _T], data: np.ndarray, groupindices: Sequence[Sequence[int]]
 ) -> Sequence[_T]:
     return [f(data[indices]) for indices in groupindices]
 

@@ -11,9 +11,10 @@ from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
 from Orange.classification import (
     NaiveBayesLearner, LogisticRegressionLearner, MajorityLearner
 )
+from Orange.preprocess import Scale, Continuize
 from Orange.tests import test_filename
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
+from Orange.widgets.tests.utils import simulate
 from Orange.widgets.visualize.ownomogram import (
     OWNomogram, DiscreteFeatureItem, ContinuousFeatureItem, ProbabilitiesDotItem,
     MovableToolTip
@@ -281,20 +282,6 @@ class TestOWNomogram(WidgetTest):
         # most left text at 3. iteration is the same -> stop
         self.assertEqual(mocked_item.call_args_list[15][0][0], "foo3")
 
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data = self.data
-        info = self.widget.info
-        no_input = "No data on input"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-
     def test_dots_stop_flashing(self):
         self.widget.set_data(self.data)
         self.widget.set_classifier(self.nb_cls)
@@ -303,6 +290,55 @@ class TestOWNomogram(WidgetTest):
         dot._mousePressFunc()
         anim = animator._GraphicsColorAnimator__animation
         self.assertNotEqual(anim.state(), QPropertyAnimation.Running)
+
+    def test_reconstruct_domain(self):
+        data = Table("heart_disease")
+        cls = LogisticRegressionLearner()(data)
+        domain = OWNomogram.reconstruct_domain(cls, cls.domain)
+        transformed_data = cls.original_data.transform(domain)
+        self.assertEqual(transformed_data.X.shape, data.X.shape)
+        self.assertFalse(np.isnan(transformed_data.X[0]).any())
+
+        scaled_data = Scale()(data)
+        cls = LogisticRegressionLearner()(scaled_data)
+        domain = OWNomogram.reconstruct_domain(cls, cls.domain)
+        transformed_data = cls.original_data.transform(domain)
+        self.assertEqual(transformed_data.X.shape, scaled_data.X.shape)
+        self.assertFalse(np.isnan(transformed_data.X[0]).any())
+
+        disc_data = Continuize()(data)
+        cls = LogisticRegressionLearner()(disc_data)
+        domain = OWNomogram.reconstruct_domain(cls, cls.domain)
+        transformed_data = cls.original_data.transform(domain)
+        self.assertEqual(transformed_data.X.shape, disc_data.X.shape)
+        self.assertFalse(np.isnan(transformed_data.X[0]).any())
+
+    def test_missing_class_value(self):
+        iris = Table("iris")
+        iris_set_ver = iris[:100]
+        target_cb = self.widget.controls.target_class_index
+
+        lr = LogisticRegressionLearner()(iris)
+        self.send_signal(self.widget.Inputs.classifier, lr)
+        simulate.combobox_activate_index(target_cb, 2)
+        self.assertEqual(target_cb.currentIndex(), 2)
+        self.assertEqual(target_cb.count(), 3)
+
+        lr = LogisticRegressionLearner()(iris_set_ver)
+        self.send_signal(self.widget.Inputs.classifier, lr)
+        self.assertEqual(target_cb.currentIndex(), 0)
+        self.assertEqual(target_cb.count(), 2)
+
+        nb = NaiveBayesLearner()(iris)
+        self.send_signal(self.widget.Inputs.classifier, nb)
+        simulate.combobox_activate_index(target_cb, 2)
+        self.assertEqual(target_cb.currentIndex(), 2)
+        self.assertEqual(target_cb.count(), 3)
+
+        nb = NaiveBayesLearner()(iris_set_ver)
+        self.send_signal(self.widget.Inputs.classifier, nb)
+        self.assertEqual(target_cb.currentIndex(), 2)
+        self.assertEqual(target_cb.count(), 3)
 
 
 if __name__ == "__main__":

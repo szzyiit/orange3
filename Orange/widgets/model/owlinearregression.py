@@ -23,12 +23,13 @@ class OWLinearRegression(OWBaseLearner):
     ]
     priority = 60
     keywords = ["ridge", "lasso", "elastic net", 'xianxinghuigui', 'huigui']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = LinearRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
+        coefficients = Output("系数(Coefficients)", Table,
+                              explicit=True, replaces=['Coefficients'])
 
     #: Types
     REGULARIZATION_TYPES = ["无正则化", "岭回归Ridge regression (L2)",
@@ -62,7 +63,6 @@ class OWLinearRegression(OWBaseLearner):
                          btnLabels=self.REGULARIZATION_TYPES,
                          callback=self._reg_type_changed)
 
-        gui.separator(box, 20, 20)
         self.alpha_box = box2 = gui.vBox(box, margin=10)
         gui.widgetLabel(box2, "正则化强度:")
         gui.hSlider(
@@ -74,14 +74,13 @@ class OWLinearRegression(OWBaseLearner):
         self.alpha_label = gui.widgetLabel(box3, "")
         self._set_alpha_label()
 
-        gui.separator(box2, 10, 10)
         box4 = gui.vBox(box2, margin=0)
         gui.widgetLabel(box4, "弹性网络混合(Elastic net mixing):")
         box5 = gui.hBox(box4)
         gui.widgetLabel(box5, "L1")
         self.l2_ratio_slider = gui.hSlider(
             box5, self, "l2_ratio", minValue=0.01, maxValue=0.99,
-            intOnly=False, ticks=0.1, createLabel=False, width=120,
+            intOnly=False, createLabel=False, width=120,
             step=0.01, callback=self._l2_ratio_changed)
         gui.widgetLabel(box5, "L2")
         self.l2_ratio_label = gui.widgetLabel(
@@ -96,9 +95,6 @@ class OWLinearRegression(OWBaseLearner):
         self.controls.alpha_index.setEnabled(self.reg_type != self.OLS)
         self.l2_ratio_slider.setEnabled(self.reg_type == self.Elastic)
 
-    def handleNewSignals(self):
-        self.apply()
-
     def _intercept_changed(self):
         self.apply()
 
@@ -108,7 +104,8 @@ class OWLinearRegression(OWBaseLearner):
         self.apply()
 
     def _set_alpha_label(self):
-        self.alpha_label.setText("Alpha: {}".format(self.alphas[self.alpha_index]))
+        self.alpha_label.setText(
+            "Alpha: {}".format(self.alphas[self.alpha_index]))
 
     def _alpha_changed(self):
         self._set_alpha_label()

@@ -3,13 +3,13 @@ import codecs
 
 from typing import List, Iterable
 
-from PyQt5.QtCore import Qt, QModelIndex, QAbstractItemModel, QSettings
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import (
+from AnyQt.QtCore import Qt, QModelIndex, QAbstractItemModel, QSettings
+from AnyQt.QtGui import QStandardItemModel, QStandardItem
+from AnyQt.QtWidgets import (
     QVBoxLayout, QWidget, QLabel, QListView, QDialogButtonBox, QSizePolicy,
     QStyle, QStyleOption,
 )
-from PyQt5.QtCore import pyqtSlot as Slot
+from AnyQt.QtCore import pyqtSlot as Slot
 
 
 DEFAULT_ENCODINGS = [
@@ -191,10 +191,9 @@ class SelectEncodingsWidget(QWidget):
         buttons = QDialogButtonBox(
             standardButtons=QDialogButtonBox.RestoreDefaults
         )
-        b = buttons.addButton("全选", QDialogButtonBox.ActionRole)
+        b = buttons.addButton("Select all", QDialogButtonBox.ActionRole)
         b.clicked.connect(self.selectAll)
         b = buttons.button(QDialogButtonBox.RestoreDefaults)
-        b.setText('恢复默认')
         b.clicked.connect(self.reset)
         self.layout().addWidget(buttons)
         self.setAttribute(Qt.WA_MacSmallSize)
@@ -361,7 +360,7 @@ def encodings_model():
 
 
 def main(args=sys.argv):
-    from PyQt5.QtWidgets import QApplication
+    from AnyQt.QtWidgets import QApplication
     app = QApplication(args)
     w = SelectEncodingsWidget(
         headingText="Select encodings visible in text encoding menus"

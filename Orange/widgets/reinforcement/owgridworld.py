@@ -13,7 +13,7 @@ class GridWold(OWWidget):
     manual_mode, auto_mode = 0, 1
     mode = manual_mode
     keywords = ['gezishijie']
-    category = 'reinforcement'
+    category = '强化学习(Reinforcement)'
 
     discount = 0.9
     noise_ratio = 0.2

@@ -5,12 +5,13 @@ import numpy as np
 
 from AnyQt.QtCore import Qt, QModelIndex, pyqtSignal as Signal
 from AnyQt.QtWidgets import (
-    QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QSizePolicy
 )
+
 from orangewidget.utils.combobox import ComboBoxSearch
 
 import Orange
-from Orange.data import StringVariable, ContinuousVariable, Variable
+from Orange.data import StringVariable, ContinuousVariable, Variable, Domain
 from Orange.data.util import hstack, get_unique_names_duplicates
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting, ContextHandler, ContextSetting
@@ -18,8 +19,6 @@ from Orange.widgets.utils import vartype
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_multiple_summaries, \
-    format_summary_details
 from Orange.widgets.widget import Input, Output, Msg
 
 INSTANCEID = "实例 ID"
@@ -31,8 +30,7 @@ class ConditionBox(QWidget):
 
     RowItems = namedtuple(
         "RowItems",
-        ("pre_label", "left_combo", "in_label", "right_combo",
-         "remove_button", "add_button"))
+        ("pre_label", "left_combo", "in_label", "right_combo", "remove_button"))
 
     def __init__(self, parent, model_left, model_right, pre_label, in_label):
         super().__init__(parent)
@@ -44,6 +42,12 @@ class ConditionBox(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
         self.setMouseTracking(True)
+
+    def get_button(self, label, callback):
+        return gui.button(
+            None, self, label, callback=callback,
+            addToLayout=False, autoDefault=False, width=34,
+            sizePolicy=(QSizePolicy.Maximum, QSizePolicy.Maximum))
 
     def add_row(self):
         def sync_combos():
@@ -80,30 +84,28 @@ class ConditionBox(QWidget):
             combo.activated.connect(sync_combos)
             return combo
 
-        def get_button(label, callback):
-            button = QPushButton(label, self)
-            button.setFlat(True)
-            button.setFixedWidth(12)
-            button.clicked.connect(callback)
-            return button
-
         row = self.layout().count()
         row_items = self.RowItems(
             QLabel("和" if row else self.pre_label),
             get_combo(self.model_left),
             QLabel(self.in_label),
             get_combo(self.model_right),
-            get_button("×", self.on_remove_row),
-            get_button("+", self.on_add_row)
+            self.get_button("×", self.on_remove_row)
         )
         layout = QHBoxLayout()
         layout.setSpacing(10)
-        self.layout().addLayout(layout)
+        self.layout().insertLayout(self.layout().count() - 1, layout)
         layout.addStretch(10)
         for item in row_items:
             layout.addWidget(item)
         self.rows.append(row_items)
         self._reset_buttons()
+
+    def add_plus_row(self):
+        layout = QHBoxLayout()
+        self.layout().addLayout(layout)
+        layout.addStretch(1)
+        layout.addWidget(self.get_button("+", self.on_add_row))
 
     def remove_row(self, row):
         self.layout().takeAt(self.rows.index(row))
@@ -127,16 +129,8 @@ class ConditionBox(QWidget):
         self.emit_list()
 
     def _reset_buttons(self):
-        def endis(button, enable, text):
-            button.setEnabled(enable)
-            button.setText(text if enable else "")
-
         self.rows[0].pre_label.setText(self.pre_label)
-        single_row = len(self.rows) == 1
-        endis(self.rows[0].remove_button, not single_row, "×")
-        endis(self.rows[-1].add_button, True, "+")
-        if not single_row:
-            endis(self.rows[-2].add_button, False, "")
+        self.rows[0].remove_button.setDisabled(len(self.rows) == 1)
 
     def current_state(self):
         def get_var(model, combo):
@@ -153,7 +147,8 @@ class ConditionBox(QWidget):
             self.add_row()
         for (val_left, val_right), row in zip(values, self.rows):
             row.left_combo.setCurrentIndex(self.model_left.indexOf(val_left))
-            row.right_combo.setCurrentIndex(self.model_right.indexOf(val_right))
+            row.right_combo.setCurrentIndex(
+                self.model_right.indexOf(val_right))
 
     def emit_list(self):
         self.vars_changed.emit(self.current_state())
@@ -207,6 +202,8 @@ class MergeDataContextHandler(ContextHandler):
     def _encode_domain(self, domain):
         if domain is None:
             return {}
+        if not isinstance(domain, Domain):
+            domain = domain.domain
         all_vars = chain(domain.variables, domain.metas)
         return dict(self.encode_variables(all_vars))
 
@@ -248,14 +245,16 @@ class MergeDataContextHandler(ContextHandler):
 class OWMergeData(widget.OWWidget):
     name = "合并数据(Merge Data)"
     description = "根据选择的特征合并数据集."
+    category = "变换(Transform)"
     icon = "icons/MergeData.svg"
     priority = 1110
     keywords = ["join", 'hebing']
-    category = "Data"
 
     class Inputs:
-        data = Input("主数据(Data)", Orange.data.Table, default=True, replaces=["Data A", 'Data'])
-        extra_data = Input("附加数据(Extra Data)", Orange.data.Table, replaces=["Data B", 'Extra Data'])
+        data = Input("主数据(Data)", Orange.data.Table,
+                     default=True, replaces=["Data A", 'Data'])
+        extra_data = Input("附加数据(Extra Data)", Orange.data.Table,
+                           replaces=["Data B", 'Extra Data'])
 
     class Outputs:
         data = Output("数据(Data)",
@@ -315,41 +314,38 @@ class OWMergeData(widget.OWWidget):
         self.model = DomainModelWithTooltips(content)
         self.extra_model = DomainModelWithTooltips(content)
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
         grp = gui.radioButtons(
             self.controlArea, self, "merging", box="合并",
             btnLabels=self.OptionNames, tooltips=self.OptionDescriptions,
             callback=self.change_merging)
-        grp.layout().setSpacing(8)
 
         self.attr_boxes = ConditionBox(
             self, self.model, self.extra_model, "", "匹配")
         self.attr_boxes.add_row()
+        self.attr_boxes.add_plus_row()
         box = gui.vBox(self.controlArea, box="行匹配")
         box.layout().addWidget(self.attr_boxes)
 
-        gui.auto_apply(self.controlArea, self, box=False)
-        # connect after wrapping self.commit with gui.auto_commit!
-        self.attr_boxes.vars_changed.connect(self.commit)
+        gui.auto_apply(self.buttonsArea, self)
+
+        self.attr_boxes.vars_changed.connect(self.commit.deferred)
         self.attr_boxes.vars_changed.connect(self.store_combo_state)
         self.settingsAboutToBePacked.connect(self.store_combo_state)
 
     def change_merging(self):
-        self.commit()
+        self.commit.deferred()
 
     @Inputs.data
     @check_sql_input
     def set_data(self, data):
         self.data = data
-        self.model.set_domain(data and data.domain)
+        self.model.set_domain(data.domain if data else None)
 
     @Inputs.extra_data
     @check_sql_input
     def set_extra_data(self, data):
         self.extra_data = data
-        self.extra_model.set_domain(data and data.domain)
+        self.extra_model.set_domain(data.domain if data else None)
 
     def store_combo_state(self):
         self.attr_pairs = self.attr_boxes.current_state()
@@ -360,21 +356,7 @@ class OWMergeData(widget.OWWidget):
         self.openContext(self.data and self.data.domain,
                          self.extra_data and self.extra_data.domain)
         self.attr_boxes.set_state(self.attr_pairs)
-
-        summary, details, kwargs = self.info.NoInput, "", {}
-        if self.data or self.extra_data:
-            n_data = len(self.data) if self.data else 0
-            n_extra_data = len(self.extra_data) if self.extra_data else 0
-            summary = f"{self.info.format_number(n_data)}, " \
-                      f"{self.info.format_number(n_extra_data)}"
-            kwargs = {"format": Qt.RichText}
-            details = format_multiple_summaries([
-                ("Data", self.data),
-                ("Extra data", self.extra_data)
-            ])
-        self.info.set_input_summary(summary, details, **kwargs)
-
-        self.unconditional_commit()
+        self.commit.now()
 
     def _find_best_match(self):
         def get_unique_str_metas_names(model_):
@@ -394,13 +376,11 @@ class OWMergeData(widget.OWWidget):
                     n_max_intersect, attr, extra_attr = n_inter, m_a, m_b
         return attr, extra_attr
 
+    @gui.deferred
     def commit(self):
         self.clear_messages()
         merged = self.merge() if self.data and self.extra_data else None
         self.Outputs.data.send(merged)
-        details = format_summary_details(merged) if merged else ""
-        summary = len(merged) if merged else self.info.NoOutput
-        self.info.set_output_summary(summary, details)
 
     def send_report(self):
         # pylint: disable=invalid-sequence-index
@@ -426,7 +406,8 @@ class OWMergeData(widget.OWWidget):
         if not self._check_uniqueness(left, left_mask, right, right_mask):
             return None
         method = self._merge_methods[self.merging]
-        lefti, righti, rightu = method(self, left, left_mask, right, right_mask)
+        lefti, righti, rightu = method(
+            self, left, left_mask, right, right_mask)
         reduced_extra_data = \
             self._compute_reduced_extra_data(right_vars, lefti, righti, rightu)
         return self._join_table_by_indices(
@@ -507,7 +488,7 @@ class OWMergeData(widget.OWWidget):
             return np.arange(len(data))
         if var == INSTANCEID:
             return np.fromiter(
-                (inst.id for inst in data), count=len(data), dtype=np.int)
+                (inst.id for inst in data), count=len(data), dtype=int)
         col = data.get_column_view(var)[0]
         if var.is_primitive():
             col = col.astype(float, copy=False)
@@ -583,7 +564,8 @@ class OWMergeData(widget.OWWidget):
             self.data.X, reduced_extra.X, lefti, righti)
         Y = self._join_array_by_indices(
             np.c_[self.data.Y], np.c_[reduced_extra.Y], lefti, righti)
-        string_cols = [i for i, var in enumerate(domain.metas) if var.is_string]
+        string_cols = [i for i, var in enumerate(
+            domain.metas) if var.is_string]
         metas = self._join_array_by_indices(
             self.data.metas, reduced_extra.metas, lefti, righti, string_cols)
         if rightu is not None:
@@ -618,7 +600,8 @@ class OWMergeData(widget.OWWidget):
         the variables, by replacing them with new ones (names are
         appended a number). """
         attrs, cvars, mets = [], [], []
-        n_attrs, n_cvars, n_metas = len(attributes), len(class_vars), len(metas)
+        n_attrs, n_cvars, n_metas = len(
+            attributes), len(class_vars), len(metas)
         lists = [attrs] * n_attrs + [cvars] * n_cvars + [mets] * n_metas
 
         all_vars = attributes + class_vars + metas
@@ -655,7 +638,8 @@ class OWMergeData(widget.OWWidget):
 
         left_width = left.shape[1]
         str_left = [i for i in string_cols or () if i < left_width]
-        str_right = [i - left_width for i in string_cols or () if i >= left_width]
+        str_right = [i - left_width for i in string_cols or ()
+                     if i >= left_width]
         res = hstack((prepare(left, lefti, str_left),
                       prepare(right, righti, str_right)))
         return res
@@ -698,5 +682,5 @@ class OWMergeData(widget.OWWidget):
 
 if __name__ == "__main__":  # pragma: no cover
     WidgetPreview(OWMergeData).run(
-        set_data=Orange.data.Table("tests/data-gender-region"),
-        set_extra_data=Orange.data.Table("tests/data-regions"))
+        set_data=Orange.data.Table("../widgets/data/tests/data-gender-region"),
+        set_extra_data=Orange.data.Table("../widgets/data/tests/data-regions"))

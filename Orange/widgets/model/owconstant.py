@@ -13,10 +13,10 @@ class OWConstant(OWBaseLearner):
         "Orange.widgets.regression.owmean.OWMean",
     ]
     priority = 10
-    keywords = ["majority", "mean", 'changshu', 'changliang']
+    keywords = ["majority", "mean"]
 
     LEARNER = ConstantLearner
-    category = 'model'
+    category = '模型(Model)'
 
 
 if __name__ == "__main__":  # pragma: no cover

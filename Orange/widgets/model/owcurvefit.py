@@ -104,8 +104,8 @@ class ParametersWidget(QWidget):
         self.__layout = QGridLayout()
         box.layout().addLayout(self.__layout)
 
-        self.__labels = [QLabel("Name"), QLabel("Initial value"),
-                         QLabel("Lower bound"), QLabel("Upper bound")]
+        self.__labels = [QLabel("名称"), QLabel("初始值"),
+                         QLabel("最小值"), QLabel("最大值")]
         self.__layout.addWidget(self.__labels[0], 0, self.NAME)
         self.__layout.addWidget(self.__labels[1], 0, self.INITIAL)
         self.__layout.addWidget(self.__labels[2], 0, self.LOWER, 1, 2)
@@ -243,14 +243,16 @@ class ParametersWidget(QWidget):
 
 
 class OWCurveFit(OWBaseLearner):
-    name = "Curve Fit"
-    description = "Fit a function to data."
+    name = "曲线拟合(Curve Fit)"
+    description = "使用一个函数拟合数据."
     icon = "icons/CurveFit.svg"
     priority = 90
-    keywords = ["function"]
+    keywords = ["function", 'nihe']
+    category = '模型(Model)'
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("Coefficients", Table, explicit=True)
+        coefficients = Output("系数(Coefficients)", Table,
+                              explicit=True, replaces=["Coefficients"])
 
     class Warning(OWBaseLearner.Warning):
         duplicate_parameter = Msg("Duplicated parameter name.")
@@ -273,9 +275,9 @@ class OWCurveFit(OWBaseLearner):
     parameters: Mapping[str, Tuple[Any, ...]] = Setting({}, schema_only=True)
     expression: str = Setting("", schema_only=True)
 
-    FEATURE_PLACEHOLDER = "Select Feature"
-    PARAM_PLACEHOLDER = "Select Parameter"
-    FUNCTION_PLACEHOLDER = "Select Function"
+    FEATURE_PLACEHOLDER = "选择特征"
+    PARAM_PLACEHOLDER = "选择系数"
+    FUNCTION_PLACEHOLDER = "选择函数"
 
     _feature: Optional[ContinuousVariable] = None
     _parameter: str = PARAM_PLACEHOLDER
@@ -304,16 +306,16 @@ class OWCurveFit(OWBaseLearner):
         self.Warning.data_missing()
 
     def add_main_layout(self):
-        box = gui.vBox(self.controlArea, "Parameters")
+        box = gui.vBox(self.controlArea, "参数 -- 点击下方的按钮添加参数")
         self.__param_widget = ParametersWidget(self)
         self.__param_widget.sigDataChanged.connect(
             self.__on_parameters_changed)
         box.layout().addWidget(self.__param_widget)
 
-        function_box = gui.vBox(self.controlArea, box="Expression")
+        function_box = gui.vBox(self.controlArea, box="表达式")
         self.__expression_edit = gui.lineEdit(
             function_box, self, "expression",
-            placeholderText="Expression...", callback=self.settings_changed
+            placeholderText="表达式...", callback=self.settings_changed
         )
         hbox = gui.hBox(function_box)
         combo_options = dict(sendSelectedValue=True, searchable=True,

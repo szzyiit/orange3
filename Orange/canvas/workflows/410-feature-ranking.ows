@@ -1,20 +1,20 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="对于监督问题，数据实例使用类标签进行注释，我们想知道哪些是最具信息性的特征。 排名小部件提供功特征及其信息性分数，并支持手动特征选择。 在工作流程中，我们使用它来查找最佳的两个特征并显示其散点图。" title="特征排名" version="2.0">
+<scheme description="For supervised problems, where data instances are annotated with class labels, we would like to know which are the most informative features. Rank widget provides a table of features and their informativity scores, and supports manual feature selection. In the workflow, we used it to find the best two features (of initial 79 from brown-selected dataset) and display its scatter plot." title="Feature Ranking" version="2.0">
 	<nodes>
-		<node id="0" name="文件(File)" position="(39.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
-		<node id="1" name="排名(Rank)" position="(296.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owrank.OWRank" title="排名" version="" />
-		<node id="2" name="散点图(Scatter Plot)" position="(423.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="散点图" version="" />
-		<node id="3" name="填充(Impute)" position="(163.0, 93.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owimpute.OWImpute" title="填充" version="" />
+		<node id="0" name="File" position="(39.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
+		<node id="1" name="Rank" position="(296.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owrank.OWRank" title="Rank" version="" />
+		<node id="2" name="Scatter Plot" position="(423.0, 195.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot" version="" />
+		<node id="3" name="Impute" position="(163.0, 93.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owimpute.OWImpute" title="Impute" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="3" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="3" />
-		<link enabled="true" id="2" sink_channel="Data" sink_node_id="2" source_channel="Reduced Data" source_node_id="1" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Reduced Data" source_node_id="1" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="3" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="2" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="3" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="12" id="0" rect="(242.0, 17.0, 150.0, 60.0)" type="text/plain">填充缺失值以可视化所有数据</text>
-		<text font-family="Helvetica" font-size="12" id="1" rect="(311.0, 292.0, 218.0, 61.0)" type="text/plain">信息最丰富的特征的散点图。它们能分类开类别吗？ 打开小部件以查看它。</text>
-		<text font-family="Helvetica" font-size="12" id="2" rect="(101.0, 256.0, 150.0, 60.0)" type="text/plain">显示特征分数。 我们使用此部件来选择两个最具信息性的特征。</text>
+		<text font-family="Helvetica" font-size="12" id="0" rect="(242.0, 17.0, 150.0, 60.0)">We imputed the missing values to be able to visualize all the data points.</text>
+		<text font-family="Helvetica" font-size="12" id="1" rect="(311.0, 292.0, 218.0, 61.0)">Scatter plot with most informative features. Do they provide a good separation of classes? Open the widget to check this out.</text>
+		<text font-family="Helvetica" font-size="12" id="2" rect="(101.0, 256.0, 150.0, 60.0)">Displays the feature scores. We used the widget to select two most informative features.</text>
 		<arrow end="(262.0, 209.0)" fill="#C1272D" id="3" start="(209.0, 254.0)" />
 		<arrow end="(399.0, 253.0)" fill="#C1272D" id="4" start="(394.0, 290.0)" />
 		<arrow end="(198.0, 68.0)" fill="#C1272D" id="5" start="(237.0, 47.00000000000001)" />

@@ -1,6 +1,7 @@
-from AnyQt.QtCore import Qt
 from scipy.sparse import issparse
 import bottleneck as bn
+
+from AnyQt.QtCore import Qt
 
 import Orange.data
 import Orange.misc
@@ -10,7 +11,6 @@ from Orange.widgets.settings import Setting
 from Orange.widgets.utils.concurrent import TaskState, ConcurrentWidgetMixin
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 
@@ -69,7 +69,7 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
     description = "计算成对距离矩阵."
     icon = "icons/Distance.svg"
     keywords = ['juli']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -89,8 +89,7 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
     autocommit = Setting(True)       # type: bool
 
     want_main_area = False
-    resizing_enabled = False
-    buttons_area_orientation = Qt.Vertical
+    resizing_enabled = True
 
     class Error(OWWidget.Error):
         no_continuous_features = Msg("No numeric features")
@@ -112,9 +111,6 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
 
         self.data = None
 
-        self._set_input_summary(None)
-        self._set_output_summary(None)
-
         gui.radioButtons(
             self.controlArea, self, "axis", ["行", "列"],
             box="之间的距离", callback=self._invalidate
@@ -130,21 +126,20 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
             callback=self._invalidate,
             tooltip=("All dimensions are (implicitly) scaled to a common"
                      "scale to normalize the influence across the domain."),
-            stateWhenDisabled=False
+            stateWhenDisabled=False, attribute=Qt.WA_LayoutUsesWidgetRect
         )
         _, metric = METRICS[self.metric_idx]
         self.normalization_check.setEnabled(metric.supports_normalization)
 
-        gui.auto_apply(self.controlArea, self, "autocommit")
+        gui.auto_apply(self.buttonsArea, self, "autocommit")
 
     @Inputs.data
     @check_sql_input
     def set_data(self, data):
         self.cancel()
         self.data = data
-        self._set_input_summary(data)
         self.refresh_metrics()
-        self.unconditional_commit()
+        self.commit.now()
 
     def refresh_metrics(self):
         sparse = self.data is not None and issparse(self.data.X)
@@ -152,6 +147,7 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
             item = self.metrics_combo.model().item(i)
             item.setEnabled(not sparse or metric[1].supports_sparse)
 
+    @gui.deferred
     def commit(self):
         # pylint: disable=invalid-sequence-index
         metric = METRICS[self.metric_idx][1]
@@ -176,7 +172,7 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
                     self.Error.no_continuous_features()
                     return False
                 self.Warning.ignoring_discrete()
-                data = distance.remove_discrete_features(data)
+                data = distance.remove_discrete_features(data, to_metas=True)
             return True
 
         def _fix_nonbinary():
@@ -189,7 +185,8 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
                     return False
                 elif nbinary < len(data.domain.attributes):
                     self.Warning.ignoring_nonbinary()
-                    data = distance.remove_nonbinary_features(data)
+                    data = distance.remove_nonbinary_features(data,
+                                                              to_metas=True)
             return True
 
         def _fix_missing():
@@ -228,7 +225,6 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
 
     def on_done(self, result: Orange.misc.DistMatrix):
         assert isinstance(result, Orange.misc.DistMatrix) or result is None
-        self._set_output_summary(result)
         self.Outputs.distances.send(result)
 
     def on_exception(self, ex):
@@ -241,24 +237,12 @@ class OWDistances(OWWidget, ConcurrentWidgetMixin):
         else:
             raise ex
 
-    def _set_input_summary(self, data):
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
-
-    def _set_output_summary(self, output):
-        if output is None:
-            self.info.set_output_summary(self.info.NoOutput)
-        else:
-            summary = f"{output.shape[0]}×{output.shape[1]}"
-            self.info.set_output_summary(summary, summary)
-
     def onDeleteWidget(self):
         self.shutdown()
         super().onDeleteWidget()
 
     def _invalidate(self):
-        self.commit()
+        self.commit.deferred()
 
     def _metric_changed(self):
         metric = METRICS[self.metric_idx][1]

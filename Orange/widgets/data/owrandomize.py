@@ -7,7 +7,6 @@ from Orange.data import Table
 from Orange.preprocess import Randomize
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Input, Output
 from Orange.widgets import gui
 
@@ -15,10 +14,10 @@ from Orange.widgets import gui
 class OWRandomize(OWWidget):
     name = "随机化(Randomize)"
     description = "随机化数据表中的特征、类别(和/或)元。"
+    category = "变换(Transform)"
     icon = "icons/Random.svg"
     priority = 2100
     keywords = ['suiji']
-    category = "Data"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -64,26 +63,22 @@ class OWRandomize(OWWidget):
             box, "", alignment=Qt.AlignCenter,
             sizePolicy=(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         self._set_scope_label()
-        gui.separator(box, 10, 10)
         self.replicable_check = gui.checkBox(
             box, self, "random_seed", "可复制的混排(Replicable shuffling)",
             callback=self._shuffle_check_changed)
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
-        self.apply_button = gui.auto_apply(self.controlArea, self, box=False, commit=self.apply)
+        gui.auto_apply(self.buttonsArea, self)
 
     @property
     def parts(self):
         return [self.shuffle_class, self.shuffle_attrs, self.shuffle_metas]
 
     def _shuffle_check_changed(self):
-        self.apply()
+        self.commit.deferred()
 
     def _scope_slider_changed(self):
         self._set_scope_label()
-        self.apply()
+        self.commit.deferred()
 
     def _set_scope_label(self):
         self.scope_label.setText("{}%".format(self.scope_prop))
@@ -91,12 +86,10 @@ class OWRandomize(OWWidget):
     @Inputs.data
     def set_data(self, data):
         self.data = data
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
-        self.unconditional_apply()
+        self.commit.now()
 
-    def apply(self):
+    @gui.deferred
+    def commit(self):
         data = None
         if self.data:
             rand_seed = self.random_seed or None
@@ -106,11 +99,9 @@ class OWRandomize(OWWidget):
             type_ = sum(t for t, p in zip(Randomize.Type, self.parts) if p)
             randomized = Randomize(type_, rand_seed)(self.data[indices])
             data = self.data.copy()
-            for i, instance in zip(indices, randomized):
-                data[i] = instance
-        summary = len(data) if data else self.info.NoOutput
-        details = format_summary_details(data) if data else ""
-        self.info.set_output_summary(summary, details)
+            with data.unlocked():
+                for i, instance in zip(indices, randomized):
+                    data[i] = instance
         self.Outputs.data.send(data)
 
     def send_report(self):

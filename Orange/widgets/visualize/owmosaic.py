@@ -9,8 +9,7 @@ from scipy.stats import distributions
 from scipy.special import comb
 from AnyQt.QtCore import Qt, QSize, pyqtSignal as Signal
 from AnyQt.QtGui import QColor, QPainter, QPen, QStandardItem
-from AnyQt.QtWidgets import (
-    QGraphicsScene, QGraphicsLineItem, QGraphicsItemGroup)
+from AnyQt.QtWidgets import QGraphicsScene, QGraphicsLineItem, QGraphicsItemGroup
 
 from Orange.data import Table, filter, Variable, Domain, DiscreteVariable
 from Orange.data.sql.table import SqlTable, LARGE_TABLE, DEFAULT_SAMPLE_TIME
@@ -21,21 +20,31 @@ from Orange.statistics.distribution import get_distribution, get_distributions
 from Orange.widgets import gui, settings
 from Orange.widgets.gui import OWComponent
 from Orange.widgets.settings import (
-    Setting, DomainContextHandler, ContextSetting, SettingProvider)
+    Setting,
+    DomainContextHandler,
+    ContextSetting,
+    SettingProvider,
+)
 from Orange.widgets.utils import to_html, get_variable_values_sorted
-from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+from Orange.widgets.utils.annotated_data import (
+    create_annotated_table,
+    ANNOTATED_DATA_SIGNAL_NAME,
+)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.utils import (
-    CanvasText, CanvasRectangle, ViewWithPress, VizRankDialog)
+    CanvasText,
+    CanvasRectangle,
+    ViewWithPress,
+    VizRankDialog,
+)
 from Orange.widgets.visualize.utils.plotutils import wrap_legend_items
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 
 class MosaicVizRank(VizRankDialog, OWComponent):
     """VizRank dialog for Mosaic"""
+
     captionTitle = "马赛克排名(Mosaic Ranking)"
     max_attrs = ContextSetting(6)
 
@@ -49,11 +58,14 @@ class MosaicVizRank(VizRankDialog, OWComponent):
 
         box = gui.hBox(self)
         self.max_attr_combo = gui.comboBox(
-            box, self, "max_attrs",
-            label="变量数目:", orientation=Qt.Horizontal,
-            items=["1", "2", "3", "4",
-                   "最多 2", "最多 3", "最多 4"],
-            callback=self.max_attr_changed)
+            box,
+            self,
+            "max_attrs",
+            label="变量数目:",
+            orientation=Qt.Horizontal,
+            items=["1", "2", "3", "4", "最多 2", "最多 3", "最多 4"],
+            callback=self.max_attr_changed,
+        )
         gui.rubber(box)
         self.layout().addWidget(self.button)
         self.attr_ordering = None
@@ -103,7 +115,7 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         if self.max_attrs != self.last_run_max_attr or self.saved_state is None:
             self.button.setText("开始")
         else:
-            self.button.setText("Continue")
+            self.button.setText("继续")
         self.button.setEnabled(self.check_preconditions())
 
     def coloring_changed(self):
@@ -148,8 +160,10 @@ class MosaicVizRank(VizRankDialog, OWComponent):
                 self.attr_ordering = sorted(data.domain, key=attrgetter("name"))
             else:
                 weights = ReliefF(n_iterations=100, k_nearest=10)(data)
-                attrs = sorted(zip(weights, data.domain.attributes),
-                               key=lambda x: (-x[0], x[1].name))
+                attrs = sorted(
+                    zip(weights, data.domain.attributes),
+                    key=lambda x: (-x[0], x[1].name),
+                )
                 self.attr_ordering = [a for _, a in attrs]
 
     def _compute_class_dists(self):
@@ -171,8 +185,9 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         min_attrs, max_attrs = self.attr_range()
         if min_attrs > max_attrs:
             return 0
-        return sum(comb(n_attrs, k, exact=True)
-                   for k in range(min_attrs, max_attrs + 1))
+        return sum(
+            comb(n_attrs, k, exact=True) for k in range(min_attrs, max_attrs + 1)
+        )
 
     def iterate_states(self, state):
         """
@@ -235,26 +250,31 @@ class MosaicVizRank(VizRankDialog, OWComponent):
             class_values = None
             attr_indices = [domain.index(attr) for attr in attrlist]
         for indices in product(*(range(len(a.values)) for a in attrlist)):
-            attr_vals = "-".join(attr.values[ind]
-                                 for attr, ind in zip(attrlist, indices))
+            attr_vals = "-".join(
+                attr.values[ind] for attr, ind in zip(attrlist, indices)
+            )
             total = cond_dist[attr_vals]
             if class_values:  # showing class distributions
                 for i, class_val in enumerate(class_values):
                     expected = total * self.marginal[i]
                     if expected > 1e-6:
-                        observed = cond_dist[attr_vals + '-' + class_val]
+                        observed = cond_dist[attr_vals + "-" + class_val]
                         ss += (expected - observed) ** 2 / expected
             else:
                 observed = cond_dist[attr_vals]
                 expected = n * reduce(
                     mul,
-                    (self.marginal[attr_idx][ind]
-                     for attr_idx, ind in zip(attr_indices, indices)))
+                    (
+                        self.marginal[attr_idx][ind]
+                        for attr_idx, ind in zip(attr_indices, indices)
+                    ),
+                )
                 if expected > 1e-6:
                     ss += (expected - observed) ** 2 / expected
         if class_values:
-            dof = (len(class_values) - 1) * \
-                  reduce(mul, (len(attr.values) for attr in attrlist))
+            dof = (len(class_values) - 1) * reduce(
+                mul, (len(attr.values) for attr in attrlist)
+            )
         else:
             dof = reduce(mul, (len(attr.values) - 1 for attr in attrlist))
         return distributions.chi2.sf(ss, dof)
@@ -265,7 +285,7 @@ class MosaicVizRank(VizRankDialog, OWComponent):
     def on_selection_changed(self, selected, deselected):
         if not selected.isEmpty():
             attrs = selected.indexes()[0].data(self._AttrRole)
-            self.selectionChanged.emit(attrs + (None, ) * (4 - len(attrs)))
+            self.selectionChanged.emit(attrs + (None,) * (4 - len(attrs)))
 
     def on_manual_change(self, attrs):
         model = self.rank_model
@@ -281,8 +301,11 @@ class MosaicVizRank(VizRankDialog, OWComponent):
         beginning, if present, so it's on the x-axis and not lost somewhere."""
         class_var = self.master.color_data.domain.class_var
         attrs = tuple(
-            sorted((self.attr_ordering[x] for x in state),
-                   key=lambda attr: (1 - (attr is class_var), attr.name)))
+            sorted(
+                (self.attr_ordering[x] for x in state),
+                key=lambda attr: (1 - (attr is class_var), attr.name),
+            )
+        )
         item = QStandardItem(", ".join(a.name for a in attrs))
         item.setData(attrs, self._AttrRole)
         return [item]
@@ -293,16 +316,18 @@ class OWMosaicDisplay(OWWidget):
     description = "在马赛克图中显示数据。"
     icon = "icons/MosaicDisplay.svg"
     priority = 220
-    keywords = ['masaiketu']
-    category = 'visualize'
+    keywords = ["masaiketu"]
+    category = "可视化(Visualize)"
 
     class Inputs:
-        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
-        data_subset = Input("数据子集(Data Subset)", Table, replaces=['Data Subset'])
+        data = Input("数据(Data)", Table, default=True, replaces=["Data"])
+        data_subset = Input("数据子集(Data Subset)", Table, replaces=["Data Subset"])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
+        selected_data = Output(
+            "选定的数据(Selected Data)", Table, default=True, replaces=["Selected Data"]
+        )
+        annotated_data = Output("数据(Data)", Table, replaces=["Data"])
 
     settingsHandler = DomainContextHandler()
     vizrank = SettingProvider(MosaicVizRank)
@@ -319,10 +344,18 @@ class OWMosaicDisplay(OWWidget):
     SPACING = 4
     ATTR_NAME_OFFSET = 20
     ATTR_VAL_OFFSET = 3
-    BLUE_COLORS = [QColor(255, 255, 255), QColor(210, 210, 255),
-                   QColor(110, 110, 255), QColor(0, 0, 255)]
-    RED_COLORS = [QColor(255, 255, 255), QColor(255, 200, 200),
-                  QColor(255, 100, 100), QColor(255, 0, 0)]
+    BLUE_COLORS = [
+        QColor(255, 255, 255),
+        QColor(210, 210, 255),
+        QColor(110, 110, 255),
+        QColor(0, 0, 255),
+    ]
+    RED_COLORS = [
+        QColor(255, 255, 255),
+        QColor(255, 200, 200),
+        QColor(255, 100, 100),
+        QColor(255, 0, 0),
+    ]
     graph_name = "canvas"
 
     attrs_changed_manually = Signal(list)
@@ -330,8 +363,9 @@ class OWMosaicDisplay(OWWidget):
     class Warning(OWWidget.Warning):
         incompatible_subset = Msg("Data subset is incompatible with Data")
         no_valid_data = Msg("No valid data")
-        no_cont_selection_sql = \
-            Msg("Selection of numeric features on SQL is not supported")
+        no_cont_selection_sql = Msg(
+            "Selection of numeric features on SQL is not supported"
+        )
 
     def __init__(self):
         super().__init__()
@@ -348,45 +382,62 @@ class OWMosaicDisplay(OWWidget):
         self.areas = []
 
         self.canvas = QGraphicsScene(self)
-        self.canvas_view = ViewWithPress(
-            self.canvas, handler=self.clear_selection)
+        self.canvas_view = ViewWithPress(self.canvas, handler=self.clear_selection)
         self.mainArea.layout().addWidget(self.canvas_view)
         self.canvas_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvas_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvas_view.setRenderHint(QPainter.Antialiasing)
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
         box = gui.vBox(self.controlArea, box=True)
         self.model_1 = DomainModel(
-            order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE)
+            order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE
+        )
         self.model_234 = DomainModel(
-            order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(无)")
+            order=DomainModel.MIXED,
+            valid_types=DomainModel.PRIMITIVE,
+            placeholder="(无)",
+        )
         self.attr_combos = [
             gui.comboBox(
-                box, self, value="variable{}".format(i),
-                orientation=Qt.Horizontal, contentsLength=12,
+                box,
+                self,
+                value="variable{}".format(i),
+                orientation=Qt.Horizontal,
+                contentsLength=12,
                 searchable=True,
                 callback=self.attr_changed,
-                model=self.model_1 if i == 1 else self.model_234)
-            for i in range(1, 5)]
+                model=self.model_1 if i == 1 else self.model_234,
+            )
+            for i in range(1, 5)
+        ]
         self.vizrank, self.vizrank_button = MosaicVizRank.add_vizrank(
-            box, self, "寻找信息马赛克(Find Informative Mosaics)", self.set_attr)
+            box, self, "寻找信息马赛克(Find Informative Mosaics)", self.set_attr
+        )
 
         box2 = gui.vBox(self.controlArea, box="内部着色")
         self.color_model = DomainModel(
-            order=DomainModel.MIXED, valid_types=DomainModel.PRIMITIVE,
-            placeholder="(皮尔逊残差)")
+            order=DomainModel.MIXED,
+            valid_types=DomainModel.PRIMITIVE,
+            placeholder="(皮尔逊残差)",
+        )
         self.cb_attr_color = gui.comboBox(
-            box2, self, value="variable_color",
-            orientation=Qt.Horizontal, contentsLength=12, labelWidth=50,
+            box2,
+            self,
+            value="variable_color",
+            orientation=Qt.Horizontal,
+            contentsLength=12,
+            labelWidth=50,
             searchable=True,
-            callback=self.set_color_data, model=self.color_model)
+            callback=self.set_color_data,
+            model=self.color_model,
+        )
         self.bar_button = gui.checkBox(
-            box2, self, 'use_boxes', label='与总数比较',
-            callback=self.update_graph)
+            box2,
+            self,
+            "use_boxes",
+            label="与总数比较",
+            callback=self.update_graph,
+        )
         gui.rubber(self.controlArea)
 
     def sizeHint(self):
@@ -397,18 +448,22 @@ class OWMosaicDisplay(OWWidget):
         Discretize continuous attributes.
         Return None when there is no data, no rows, or no primitive attributes.
         """
-        if (data is None or
-                not len(data) or
-                not any(attr.is_discrete or attr.is_continuous
-                        for attr in chain(data.domain.variables,
-                                          data.domain.metas))):
+        if (
+            data is None
+            or not len(data)
+            or not any(
+                attr.is_discrete or attr.is_continuous
+                for attr in chain(data.domain.variables, data.domain.metas)
+            )
+        ):
             return None
         elif any(attr.is_continuous for attr in data.domain.variables):
             return Discretize(
                 method=EqualFreq(n=4),
                 remove_const=False,
                 discretize_classes=True,
-                discretize_metas=True)(data)
+                discretize_metas=True,
+            )(data)
         else:
             return data
 
@@ -420,8 +475,9 @@ class OWMosaicDisplay(OWWidget):
 
         if data is None:
             set_combos(None)
-            self.variable1 = self.variable2 = self.variable3 \
-                = self.variable4 = self.variable_color = None
+            self.variable1 = (
+                self.variable2
+            ) = self.variable3 = self.variable4 = self.variable_color = None
             return
         set_combos(self.data.domain)
 
@@ -432,14 +488,16 @@ class OWMosaicDisplay(OWWidget):
         self.variable_color = self.data.domain.class_var  # None is OK, too
 
     def get_disc_attr_list(self):
-        return [self.discrete_data.domain[var.name]
-                for var in (self.variable1, self.variable2,
-                            self.variable3, self.variable4)
-                if var]
+        return [
+            self.discrete_data.domain[var.name]
+            for var in (self.variable1, self.variable2, self.variable3, self.variable4)
+            if var
+        ]
 
     def set_attr(self, *attrs):
         self.variable1, self.variable2, self.variable3, self.variable4 = [
-            attr and self.data.domain[attr.name] for attr in attrs]
+            attr and self.data.domain[attr.name] for attr in attrs
+        ]
         self.reset_graph()
 
     def attr_changed(self):
@@ -464,16 +522,16 @@ class OWMosaicDisplay(OWWidget):
 
         self.vizrank.stop_and_reset()
         self.vizrank_button.setEnabled(
-            self.data is not None and len(self.data) > 1
-            and len(self.data.domain.attributes) >= 1)
+            self.data is not None
+            and len(self.data) > 1
+            and len(self.data.domain.attributes) >= 1
+        )
 
         if self.data is None:
             self.discrete_data = None
             self.init_combos(None)
-            self.info.set_input_summary(self.info.NoInput)
             return
 
-        self.info.set_input_summary(len(data), format_summary_details(data))
         self.init_combos(self.data)
         self.openContext(self.data)
 
@@ -488,8 +546,7 @@ class OWMosaicDisplay(OWWidget):
         self.subset_indices = None
         if self.data is not None and self.subset_data:
             transformed = self.subset_data.transform(self.data.domain)
-            if np.all(np.isnan(transformed.X)) \
-                    and np.all(np.isnan(transformed.Y)):
+            if np.all(np.isnan(transformed.X)) and np.all(np.isnan(transformed.Y)):
                 self.Warning.incompatible_subset()
             else:
                 indices = {e.id for e in transformed}
@@ -546,9 +603,7 @@ class OWMosaicDisplay(OWWidget):
     def send_selection(self):
         if not self.selection or self.data is None:
             self.Outputs.selected_data.send(None)
-            self.Outputs.annotated_data.send(
-                create_annotated_table(self.data, []))
-            self.info.set_output_summary(self.info.NoOutput)
+            self.Outputs.annotated_data.send(create_annotated_table(self.data, []))
             return
         filters = []
         self.Warning.no_cont_selection_sql.clear()
@@ -559,8 +614,9 @@ class OWMosaicDisplay(OWWidget):
             cols, vals, _ = self.areas[i]
             filters.append(
                 filter.Values(
-                    filter.FilterDiscrete(col, [val])
-                    for col, val in zip(cols, vals)))
+                    filter.FilterDiscrete(col, [val]) for col, val in zip(cols, vals)
+                )
+            )
         if len(filters) > 1:
             filters = filter.Values(filters, conjunction=False)
         else:
@@ -571,12 +627,8 @@ class OWMosaicDisplay(OWWidget):
         if self.discrete_data is not self.data:
             selection = self.data[sel_idx]
 
-        summary = len(selection) if selection else self.info.NoOutput
-        details = format_summary_details(selection) if selection else ""
-        self.info.set_output_summary(summary, details)
         self.Outputs.selected_data.send(selection)
-        self.Outputs.annotated_data.send(
-            create_annotated_table(self.data, sel_idx))
+        self.Outputs.annotated_data.send(create_annotated_table(self.data, sel_idx))
 
     def send_report(self):
         self.report_plot(self.canvas)
@@ -590,24 +642,39 @@ class OWMosaicDisplay(OWWidget):
             if not attr_vals:
                 counts = [conditionaldict[val] for val in values]
             else:
-                counts = [conditionaldict[attr_vals + "-" + val]
-                          for val in values]
+                counts = [conditionaldict[attr_vals + "-" + val] for val in values]
             total = sum(counts)
             if total == 0:
                 counts = [1] * len(values)
                 total = sum(counts)
             return total, counts
 
-        def draw_data(attr_list, x0_x1, y0_y1, side, condition,
-                      total_attrs, used_attrs, used_vals, attr_vals=""):
+        def draw_data(
+            attr_list,
+            x0_x1,
+            y0_y1,
+            side,
+            condition,
+            total_attrs,
+            used_attrs,
+            used_vals,
+            attr_vals="",
+        ):
             x0, x1 = x0_x1
             y0, y1 = y0_y1
             if conditionaldict[attr_vals] == 0:
-                add_rect(x0, x1, y0, y1, "",
-                         used_attrs, used_vals, attr_vals=attr_vals)
+                add_rect(x0, x1, y0, y1, "", used_attrs, used_vals, attr_vals=attr_vals)
                 # store coordinates for later drawing of labels
-                draw_text(side, attr_list[0], (x0, x1), (y0, y1), total_attrs,
-                          used_attrs, used_vals, attr_vals)
+                draw_text(
+                    side,
+                    attr_list[0],
+                    (x0, x1),
+                    (y0, y1),
+                    total_attrs,
+                    used_attrs,
+                    used_vals,
+                    attr_vals,
+                )
                 return
 
             attr = attr_list[0]
@@ -641,13 +708,14 @@ class OWMosaicDisplay(OWWidget):
 
             for i in valrange:
                 start = i * edge + whole * float(sum(counts[:i]) / total)
-                end = i * edge + whole * float(sum(counts[:i + 1]) / total)
+                end = i * edge + whole * float(sum(counts[: i + 1]) / total)
                 val = values[i]
                 htmlval = to_html(val)
                 newattrvals = attr_vals + "-" + val if attr_vals else val
 
                 tooltip = "{}&nbsp;&nbsp;&nbsp;&nbsp;{}: <b>{}</b><br/>".format(
-                    condition, attr.name, htmlval)
+                    condition, attr.name, htmlval
+                )
                 attrs = used_attrs + [attr]
                 vals = used_vals + [val]
                 args = attrs, vals, newattrvals
@@ -656,20 +724,41 @@ class OWMosaicDisplay(OWWidget):
                         add_rect(x0 + start, x0 + end, y0, y1, tooltip, *args)
                     else:
                         draw_data(
-                            attr_list[1:], (x0 + start, x0 + end), (y0, y1),
-                            side + 1, tooltip, total_attrs, *args)
+                            attr_list[1:],
+                            (x0 + start, x0 + end),
+                            (y0, y1),
+                            side + 1,
+                            tooltip,
+                            total_attrs,
+                            *args
+                        )
                 else:
                     if len(attr_list) == 1:
                         add_rect(x0, x1, y0 + start, y0 + end, tooltip, *args)
                     else:
                         draw_data(
-                            attr_list[1:], (x0, x1), (y0 + start, y0 + end),
-                            side + 1, tooltip, total_attrs, *args)
-            draw_text(side, attr_list[0], (x0, x1), (y0, y1),
-                      total_attrs, used_attrs, used_vals, attr_vals)
+                            attr_list[1:],
+                            (x0, x1),
+                            (y0 + start, y0 + end),
+                            side + 1,
+                            tooltip,
+                            total_attrs,
+                            *args
+                        )
+            draw_text(
+                side,
+                attr_list[0],
+                (x0, x1),
+                (y0, y1),
+                total_attrs,
+                used_attrs,
+                used_vals,
+                attr_vals,
+            )
 
-        def draw_text(side, attr, x0_x1, y0_y1,
-                      total_attrs, used_attrs, used_vals, attr_vals):
+        def draw_text(
+            side, attr, x0_x1, y0_y1, total_attrs, used_attrs, used_vals, attr_vals
+        ):
             x0, x1 = x0_x1
             y0, y1 = y0_y1
             if side in drawn_sides:
@@ -704,49 +793,69 @@ class OWMosaicDisplay(OWWidget):
             # calculate position of first attribute
             currpos = 0
             total, counts = get_counts(attr_vals, values)
-            aligns = [Qt.AlignTop | Qt.AlignHCenter,
-                      Qt.AlignRight | Qt.AlignVCenter,
-                      Qt.AlignBottom | Qt.AlignHCenter,
-                      Qt.AlignLeft | Qt.AlignVCenter]
+            aligns = [
+                Qt.AlignTop | Qt.AlignHCenter,
+                Qt.AlignRight | Qt.AlignVCenter,
+                Qt.AlignBottom | Qt.AlignHCenter,
+                Qt.AlignLeft | Qt.AlignVCenter,
+            ]
             align = aligns[side]
             for i, val in enumerate(values):
                 if distributiondict[val] != 0:
                     perc = counts[i] / float(total)
                     rwidth = width * perc
-                    xs = [x0 + currpos + rwidth / 2,
-                          x0 - self.ATTR_VAL_OFFSET,
-                          x0 + currpos + rwidth / 2,
-                          x1 + self.ATTR_VAL_OFFSET]
-                    ys = [y1 + self.ATTR_VAL_OFFSET,
-                          y0 + currpos + height * 0.5 * perc,
-                          y0 - self.ATTR_VAL_OFFSET,
-                          y0 + currpos + height * 0.5 * perc]
+                    xs = [
+                        x0 + currpos + rwidth / 2,
+                        x0 - self.ATTR_VAL_OFFSET,
+                        x0 + currpos + rwidth / 2,
+                        x1 + self.ATTR_VAL_OFFSET,
+                    ]
+                    ys = [
+                        y1 + self.ATTR_VAL_OFFSET,
+                        y0 + currpos + height * 0.5 * perc,
+                        y0 - self.ATTR_VAL_OFFSET,
+                        y0 + currpos + height * 0.5 * perc,
+                    ]
 
                     CanvasText(
-                        self.canvas, val, xs[side], ys[side], align,
-                        max_width=rwidth if side == 0 else None)
+                        self.canvas,
+                        val,
+                        xs[side],
+                        ys[side],
+                        align,
+                        max_width=rwidth if side == 0 else None,
+                    )
                     space = height if side % 2 else width
                     currpos += perc * space + spacing * (total_attrs - side)
 
-            xs = [x0 + (x1 - x0) / 2,
-                  x0 - max_ylabel_w1 - self.ATTR_VAL_OFFSET,
-                  x0 + (x1 - x0) / 2,
-                  x1 + max_ylabel_w2 + self.ATTR_VAL_OFFSET]
-            ys = [y1 + self.ATTR_VAL_OFFSET + self.ATTR_NAME_OFFSET,
-                  y0 + (y1 - y0) / 2,
-                  y0 - self.ATTR_VAL_OFFSET - self.ATTR_NAME_OFFSET,
-                  y0 + (y1 - y0) / 2]
+            xs = [
+                x0 + (x1 - x0) / 2,
+                x0 - max_ylabel_w1 - self.ATTR_VAL_OFFSET,
+                x0 + (x1 - x0) / 2,
+                x1 + max_ylabel_w2 + self.ATTR_VAL_OFFSET,
+            ]
+            ys = [
+                y1 + self.ATTR_VAL_OFFSET + self.ATTR_NAME_OFFSET,
+                y0 + (y1 - y0) / 2,
+                y0 - self.ATTR_VAL_OFFSET - self.ATTR_NAME_OFFSET,
+                y0 + (y1 - y0) / 2,
+            ]
             CanvasText(
-                self.canvas, attr.name, xs[side], ys[side], align, bold=True,
-                vertical=side % 2)
+                self.canvas,
+                attr.name,
+                xs[side],
+                ys[side],
+                align,
+                bold=True,
+                vertical=side % 2,
+            )
 
-        def add_rect(x0, x1, y0, y1, condition,
-                     used_attrs, used_vals, attr_vals=""):
+        def add_rect(x0, x1, y0, y1, condition, used_attrs, used_vals, attr_vals=""):
             area_index = len(self.areas)
-            x1 += (x0 == x1)
-            y1 += (y0 == y1)
+            x1 += x0 == x1
+            y1 += y0 == y1
             # rectangles of width and height 1 are not shown - increase
-            y1 += (x1 - x0 + y1 - y0 == 2)
+            y1 += x1 - x0 + y1 - y0 == 2
             colors = class_var and [QColor(*col) for col in class_var.colors]
 
             def select_area(_, ev):
@@ -755,13 +864,22 @@ class OWMosaicDisplay(OWWidget):
             def rect(x, y, w, h, z, pen_color=None, brush_color=None, **args):
                 if pen_color is None:
                     return CanvasRectangle(
-                        self.canvas, x, y, w, h, z=z, onclick=select_area,
-                        **args)
+                        self.canvas, x, y, w, h, z=z, onclick=select_area, **args
+                    )
                 if brush_color is None:
                     brush_color = pen_color
                 return CanvasRectangle(
-                    self.canvas, x, y, w, h, pen_color, brush_color, z=z,
-                    onclick=select_area, **args)
+                    self.canvas,
+                    x,
+                    y,
+                    w,
+                    h,
+                    pen_color,
+                    brush_color,
+                    z=z,
+                    onclick=select_area,
+                    **args
+                )
 
             def line(x1, y1, x2, y2):
                 r = QGraphicsLineItem(x1, y1, x2, y2, None)
@@ -778,8 +896,11 @@ class OWMosaicDisplay(OWWidget):
                 s = sum(apriori_dists[0])
                 expected = s * reduce(
                     mul,
-                    (apriori_dists[i][used_vals[i]] / float(s)
-                     for i in range(len(used_vals))))
+                    (
+                        apriori_dists[i][used_vals[i]] / float(s)
+                        for i in range(len(used_vals))
+                    ),
+                )
                 actual = conditionaldict[attr_vals]
                 pearson = float((actual - expected) / sqrt(expected))
                 if pearson == 0:
@@ -789,11 +910,11 @@ class OWMosaicDisplay(OWWidget):
                 color = [self.RED_COLORS, self.BLUE_COLORS][pearson > 0][ind]
                 rect(x0, y0, x1 - x0, y1 - y0, -20, color)
                 outer_rect.setToolTip(
-                    condition + "<hr/>" +
-                    "Expected instances: %.1f<br>"
+                    condition + "<hr/>" + "Expected instances: %.1f<br>"
                     "Actual instances: %d<br>"
-                    "Standardized (Pearson) residual: %.1f" %
-                    (expected, conditionaldict[attr_vals], pearson))
+                    "Standardized (Pearson) residual: %.1f"
+                    % (expected, conditionaldict[attr_vals], pearson)
+                )
             else:
                 cls_values = get_variable_values_sorted(class_var)
                 prior = get_distribution(data, class_var.name)
@@ -809,8 +930,11 @@ class OWMosaicDisplay(OWWidget):
                     rect(x0, y0 + total, x1 - x0, v, -20, colors[i])
                     total += v
 
-                if self.use_boxes and \
-                        abs(x1 - x0) > bar_width and abs(y1 - y0) > bar_width:
+                if (
+                    self.use_boxes
+                    and abs(x1 - x0) > bar_width
+                    and abs(y1 - y0) > bar_width
+                ):
                     total = 0
                     line(x0 + bar_width, y0, x0 + bar_width, y1)
                     n = sum(prior)
@@ -829,41 +953,65 @@ class OWMosaicDisplay(OWWidget):
                             total = 0
                             n = conditionalsubsetdict[attr_vals]
                             if n:
-                                for i, (cls, color) in \
-                                        enumerate(zip(cls_values, colors)):
-                                    val = conditionalsubsetdict[
-                                        attr_vals + "-" + cls]
+                                for i, (cls, color) in enumerate(
+                                    zip(cls_values, colors)
+                                ):
+                                    val = conditionalsubsetdict[attr_vals + "-" + cls]
                                     if val == 0:
                                         continue
                                     if i == len(prior) - 1:
                                         v = y1 - y0 - total
                                     else:
                                         v = ((y1 - y0) * val) / n
-                                    rect(x1 - bar_width, y0 + total,
-                                         bar_width, v, 15, color)
+                                    rect(
+                                        x1 - bar_width,
+                                        y0 + total,
+                                        bar_width,
+                                        v,
+                                        15,
+                                        color,
+                                    )
                                     total += v
 
-                actual = [conditionaldict[attr_vals + "-" + cls_values[i]]
-                          for i in range(len(prior))]
+                actual = [
+                    conditionaldict[attr_vals + "-" + cls_values[i]]
+                    for i in range(len(prior))
+                ]
                 n_actual = sum(actual)
                 if n_actual > 0:
                     apriori = [prior[key] for key in cls_values]
                     n_apriori = sum(apriori)
                     text = "<br/>".join(
-                        "<b>%s</b>: %d / %.1f%% (Expected %.1f / %.1f%%)" %
-                        (cls, act, 100.0 * act / n_actual,
-                         apr / n_apriori * n_actual, 100.0 * apr / n_apriori)
-                        for cls, act, apr in zip(cls_values, actual, apriori))
+                        "<b>%s</b>: %d / %.1f%% (Expected %.1f / %.1f%%)"
+                        % (
+                            cls,
+                            act,
+                            100.0 * act / n_actual,
+                            apr / n_apriori * n_actual,
+                            100.0 * apr / n_apriori,
+                        )
+                        for cls, act, apr in zip(cls_values, actual, apriori)
+                    )
                 else:
                     text = ""
                 outer_rect.setToolTip(
                     "{}<hr>Instances: {}<br><br>{}".format(
-                        condition, n_actual, text[:-4]))
+                        condition, n_actual, text[:-4]
+                    )
+                )
 
         def create_legend():
             if self.variable_color is None:
-                names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8",
-                         "Residuals:"]
+                names = [
+                    "<-8",
+                    "-8:-4",
+                    "-4:-2",
+                    "-2:2",
+                    "2:4",
+                    "4:8",
+                    ">8",
+                    "Residuals:",
+                ]
                 colors = self.RED_COLORS[::-1] + self.BLUE_COLORS[1:]
                 edges = repeat(Qt.black)
             else:
@@ -875,14 +1023,18 @@ class OWMosaicDisplay(OWWidget):
             for name, color, edgecolor in zip(names, colors, edges):
                 item = QGraphicsItemGroup()
                 item.addToGroup(
-                    CanvasRectangle(None, -size / 2, -size / 2, size, size,
-                                    edgecolor, color))
-                item.addToGroup(
-                    CanvasText(None, name, size, 0, Qt.AlignVCenter))
+                    CanvasRectangle(
+                        None, -size / 2, -size / 2, size, size, edgecolor, color
+                    )
+                )
+                item.addToGroup(CanvasText(None, name, size, 0, Qt.AlignVCenter))
                 items.append(item)
             return wrap_legend_items(
-                items, hspacing=20, vspacing=16 + size,
-                max_width=self.canvas_view.width() - xoff)
+                items,
+                hspacing=20,
+                vspacing=16 + size,
+                max_width=self.canvas_view.width() - xoff,
+            )
 
         self.canvas.clear()
         self.areas = []
@@ -904,14 +1056,15 @@ class OWMosaicDisplay(OWWidget):
 
         attrs = [attr for attr in attr_list if not attr.values]
         if attrs:
-            CanvasText(self.canvas,
-                       "Feature {} has no values".format(attrs[0]),
-                       (self.canvas_view.width() - 120) / 2,
-                       self.canvas_view.height() / 2)
+            CanvasText(
+                self.canvas,
+                "Feature {} has no values".format(attrs[0]),
+                (self.canvas_view.width() - 120) / 2,
+                self.canvas_view.height() / 2,
+            )
             return
         if self.variable_color is None:
-            apriori_dists = [get_distribution(data, attr) for attr
-                             in attr_list]
+            apriori_dists = [get_distribution(data, attr) for attr in attr_list]
         else:
             apriori_dists = []
 
@@ -931,49 +1084,67 @@ class OWMosaicDisplay(OWWidget):
         if len(attr_list) > 1:
             text = CanvasText(self.canvas, attr_list[1].name, bold=1, show=0)
             max_ylabel_w1 = min(get_max_label_width(attr_list[1]), 150)
-            width = 5 + text.boundingRect().height() + \
-                self.ATTR_VAL_OFFSET + max_ylabel_w1
+            width = (
+                5 + text.boundingRect().height() + self.ATTR_VAL_OFFSET + max_ylabel_w1
+            )
             xoff = width
             if len(attr_list) == 4:
                 text = CanvasText(self.canvas, attr_list[3].name, bold=1, show=0)
                 max_ylabel_w2 = min(get_max_label_width(attr_list[3]), 150)
-                width += text.boundingRect().height() + \
-                    self.ATTR_VAL_OFFSET + max_ylabel_w2 - 10
+                width += (
+                    text.boundingRect().height()
+                    + self.ATTR_VAL_OFFSET
+                    + max_ylabel_w2
+                    - 10
+                )
 
         legend = create_legend()
 
         # get the maximum height of rectangle
         yoff = 45
         legendoff = yoff + self.ATTR_NAME_OFFSET + self.ATTR_VAL_OFFSET + 35
-        square_size = min(self.canvas_view.width() - width - 20,
-                          self.canvas_view.height() - legendoff
-                          - legend.boundingRect().height())
+        square_size = min(
+            self.canvas_view.width() - width - 20,
+            self.canvas_view.height() - legendoff - legend.boundingRect().height(),
+        )
 
         if square_size < 0:
             return  # canvas is too small to draw rectangles
         self.canvas_view.setSceneRect(
-            0, 0, self.canvas_view.width(), self.canvas_view.height())
+            0, 0, self.canvas_view.width(), self.canvas_view.height()
+        )
 
         drawn_sides = set()
         draw_positions = {}
 
-        conditionaldict, distributiondict = \
-            get_conditional_distribution(data, attr_list)
+        conditionaldict, distributiondict = get_conditional_distribution(
+            data, attr_list
+        )
         conditionalsubsetdict = None
         if self.subset_indices:
             conditionalsubsetdict, _ = get_conditional_distribution(
-                self.discrete_data[self.subset_indices], attr_list)
+                self.discrete_data[self.subset_indices], attr_list
+            )
 
         # draw rectangles
         draw_data(
-            attr_list, (xoff, xoff + square_size), (yoff, yoff + square_size),
-            0, "", len(attr_list), [], [])
+            attr_list,
+            (xoff, xoff + square_size),
+            (yoff, yoff + square_size),
+            0,
+            "",
+            len(attr_list),
+            [],
+            [],
+        )
 
         self.canvas.addItem(legend)
         legend.setPos(
-            xoff - legend.boundingRect().x()
+            xoff
+            - legend.boundingRect().x()
             + max(0, (square_size - legend.boundingRect().width()) / 2),
-            legendoff + square_size)
+            legendoff + square_size,
+        )
         self.update_selection_rects()
 
     @classmethod
@@ -1000,10 +1171,11 @@ def get_conditional_distribution(data, attrs):
             with data._execute_sql_query(query) as cur:
                 res = cur.fetchall()
             for r in res:
-                str_values = [a.repr_val(a.to_val(x))
-                              for a, x in zip(all_attrs, r[:-1])]
-                str_values = [x if x != '?' else 'None' for x in str_values]
-                cond_dist['-'.join(str_values)] = r[-1]
+                str_values = [
+                    a.repr_val(a.to_val(x)) for a, x in zip(all_attrs, r[:-1])
+                ]
+                str_values = [x if x != "?" else "None" for x in str_values]
+                cond_dist["-".join(str_values)] = r[-1]
                 dist[str_values[-1]] += r[-1]
         else:
             for indices in product(*(range(len(a.values)) for a in attr)):
@@ -1012,11 +1184,12 @@ def get_conditional_distribution(data, attrs):
                 for k, ind in enumerate(indices):
                     vals.append(attr[k].values[ind])
                     fd = filter.FilterDiscrete(
-                        column=attr[k], values=[attr[k].values[ind]])
+                        column=attr[k], values=[attr[k].values[ind]]
+                    )
                     conditions.append(fd)
                 filt = filter.Values(conditions)
                 filtdata = filt(data)
-                cond_dist['-'.join(vals)] = len(filtdata)
+                cond_dist["-".join(vals)] = len(filtdata)
                 dist[vals[-1]] += len(filtdata)
     return cond_dist, dist
 

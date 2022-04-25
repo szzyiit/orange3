@@ -10,11 +10,10 @@ import Orange.distance
 from Orange.data import (
     Table, Domain, ContinuousVariable, DiscreteVariable, StringVariable)
 from Orange.misc import DistMatrix
-# from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_SIGNAL_NAME
+from Orange.widgets.utils.annotated_data import ANNOTATED_DATA_SIGNAL_NAME
 from Orange.widgets.visualize.owsilhouetteplot import OWSilhouettePlot
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
 from Orange.widgets.tests.utils import possible_duplicate_table
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
@@ -24,7 +23,7 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
         WidgetOutputsTestMixin.init(cls)
         cls.same_input_output_domain = False
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
         cls.scorename = "Silhouette ({})".format(cls.data.domain.class_var.name)
 
@@ -66,10 +65,11 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
 
     def test_unknowns_in_labels(self):
         data = self.data[[0, 1, 2, 50, 51, 52, 100, 101, 102]]
-        data.Y[::3] = np.nan
+        with data.unlocked(data.Y):
+            data.Y[::3] = np.nan
         valid = ~np.isnan(data.Y.flatten())
         self.send_signal(self.widget.Inputs.data, data)
-        output = self.get_output("数据(Data)")
+        output = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
         scores = output[:, self.scorename].metas.flatten()
         self.assertTrue(np.all(np.isnan(scores[::3])))
         self.assertTrue(np.all(np.isfinite(scores[valid])))
@@ -77,7 +77,7 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
         # Run again on subset with known labels
         data_1 = data[np.flatnonzero(valid)]
         self.send_signal(self.widget.Inputs.data, data_1)
-        output_1 = self.get_output("数据(Data)")
+        output_1 = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
         scores_1 = output_1[:, self.scorename].metas.flatten()
         self.assertTrue(np.all(np.isfinite(scores_1)))
         # the scores must match
@@ -86,15 +86,16 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
     def test_nan_distances(self):
         self.widget.distance_idx = 2
         self.assertEqual(self.widget.Distances[self.widget.distance_idx][0],
-                         '余弦')
+                         'Cosine')
         data = self.data[[0, 1, 2, 50, 51, 52, 100, 101, 102]]
-        data.X[::3] = 0
+        with data.unlocked(data.X):
+            data.X[::3] = 0
         valid = np.any(data.X != 0, axis=1)
         self.assertFalse(self.widget.Warning.nan_distances.is_shown())
         self.send_signal(self.widget.Inputs.data, data)
         self.assertTrue(np.isnan(self.widget._matrix).any())
         self.assertTrue(self.widget.Warning.nan_distances.is_shown())
-        output = self.get_output("数据(Data)")
+        output = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
         scores = output[:, self.scorename].metas.flatten()
         self.assertTrue(np.all(np.isnan(scores[::3])))
         self.assertTrue(np.all(np.isfinite(scores[valid])))
@@ -103,12 +104,12 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
         data = Table('heart_disease')
         self.widget.distance_idx = 2
         self.assertEqual(self.widget.Distances[self.widget.distance_idx][0],
-                         '余弦')
+                         'Cosine')
         self.assertFalse(self.widget.Warning.ignoring_categorical.is_shown())
         self.send_signal(self.widget.Inputs.data, data)
         self.assertTrue(self.widget.Warning.ignoring_categorical.is_shown())
-        output = self.get_output("数据(Data)")
-        self.assertEqual(len(output.domain), len(data.domain))
+        output = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
+        self.assertEqual(len(output.domain.variables), len(data.domain.variables))
         self.widget.distance_idx = 0
         self.widget._update()
         self.assertFalse(self.widget.Warning.ignoring_categorical.is_shown())
@@ -215,43 +216,6 @@ class TestOWSilhouettePlot(WidgetTest, WidgetOutputsTestMixin):
 
         self.send_signal(widget.Inputs.data, None, widget=widget)
         self.assertFalse(widget.Error.input_validation_error.is_shown())
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        data = self.data
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        matrix = Orange.distance.Euclidean(data)
-        self.send_signal(self.widget.Inputs.data, matrix)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_unique_output_domain(self):
         widget = self.widget

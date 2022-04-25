@@ -7,14 +7,12 @@ from typing import Any, List, Tuple, Dict, Optional, Set, Union
 import numpy as np
 
 from AnyQt.QtWidgets import (
-    QGraphicsWidget, QGraphicsObject, QGraphicsScene, QGridLayout, QSizePolicy,
+    QGraphicsWidget, QGraphicsScene, QGridLayout, QSizePolicy,
     QAction, QComboBox, QGraphicsGridLayout, QGraphicsSceneMouseEvent
 )
-from AnyQt.QtGui import QColor, QPen, QFont, QKeySequence
-from AnyQt.QtCore import Qt, QSize, QSizeF, QPointF, QRectF, QLineF, QEvent
+from AnyQt.QtGui import QPen, QFont, QKeySequence, QPainterPath
+from AnyQt.QtCore import Qt, QSizeF, QPointF, QRectF, QLineF, QEvent
 from AnyQt.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
-
-import pyqtgraph as pg
 
 import Orange.data
 from Orange.data.domain import filter_visible
@@ -28,14 +26,14 @@ from Orange.data.util import get_unique_names
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils import itemmodels, combobox
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+                                                 ANNOTATED_DATA_SIGNAL_NAME)
 from Orange.widgets.utils.widgetpreview import WidgetPreview
+from Orange.widgets.visualize.utils.plotutils import AxisItem
 from Orange.widgets.widget import Input, Output, Msg
 
 from Orange.widgets.utils.stickygraphicsview import StickyGraphicsView
 from Orange.widgets.utils.graphicstextlist import TextListWidget
 from Orange.widgets.utils.dendrogram import DendrogramWidget
-from Orange.widgets.utils.state_summary import format_summary_details
 
 __all__ = ["OWHierarchicalClustering"]
 
@@ -109,14 +107,14 @@ class OWHierarchicalClustering(widget.OWWidget):
     icon = "icons/HierarchicalClustering.svg"
     priority = 2100
     keywords = ['cengcijulei', 'julei']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         distances = Input("距离(Distances)", Orange.misc.DistMatrix, replaces=['Distances'])
 
     class Outputs:
         selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Orange.data.Table, replaces=['Data'])
+        annotated_data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     settingsHandler = _DomainContextHandler()
 
@@ -164,9 +162,6 @@ class OWHierarchicalClustering(widget.OWWidget):
         self._displayed_root = None
         self.cutoff_height = 0.0
 
-        self._set_input_summary(None)
-        self._set_output_summary(None)
-
         gui.comboBox(
             self.controlArea, self, "linkage", items=LINKAGE_CHINESE, box="链接(Linkage)",
             callback=self._invalidate_clustering)
@@ -205,7 +200,7 @@ class OWHierarchicalClustering(widget.OWWidget):
         self.max_depth_spin = gui.spin(
             box, self, "max_depth", minv=1, maxv=100,
             callback=self._invalidate_pruning,
-            keyboardTracking=False
+            keyboardTracking=False, addToLayout=False
         )
 
         grid.addWidget(
@@ -232,7 +227,8 @@ class OWHierarchicalClustering(widget.OWWidget):
         )
         self.cut_ratio_spin = gui.spin(
             self.selection_box, self, "cut_ratio", 0, 100, step=1e-1,
-            spinType=float, callback=self._selection_method_changed
+            spinType=float, callback=self._selection_method_changed,
+            addToLayout=False
         )
         self.cut_ratio_spin.setSuffix("%")
 
@@ -244,7 +240,8 @@ class OWHierarchicalClustering(widget.OWWidget):
             2, 0
         )
         self.top_n_spin = gui.spin(self.selection_box, self, "top_n", 1, 20,
-                                   callback=self._selection_method_changed)
+                                   callback=self._selection_method_changed,
+                                   addToLayout=False)
         grid.addWidget(self.top_n_spin, 2, 1)
 
         self.zoom_slider = gui.hSlider(
@@ -269,7 +266,7 @@ class OWHierarchicalClustering(widget.OWWidget):
 
         self.controlArea.layout().addStretch()
 
-        gui.auto_send(box, self, "autocommit", box=False)
+        gui.auto_send(self.buttonsArea, self, "autocommit")
 
         self.scene = QGraphicsScene(self)
         self.view = StickyGraphicsView(
@@ -341,7 +338,6 @@ class OWHierarchicalClustering(widget.OWWidget):
 
         self.error()
         self.Error.clear()
-        self._set_input_summary(matrix)
         if matrix is not None:
             N, _ = matrix.shape
             if N < 2:
@@ -364,7 +360,7 @@ class OWHierarchicalClustering(widget.OWWidget):
             self._restore_selection(selection_state)
             self.__pending_selection_restore = None
 
-        self.unconditional_commit()
+        self.commit.now()
 
     def _set_items(self, items, axis=1):
         self.closeContext()
@@ -415,15 +411,6 @@ class OWHierarchicalClustering(widget.OWWidget):
             self._main_graphics.sizeHint(Qt.PreferredSize).height()
         )
         self._main_graphics.layout().activate()
-
-    def _set_input_summary(self, matrix):
-        summary = len(matrix) if matrix is not None else self.info.NoInput
-        self.info.set_input_summary(summary)
-
-    def _set_output_summary(self, output):
-        summary = len(output) if output else self.info.NoOutput
-        details = format_summary_details(output) if output else ""
-        self.info.set_output_summary(summary, details)
 
     def _update(self):
         self._clear_plot()
@@ -546,7 +533,7 @@ class OWHierarchicalClustering(widget.OWWidget):
         self._invalidate_output()
 
     def _invalidate_output(self):
-        self.commit()
+        self.commit.deferred()
 
     def _invalidate_pruning(self):
         if self.root:
@@ -564,10 +551,10 @@ class OWHierarchicalClustering(widget.OWWidget):
 
         self._apply_selection()
 
+    @gui.deferred
     def commit(self):
         items = getattr(self.matrix, "items", self.items)
         if not items:
-            self._set_output_summary(None)
             self.Outputs.selected_data.send(None)
             self.Outputs.annotated_data.send(None)
             return
@@ -585,7 +572,6 @@ class OWHierarchicalClustering(widget.OWWidget):
                                     set(selected_indices))
 
         if not selected_indices:
-            self._set_output_summary(None)
             self.Outputs.selected_data.send(None)
             annotated_data = create_annotated_table(items, []) \
                 if self.selection_method == 0 and self.matrix.axis else None
@@ -616,7 +602,8 @@ class OWHierarchicalClustering(widget.OWWidget):
                 var_name, values=values + ["Other"])
             domain = Orange.data.Domain(attrs, classes, metas + (clust_var,))
             data = items.transform(domain)
-            data.get_column_view(clust_var)[0][:] = c
+            with data.unlocked(data.metas):
+                data.get_column_view(clust_var)[0][:] = c
 
             if selected_indices:
                 selected_data = data[mask]
@@ -625,22 +612,30 @@ class OWHierarchicalClustering(widget.OWWidget):
                 selected_data.domain = Domain(
                     attrs, classes, metas + (clust_var, ))
 
+            annotated_data = create_annotated_table(data, selected_indices)
+
         elif isinstance(items, Orange.data.Table) and self.matrix.axis == 0:
             # Select columns
+            attrs = []
+            for clust, indices in chain(enumerate(maps, start=1),
+                                        [(0, unselected_indices)]):
+                for i in indices:
+                    attr = items.domain[i].copy()
+                    attr.attributes["cluster"] = clust
+                    attrs.append(attr)
             domain = Orange.data.Domain(
-                [items.domain[i] for i in selected_indices],
+                # len(unselected_indices) can be 0
+                attrs[:len(attrs) - len(unselected_indices)],
                 items.domain.class_vars, items.domain.metas)
             selected_data = items.from_table(domain, items)
-            data = None
 
-        self._set_output_summary(selected_data)
+            domain = Orange.data.Domain(
+                attrs,
+                items.domain.class_vars, items.domain.metas)
+            annotated_data = items.from_table(domain, items)
 
         self.Outputs.selected_data.send(selected_data)
-        annotated_data = create_annotated_table(data, selected_indices)
         self.Outputs.annotated_data.send(annotated_data)
-
-    def sizeHint(self):
-        return QSize(800, 500)
 
     def eventFilter(self, obj, event):
         if obj is self.view.viewport() and event.type() == QEvent.Resize:
@@ -835,7 +830,7 @@ class OWHierarchicalClustering(widget.OWWidget):
             Qt.PreferredSize, constraint=QSizeF(width, -1))
         self._main_graphics.resize(QSizeF(width, preferred.height()))
         mw = self._main_graphics.minimumWidth() + 4
-        self.view.setMinimumWidth(mw + self.view.verticalScrollBar().width())
+        self.view.setMinimumWidth(int(mw + self.view.verticalScrollBar().width()))
 
     def __update_font_scale(self):
         font = self.scene.font()
@@ -872,7 +867,7 @@ def qfont_scaled(font, factor):
     return scaled
 
 
-class AxisItem(pg.AxisItem):
+class AxisItem(AxisItem):
     mousePressed = Signal(QPointF, Qt.MouseButton)
     mouseMoved = Signal(QPointF, Qt.MouseButtons)
     mouseReleased = Signal(QPointF, Qt.MouseButton)
@@ -897,7 +892,7 @@ class AxisItem(pg.AxisItem):
         event.accept()
 
 
-class SliderLine(QGraphicsObject):
+class SliderLine(QGraphicsWidget):
     """A movable slider line."""
     valueChanged = Signal(float)
 
@@ -913,14 +908,10 @@ class SliderLine(QGraphicsObject):
         self._length = length
         self._min = 0.0
         self._max = 1.0
-        self._line = QLineF()  # type: Optional[QLineF]
-        self._pen = QPen()
+        self._line: Optional[QLineF] = QLineF()
+        self._pen: Optional[QPen] = None
         super().__init__(parent, **kwargs)
-
         self.setAcceptedMouseButtons(Qt.LeftButton)
-        self.setPen(make_pen(brush=QColor(50, 50, 50), width=1, cosmetic=False,
-                             style=Qt.DashLine))
-
         if self._orientation == Qt.Vertical:
             self.setCursor(Qt.SizeVerCursor)
         else:
@@ -935,7 +926,10 @@ class SliderLine(QGraphicsObject):
             self.update()
 
     def pen(self) -> QPen:
-        return QPen(self._pen)
+        if self._pen is None:
+            return QPen(self.palette().text(), 1.0, Qt.DashLine)
+        else:
+            return QPen(self._pen)
 
     def setValue(self, value: float):
         value = min(max(value, self._min), self._max)
@@ -996,6 +990,11 @@ class SliderLine(QGraphicsObject):
             self.setValue(event.pos().x())
         self.lineReleased.emit()
         event.accept()
+
+    def shape(self) -> QPainterPath:
+        path = QPainterPath()
+        path.addRect(self.boundingRect())
+        return path
 
     def boundingRect(self) -> QRectF:
         if self._line is None:

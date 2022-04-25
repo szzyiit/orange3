@@ -25,7 +25,6 @@ from Orange.widgets.utils import vartype
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.utils import VizRankDialogAttrPair
 from Orange.widgets.widget import OWWidget, AttributeList, Msg
 
@@ -57,6 +56,7 @@ class KMeansCorrelationHeuristic:
     Heuristic to obtain the most promising attribute pairs, when there are too
     many attributes to calculate correlations for all possible pairs.
     """
+
     def __init__(self, data):
         self.n_attributes = len(data.domain.attributes)
         self.data = data
@@ -157,7 +157,7 @@ class CorrelationRank(VizRankDialogAttrPair):
         for attr in attrs:
             item = QStandardItem(attr.name)
             item.setData(attrs, self._AttrRole)
-            item.setData(Qt.AlignLeft + Qt.AlignTop, Qt.TextAlignmentRole)
+            item.setData(Qt.AlignLeft + Qt.AlignCenter, Qt.TextAlignmentRole)
             item.setToolTip(attr.name)
             attr_items.append(item)
         correlation_item = QStandardItem("{:+.3f}".format(score[1]))
@@ -238,7 +238,7 @@ class OWCorrelations(OWWidget):
     description = "计算所有成对属性的关联性。"
     icon = "icons/Correlations.svg"
     priority = 1106
-    category = 'Data'
+    category = "非监督(Unsupervised)"
     keywords = ['xiangguan']
 
     class Inputs:
@@ -247,9 +247,11 @@ class OWCorrelations(OWWidget):
     class Outputs:
         data = Output("数据(Data)", Table, replaces=['Data'])
         features = Output("特征(Features)", AttributeList, replaces=['Features'])
-        correlations = Output("相关性(Correlations)", Table, replaces=['Correlations'])
+        correlations = Output("相关性(Correlations)", Table,
+                              replaces=['Correlations'])
 
-    want_control_area = False
+    want_main_area = False
+    want_control_area = True
 
     correlation_type: int
 
@@ -272,7 +274,7 @@ class OWCorrelations(OWWidget):
         self.cont_data = None  # type: Table
 
         # GUI
-        box = gui.vBox(self.mainArea)
+        box = gui.vBox(self.controlArea)
         self.correlation_combo = gui.comboBox(
             box, self, "correlation_type", items=CorrelationType.items(),
             orientation=Qt.Horizontal, callback=self._correlation_combo_changed
@@ -280,7 +282,7 @@ class OWCorrelations(OWWidget):
 
         self.feature_model = DomainModel(
             order=DomainModel.ATTRIBUTES, separators=False,
-            placeholder="所有组合", valid_types=ContinuousVariable)
+            placeholder="(所有组合)", valid_types=ContinuousVariable)
         gui.comboBox(
             box, self, "feature", callback=self._feature_combo_changed,
             model=self.feature_model
@@ -295,11 +297,8 @@ class OWCorrelations(OWWidget):
         box.layout().addWidget(self.vizrank.filter)
         box.layout().addWidget(self.vizrank.rank_table)
 
-        button_box = gui.hBox(self.mainArea)
+        button_box = gui.hBox(self.buttonsArea)
         button_box.layout().addWidget(self.vizrank.button)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
 
     @staticmethod
     def sizeHint():
@@ -367,17 +366,14 @@ class OWCorrelations(OWWidget):
                     self.Warning.not_enough_vars()
                 else:
                     self.cont_data = SklImpute()(cont_data)
-            self.info.set_input_summary(len(data),
-                                        format_summary_details(data))
-        else:
-            self.info.set_input_summary(self.info.NoInput)
         self.set_feature_model()
         self.openContext(self.cont_data)
         self.apply()
         self.vizrank.button.setEnabled(self.cont_data is not None)
 
     def set_feature_model(self):
-        self.feature_model.set_domain(self.cont_data and self.cont_data.domain)
+        self.feature_model.set_domain(
+            self.cont_data.domain if self.cont_data else None)
         data = self.data
         if self.cont_data and data.domain.has_continuous_class:
             self.feature = self.cont_data.domain[data.domain.class_var.name]
@@ -394,9 +390,6 @@ class OWCorrelations(OWWidget):
 
     def commit(self):
         self.Outputs.data.send(self.data)
-        summary = len(self.data) if self.data else self.info.NoOutput
-        details = format_summary_details(self.data) if self.data else ""
-        self.info.set_output_summary(summary, details)
 
         if self.data is None or self.cont_data is None:
             self.Outputs.features.send(None)

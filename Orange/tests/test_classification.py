@@ -245,20 +245,29 @@ class ModelTest(unittest.TestCase):
         Test whether results shapes are correct when testing on numpy data
         """
         iris = Table('iris')
+        iris_bin = Table(
+            Domain(
+                iris.domain.attributes,
+                DiscreteVariable("iris", values=["a", "b"])
+            ),
+            iris.X[:100], iris.Y[:100]
+        )
         for learner in all_learners():
             with self.subTest(learner.__name__):
-                try:
-                    model = learner()(iris)
-                except TypeError:
-                    # cannot be tested with default parameters
-                    continue
-                transformed_iris = model.data_to_model_domain(iris)
+                args = []
+                if learner in (ThresholdLearner, CalibratedLearner):
+                    args = [LogisticRegressionLearner()]
+                data = iris_bin if learner is ThresholdLearner else iris
+                model = learner(*args)(data)
+                transformed_iris = model.data_to_model_domain(data)
 
                 res = model(transformed_iris.X[0:5])
                 self.assertTupleEqual((5,), res.shape)
 
                 res = model(transformed_iris.X[0:1], model.Probs)
-                self.assertTupleEqual((1, 3), res.shape)
+                self.assertTupleEqual(
+                    (1, len(data.domain.class_var.values)), res.shape
+                )
 
 
 class ExpandProbabilitiesTest(unittest.TestCase):
@@ -315,7 +324,8 @@ class SklTest(unittest.TestCase):
 
     def test_nan_columns(self):
         data = Orange.data.Table("iris")
-        data.X[:, (1, 3)] = np.NaN
+        with data.unlocked():
+            data.X[:, (1, 3)] = np.NaN
         lr = LogisticRegressionLearner()
         cv = CrossValidation(k=2, store_models=True)
         res = cv(data, [lr])
@@ -355,7 +365,7 @@ class UnknownValuesInPrediction(unittest.TestCase):
     def test_unknown(self):
         table = Table("iris")
         tree = LogisticRegressionLearner()(table)
-        tree([1, 2, None])
+        tree([1, 2, None, 4])
 
     def test_missing_class(self):
         table = Table(test_filename("datasets/adult_sample_missing"))
@@ -396,6 +406,8 @@ class LearnerAccessibility(unittest.TestCase):
             if isinstance(learner, _RuleLearner):
                 continue
             with self.subTest(learner.__name__):
+                if "RandomForest" not in learner.__name__:
+                    continue
                 learner = learner()
                 for ds in datasets:
                     model = learner(ds)

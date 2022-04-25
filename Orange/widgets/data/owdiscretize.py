@@ -17,7 +17,6 @@ from Orange.data import Variable
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.utils import itemmodels, vartype, unique_everseen
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 from Orange.widgets.data.oweditdomain import FixedSizeButton
 
@@ -256,15 +255,17 @@ class OWDiscretize(widget.OWWidget):
     # pylint: disable=too-many-instance-attributes
     name = "离散化(Discretize)"
     description = "离散化数值型特征."
+    category = "变换(Transform)"
     icon = "icons/Discretize.svg"
-    keywords = ['lisan']
-    category = "Data"
+    keywords = ['lisan', "bin"]
 
     class Inputs:
-        data = Input("数据(Data)", Orange.data.Table, doc="Input data table", replaces=['Data'])
+        data = Input("数据(Data)", Orange.data.Table,
+                     doc="Input data table", replaces=['Data'])
 
     class Outputs:
-        data = Output("数据(Data)", Orange.data.Table, doc="Table with discretized features", replaces=['Data'])
+        data = Output("数据(Data)", Orange.data.Table,
+                      doc="Table with discretized features", replaces=['Data'])
 
     settingsHandler = settings.DomainContextHandler()
     settings_version = 2
@@ -330,7 +331,7 @@ class OWDiscretize(widget.OWWidget):
         def _intbox(parent, attr, callback):
             box = gui.indentedBox(parent)
             s = gui.spin(
-                box, self, attr, minv=2, maxv=10, label="间隔数(Num. of intervals):",
+                box, self, attr, minv=2, maxv=10, label="间隔数:",
                 callback=callback)
             s.setMaximumWidth(60)
             s.setAlignment(Qt.AlignRight)
@@ -350,6 +351,7 @@ class OWDiscretize(widget.OWWidget):
                         "0.0, 0.5, 1.0).",
                 enabled=enabled,
             )
+
             @edit.textChanged.connect
             def update():
                 validator = edit.validator()
@@ -399,11 +401,12 @@ class OWDiscretize(widget.OWWidget):
 
         self.connect_control(
             "default_cutpoints",
-            lambda values: self.manual_cuts_edit.setText(", ".join(map(str, values)))
+            lambda values: self.manual_cuts_edit.setText(
+                ", ".join(map(str, values)))
         )
         vlayout = QHBoxLayout()
         box = gui.widgetBox(
-            self.controlArea, "单个属性设置",
+            self.controlArea, "单独属性设置",
             orientation=vlayout, spacing=8
         )
 
@@ -432,7 +435,8 @@ class OWDiscretize(widget.OWWidget):
 
         self.k_specific = _intbox(controlbox, "k", self._disc_method_changed)
 
-        gui.appendRadioButton(controlbox, "删除属性", id=Methods.Remove)
+        gui.appendRadioButton(
+            controlbox, "删除属性", id=Methods.Remove)
         b = gui.appendRadioButton(controlbox, "手动", id=Methods.Custom)
 
         self.manual_cuts_specific = manual_cut_editline(
@@ -451,11 +455,12 @@ class OWDiscretize(widget.OWWidget):
 
         self.connect_control(
             "cutpoints",
-            lambda values: self.manual_cuts_specific.setText(", ".join(map(str, values)))
+            lambda values: self.manual_cuts_specific.setText(
+                ", ".join(map(str, values)))
         )
         ibox = gui.indentedBox(controlbox, orientation=Qt.Horizontal)
         self.copy_current_to_manual_button = b = FixedSizeButton(
-            text="CC", toolTip="Copy the current cut points to manual mode",
+            text="CC", toolTip="复制当前分割点至手动模式",
             enabled=False
         )
         b.clicked.connect(self._copy_to_manual)
@@ -467,14 +472,9 @@ class OWDiscretize(widget.OWWidget):
         bg.button(self.method)
         self.controlbox = controlbox
 
-        box = gui.auto_apply(self.controlArea, self, "autosend")
-        box.button.setFixedWidth(180)
-        box.layout().insertStretch(0)
+        gui.auto_apply(self.buttonsArea, self, "autosend")
 
         self._update_spin_positions()
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
 
     @property
     def default_method(self) -> Methods:
@@ -507,12 +507,9 @@ class OWDiscretize(widget.OWWidget):
             self._restore(self.saved_var_states)
             # Complete the induction of cut points
             self._update_points()
-            self.info.set_input_summary(len(data),
-                                        format_summary_details(data))
         else:
-            self.info.set_input_summary(self.info.NoInput)
             self._clear()
-        self.unconditional_commit()
+        self.commit.now()
 
     def _initialize(self, data):
         # Initialize the default variable states for new data.
@@ -661,7 +658,7 @@ class OWDiscretize(widget.OWWidget):
             if isinstance(self.var_state[i].method, Default):
                 self._set_var_state(i, state)
         self._update_points()
-        self.commit()
+        self.commit.deferred()
 
     def _disc_method_changed(self):
         self._update_spin_positions()
@@ -672,7 +669,7 @@ class OWDiscretize(widget.OWWidget):
             self._set_var_state(idx, state)
         self._update_points()
         self._copy_to_manual_update_enabled()
-        self.commit()
+        self.commit.deferred()
 
     def _copy_to_manual(self):
         indices = self.selected_indices()
@@ -688,13 +685,14 @@ class OWDiscretize(widget.OWWidget):
             points = ()
         else:
             points = tuple(state.points)
-        state = state._replace(method=Custom(points), points=None, disc_var=None)
+        state = state._replace(method=Custom(
+            points), points=None, disc_var=None)
         self._set_var_state(index, state)
         self.method = Methods.Custom
         self.cutpoints = points
         self.manual_cuts_specific.setText(", ".join(map(fmt, points)))
         self._update_points()
-        self.commit()
+        self.commit.deferred()
 
     def _copy_to_manual_update_enabled(self):
         indices = self.selected_indices()
@@ -773,15 +771,12 @@ class OWDiscretize(widget.OWWidget):
         )
         return domain
 
+    @gui.deferred
     def commit(self):
         output = None
         if self.data is not None:
             domain = self.discretized_domain()
             output = self.data.transform(domain)
-
-        summary = len(output) if output else self.info.NoOutput
-        details = format_summary_details(output) if output else ""
-        self.info.set_output_summary(summary, details)
         self.Outputs.data.send(output)
 
     def storeSpecificSettings(self):

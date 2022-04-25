@@ -11,7 +11,6 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Msg
 
 
-
 class OWLogisticRegression(OWBaseLearner):
     name = "逻辑回归(Logistic Regression)"
     description = "具有LASSO（L1）或ridge（L2）正则化的逻辑回归分类算法。"
@@ -21,12 +20,13 @@ class OWLogisticRegression(OWBaseLearner):
     ]
     priority = 60
     keywords = ['luojihuigui', 'fenlei']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = LogisticRegressionLearner
 
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
+        coefficients = Output("系数(Coefficients)", Table,
+                              explicit=True, replaces=['Coefficients'])
 
     penalty_type = settings.Setting(1)
     C_index = settings.Setting(61)
@@ -50,7 +50,8 @@ class OWLogisticRegression(OWBaseLearner):
     penalty_types_short = ["l1", "l2"]
 
     class Warning(OWBaseLearner.Warning):
-        class_weights_used = Msg("Weighting by class may decrease performance.")
+        class_weights_used = Msg(
+            "Weighting by class may decrease performance.")
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
@@ -58,7 +59,7 @@ class OWLogisticRegression(OWBaseLearner):
         self.penalty_combo = gui.comboBox(
             box, self, "penalty_type", label="正则化类型: ",
             items=self.Chinese_penalty_types, orientation=Qt.Horizontal,
-            addSpace=4, callback=self.settings_changed)
+            callback=self.settings_changed)
         gui.widgetLabel(box, "强度:")
         box2 = gui.hBox(gui.indentedBox(box))
         gui.widgetLabel(box2, "弱").setStyleSheet("margin-top:6px")
@@ -75,7 +76,7 @@ class OWLogisticRegression(OWBaseLearner):
         box = gui.widgetBox(self.controlArea, box=True)
         self.weights = gui.checkBox(
             box, self,
-            "class_weight", label="Balance class distribution",
+            "class_weight", label="平衡类别分布",
             callback=self.settings_changed,
             tooltip="Weigh classes inversely proportional to their frequencies."
         )
@@ -124,9 +125,11 @@ def create_coef_table(classifier):
     i = classifier.intercept
     c = classifier.coefficients
     if c.shape[0] > 2:
-        values = [classifier.domain.class_var.values[int(i)] for i in classifier.used_vals[0]]
+        values = [classifier.domain.class_var.values[int(
+            i)] for i in classifier.used_vals[0]]
     else:
-        values = [classifier.domain.class_var.values[int(classifier.used_vals[0][1])]]
+        values = [classifier.domain.class_var.values[int(
+            classifier.used_vals[0][1])]]
     domain = Domain([ContinuousVariable(value) for value in values],
                     metas=[StringVariable("name")])
     coefs = np.vstack((i.reshape(1, len(i)), c.T))

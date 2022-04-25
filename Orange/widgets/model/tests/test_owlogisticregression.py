@@ -105,7 +105,8 @@ class TestOWLogisticRegression(WidgetTest, WidgetLearnerTestMixin):
         GH-2392
         """
         table = Table("iris")
-        table.Y[:5] = np.NaN
+        with table.unlocked():
+            table.Y[:5] = np.NaN
         self.send_signal("数据(Data)", table)
         coef1 = self.get_output("系数(Coefficients)")
         table = table[5:]

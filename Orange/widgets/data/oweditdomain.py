@@ -24,9 +24,12 @@ from AnyQt.QtWidgets import (
     QStyledItemDelegate, QStyleOptionViewItem, QStyle, QSizePolicy,
     QDialogButtonBox, QPushButton, QCheckBox, QComboBox, QStackedLayout,
     QDialog, QRadioButton, QGridLayout, QLabel, QSpinBox, QDoubleSpinBox,
-    QAbstractItemView, QMenu
+    QAbstractItemView, QMenu, QToolTip
 )
-from AnyQt.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QIcon
+from AnyQt.QtGui import (
+    QStandardItemModel, QStandardItem, QKeySequence, QIcon, QBrush, QPalette,
+    QHelpEvent
+)
 from AnyQt.QtCore import (
     Qt, QSize, QModelIndex, QAbstractItemModel, QPersistentModelIndex, QRect,
     QPoint,
@@ -41,7 +44,6 @@ from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils.buttons import FixedSizeButton
 from Orange.widgets.utils.itemmodels import signal_blocking
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 ndarray = np.ndarray  # pylint: disable=invalid-name
@@ -96,38 +98,42 @@ AnnotationsType = Tuple[Tuple[str, str], ...]
 # Define abstract representation of the variable types edited
 
 class Categorical(
-    _DataType, NamedTuple("Categorical", [
-        ("name", str),
-        ("categories", Tuple[str, ...]),
-        ("annotations", AnnotationsType),
-        ("linked", bool)
-    ])): pass
+        _DataType, NamedTuple("Categorical", [
+            ("name", str),
+            ("categories", Tuple[str, ...]),
+            ("annotations", AnnotationsType),
+            ("linked", bool)
+        ])):
+    pass
 
 
 class Real(
-    _DataType, NamedTuple("Real", [
-        ("name", str),
-        # a precision (int, and a format specifier('f', 'g', or '')
-        ("format", Tuple[int, str]),
-        ("annotations", AnnotationsType),
-        ("linked", bool)
-    ])): pass
+        _DataType, NamedTuple("Real", [
+            ("name", str),
+            # a precision (int, and a format specifier('f', 'g', or '')
+            ("format", Tuple[int, str]),
+            ("annotations", AnnotationsType),
+            ("linked", bool)
+        ])):
+    pass
 
 
 class String(
-    _DataType, NamedTuple("String", [
-        ("name", str),
-        ("annotations", AnnotationsType),
-        ("linked", bool)
-    ])): pass
+        _DataType, NamedTuple("String", [
+            ("name", str),
+            ("annotations", AnnotationsType),
+            ("linked", bool)
+        ])):
+    pass
 
 
 class Time(
-    _DataType, NamedTuple("Time", [
-        ("name", str),
-        ("annotations", AnnotationsType),
-        ("linked", bool)
-    ])): pass
+        _DataType, NamedTuple("Time", [
+            ("name", str),
+            ("annotations", AnnotationsType),
+            ("linked", bool)
+        ])):
+    pass
 
 
 Variable = Union[Categorical, Real, Time, String]
@@ -145,6 +151,7 @@ class Rename(_DataType, namedtuple("Rename", ["name"])):
     name : str
         The new name
     """
+
     def __call__(self, var):
         # type: (Variable) -> Variable
         return var._replace(name=self.name)
@@ -170,6 +177,7 @@ class CategoriesMapping(_DataType, namedtuple("CategoriesMapping", ["mapping"]))
     ----------
     mapping : CategoriesMappingType
     """
+
     def __call__(self, var):
         # type: (Categorical) -> Categorical
         cat = tuple(unique(cj for _, cj in self.mapping if cj is not None))
@@ -180,6 +188,7 @@ class Annotate(_DataType, namedtuple("Annotate", ["annotations"])):
     """
     Replace variable annotations.
     """
+
     def __call__(self, var):
         return var._replace(annotations=self.annotations)
 
@@ -188,39 +197,47 @@ class Unlink(_DataType, namedtuple("Unlink", [])):
     """Unlink variable from its source, that is, remove compute_value"""
 
 
-Transform = Union[Rename, CategoriesMapping, Annotate, Unlink]
-TransformTypes = (Rename, CategoriesMapping, Annotate, Unlink)
+class StrpTime(_DataType, namedtuple("StrpTime", ["label", "formats", "have_date", "have_time"])):
+    """Use format on variable interpreted as time"""
+
+
+Transform = Union[Rename, CategoriesMapping, Annotate, Unlink, StrpTime]
+TransformTypes = (Rename, CategoriesMapping, Annotate, Unlink, StrpTime)
 
 CategoricalTransformTypes = (CategoriesMapping, Unlink)
 
 
 # Reinterpret vector transformations.
 class CategoricalVector(
-    _DataType, NamedTuple("CategoricalVector", [
-        ("vtype", Categorical),
-        ("data", Callable[[], MArray]),
-    ])): ...
+        _DataType, NamedTuple("CategoricalVector", [
+            ("vtype", Categorical),
+            ("data", Callable[[], MArray]),
+        ])):
+    ...
 
 
 class RealVector(
-    _DataType, NamedTuple("RealVector", [
-        ("vtype", Real),
-        ("data", Callable[[], MArray]),
-    ])): ...
+        _DataType, NamedTuple("RealVector", [
+            ("vtype", Real),
+            ("data", Callable[[], MArray]),
+        ])):
+    ...
 
 
 class StringVector(
-    _DataType, NamedTuple("StringVector", [
-        ("vtype", String),
-        ("data", Callable[[], MArray]),
-    ])): ...
+        _DataType, NamedTuple("StringVector", [
+            ("vtype", String),
+            ("data", Callable[[], MArray]),
+        ])):
+    ...
 
 
 class TimeVector(
-    _DataType, NamedTuple("TimeVector", [
-        ("vtype", Time),
-        ("data", Callable[[], MArray]),
-    ])): ...
+        _DataType, NamedTuple("TimeVector", [
+            ("vtype", Time),
+            ("data", Callable[[], MArray]),
+        ])):
+    ...
 
 
 DataVector = Union[CategoricalVector, RealVector, StringVector, TimeVector]
@@ -229,6 +246,7 @@ DataVectorTypes = (CategoricalVector, RealVector, StringVector, TimeVector)
 
 class AsString(_DataType, NamedTuple("AsString", [])):
     """Reinterpret a data vector as a string."""
+
     def __call__(self, vector: DataVector) -> StringVector:
         var, _ = vector
         if isinstance(var, String):
@@ -244,6 +262,7 @@ class AsContinuous(_DataType, NamedTuple("AsContinuous", [])):
     Reinterpret as a continuous variable (values that do not parse as
     float are NaN).
     """
+
     def __call__(self, vector: DataVector) -> RealVector:
         var, _ = vector
         if isinstance(var, Real):
@@ -273,6 +292,7 @@ class AsContinuous(_DataType, NamedTuple("AsContinuous", [])):
 
 class AsCategorical(_DataType, namedtuple("AsCategorical", [])):
     """Reinterpret as a categorical variable"""
+
     def __call__(self, vector: DataVector) -> CategoricalVector:
         # this is the main complication in type transformation since we need
         # the data and not just the variable description
@@ -290,6 +310,7 @@ class AsCategorical(_DataType, namedtuple("AsCategorical", [])):
 
 class AsTime(_DataType, namedtuple("AsTime", [])):
     """Reinterpret as a datetime vector"""
+
     def __call__(self, vector: DataVector) -> TimeVector:
         var, _ = vector
         if isinstance(var, Time):
@@ -442,6 +463,7 @@ class DictItemsModel(QStandardItemModel):
     """
     # Implement a proper model with in-place editing.
     # (Maybe it should be a TableModel with 2 columns)
+
     def __init__(self, parent=None, a_dict=None):
         super().__init__(parent)
         self._dict = {}
@@ -701,7 +723,7 @@ class GroupItemsDialog(QDialog):
         spin2.setMaximum(max_val)
         spin2.setValue(dialog_settings.get("frequent_abs_spin", 10))
         spin2.setMinimumWidth(
-            self.fontMetrics().width("X") * (len(str(max_val)) + 1) + 20
+            self.fontMetrics().horizontalAdvance("X") * (len(str(max_val)) + 1) + 20
         )
         spin2.valueChanged.connect(self._frequent_abs_spin_changed)
 
@@ -711,7 +733,8 @@ class GroupItemsDialog(QDialog):
         spin3.setSingleStep(0.1)
         spin3.setMaximum(100)
         spin3.setValue(dialog_settings.get("frequent_rel_spin", 10))
-        spin3.setMinimumWidth(self.fontMetrics().width("X") * (2 + 1) + 20)
+        spin3.setMinimumWidth(
+            self.fontMetrics().horizontalAdvance("X") * (2 + 1) + 20)
         spin3.setSuffix(" %")
         spin3.valueChanged.connect(self._frequent_rel_spin_changed)
 
@@ -724,7 +747,7 @@ class GroupItemsDialog(QDialog):
             )
         )
         spin4.setMinimumWidth(
-            self.fontMetrics().width("X") * (len(str(max_val)) + 1) + 20
+            self.fontMetrics().horizontalAdvance("X") * (len(str(max_val)) + 1) + 20
         )
         spin4.valueChanged.connect(self._n_values_spin_spin_changed)
 
@@ -990,6 +1013,7 @@ class CountedStateModel(CountedListModel):
     # The purpose is to count the items with target name only for
     # ItemEditState.NoRole, i.e. excluding added/dropped values.
     #
+
     def key(self, index):  # type: (QModelIndex) -> Tuple[Any, Any]
         # reimplemented
         return self.data(index, Qt.EditRole), self.data(index, EditStateRole)
@@ -1013,6 +1037,7 @@ class CategoriesEditDelegate(QStyledItemDelegate):
 
     Displayed items are styled for add, remove, merge and rename operations.
     """
+
     def initStyleOption(self, option, index):
         # type: (QStyleOptionViewItem, QModelIndex)-> None
         super().initStyleOption(option, index)
@@ -1103,6 +1128,7 @@ class DiscreteVariableEditor(VariableEditor):
     Extends the :class:`VariableEditor` to enable editing of
     variables values.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.merge_dialog_settings = {}
@@ -1127,7 +1153,8 @@ class DiscreteVariableEditor(VariableEditor):
 
         self.values_edit.selectionModel().selectionChanged.connect(
             self.on_value_selection_changed)
-        self.values_model.layoutChanged.connect(self.on_value_selection_changed)
+        self.values_model.layoutChanged.connect(
+            self.on_value_selection_changed)
         self.values_model.rowsMoved.connect(self.on_value_selection_changed)
 
         vlayout.addWidget(self.values_edit)
@@ -1176,7 +1203,7 @@ class DiscreteVariableEditor(VariableEditor):
             "重命名选中的项目", group,
             iconText="=",
             objectName="action-rename-selected-items",
-            # toolTip="Rename selected items.",
+            toolTip="重命名选中的项目.",
             shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_Equal),
             shortcutContext=Qt.WidgetShortcut,
         )
@@ -1185,13 +1212,15 @@ class DiscreteVariableEditor(VariableEditor):
             iconText="M",
             objectName="action-activate-merge-dialog",
             toolTip="Merge infrequent items.",
-            shortcut=QKeySequence(Qt.ControlModifier | Qt.MetaModifier | Qt.Key_Equal),
+            shortcut=QKeySequence(Qt.ControlModifier |
+                                  Qt.MetaModifier | Qt.Key_Equal),
             shortcutContext=Qt.WidgetShortcut
         )
 
         self.add_new_item.triggered.connect(self._add_category)
         self.remove_item.triggered.connect(self._remove_category)
-        self.rename_selected_items.triggered.connect(self._rename_selected_categories)
+        self.rename_selected_items.triggered.connect(
+            self._rename_selected_categories)
         self.merge_items.triggered.connect(self._merge_categories)
 
         button1 = FixedSizeButton(
@@ -1378,7 +1407,8 @@ class DiscreteVariableEditor(VariableEditor):
         i = rows[0].row()
         if offset > 0:
             offset += 1
-        self.values_model.moveRows(QModelIndex(), i, 1, QModelIndex(), i + offset)
+        self.values_model.moveRows(
+            QModelIndex(), i, 1, QModelIndex(), i + offset)
         self.variable_changed.emit()
 
     def move_up(self):
@@ -1399,7 +1429,8 @@ class DiscreteVariableEditor(VariableEditor):
         if len(rows) == 1:
             i = rows[0].row()
             self.move_value_up.setEnabled(i != 0)
-            self.move_value_down.setEnabled(i != self.values_model.rowCount() - 1)
+            self.move_value_down.setEnabled(
+                i != self.values_model.rowCount() - 1)
         else:
             self.move_value_up.setEnabled(False)
             self.move_value_down.setEnabled(False)
@@ -1475,7 +1506,7 @@ class DiscreteVariableEditor(VariableEditor):
             sizeGripEnabled=True,
         )
         dlg.setWindowModality(Qt.WindowModal)
-        status = dlg.exec_()
+        status = dlg.exec()
         dlg.deleteLater()
         self.merge_dialog_settings[self.var] = dlg.get_dialog_settings()
 
@@ -1517,8 +1548,37 @@ class ContinuousVariableEditor(VariableEditor):
 
 
 class TimeVariableEditor(VariableEditor):
-    # TODO: enable editing of display format...
-    pass
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        form = self.layout().itemAt(0)
+
+        self.format_cb = QComboBox()
+        for item, data in [("Detect automatically", (None, 1, 1))] + list(
+            Orange.data.TimeVariable.ADDITIONAL_FORMATS.items()
+        ):
+            self.format_cb.addItem(item, StrpTime(item, *data))
+        self.format_cb.currentIndexChanged.connect(self.variable_changed)
+        form.insertRow(2, "Format:", self.format_cb)
+
+    def set_data(self, var, transform=()):
+        super().set_data(var, transform)
+        if self.parent() is not None and isinstance(self.parent().var, Time):
+            # when transforming from time to time disable format selection combo
+            self.format_cb.setEnabled(False)
+        else:
+            # select the format from StrpTime transform
+            for tr in transform:
+                if isinstance(tr, StrpTime):
+                    index = self.format_cb.findText(tr.label)
+                    self.format_cb.setCurrentIndex(index)
+            self.format_cb.setEnabled(True)
+
+    def get_data(self):
+        var, tr = super().get_data()
+        if var is not None and (self.parent() is None or not isinstance(self.parent().var, Time)):
+            # do not add StrpTime when transforming from time to time
+            tr.insert(0, self.format_cb.currentData())
+        return var, tr
 
 
 def variable_icon(var):
@@ -1589,11 +1649,30 @@ class VariableEditDelegate(QStyledItemDelegate):
             # mark as changed (maybe also change color, add text, ...)
             option.font.setItalic(True)
 
+        multiplicity = index.data(MultiplicityRole)
+        if isinstance(multiplicity, int) and multiplicity > 1:
+            option.palette.setBrush(QPalette.Text, QBrush(Qt.red))
+            option.palette.setBrush(QPalette.HighlightedText, QBrush(Qt.red))
+
+    def helpEvent(self, event: QHelpEvent, view: QAbstractItemView,
+                  option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        multiplicity = index.data(MultiplicityRole)
+        name = VariableListModel.effective_name(index)
+        if isinstance(multiplicity, int) and multiplicity > 1 \
+                and name is not None:
+            QToolTip.showText(
+                event.globalPos(), f"Name `{name}` is duplicated",
+                view.viewport()
+            )
+            return True
+        else:  # pragma: no cover
+            return super().helpEvent(event, view, option, index)
+
 
 # Item model for edited variables (Variable). Define a display role to be the
 # source variable name. This is used only in keyboard search. The display is
 # otherwise completely handled by a delegate.
-class VariableListModel(itemmodels.PyListModel):
+class VariableListModel(CountedListModel):
     def data(self, index, role=Qt.DisplayRole):
         # type: (QModelIndex, Qt.ItemDataRole) -> Any
         row = index.row()
@@ -1606,6 +1685,32 @@ class VariableListModel(itemmodels.PyListModel):
             if isinstance(item, DataVectorTypes):
                 return item.vtype.name
         return super().data(index, role)
+
+    def key(self, index):
+        return VariableListModel.effective_name(index)
+
+    def keyRoles(self):  # type: () -> FrozenSet[int]
+        return frozenset((Qt.DisplayRole, Qt.EditRole, TransformRole))
+
+    @staticmethod
+    def effective_name(index) -> Optional[str]:
+        item = index.data(Qt.EditRole)
+        if isinstance(item, DataVectorTypes):
+            var = item.vtype
+        elif isinstance(item, VariableTypes):
+            var = item
+        else:
+            return None
+        tr = index.data(TransformRole)
+        return effective_name(var, tr or [])
+
+
+def effective_name(var: Variable, tr: Sequence[Transform]) -> str:
+    name = var.name
+    for t in tr:
+        if isinstance(t, Rename):
+            name = t.name
+    return name
 
 
 class ReinterpretVariableEditor(VariableEditor):
@@ -1624,7 +1729,8 @@ class ReinterpretVariableEditor(VariableEditor):
         # Explicitly skip VariableEditor's __init__, this is ugly but we have
         # a completely different layout/logic as a compound editor (should
         # really not subclass VariableEditor).
-        super(VariableEditor, self).__init__(parent, **kwargs)  # pylint: disable=bad-super-call
+        super(VariableEditor, self).__init__(
+            parent, **kwargs)  # pylint: disable=bad-super-call
         self.var = None  # type: Optional[Variable]
         self.__transform = None  # type: Optional[ReinterpretTransform]
         self.__data = None  # type: Optional[DataVector]
@@ -1639,7 +1745,8 @@ class ReinterpretVariableEditor(VariableEditor):
             form = editor.layout().itemAt(0)
             assert isinstance(form, QFormLayout)
             typecb = QComboBox(objectName="type-combo")
-            typecb.addItem(variable_icon(Categorical), "Categorical", Categorical)
+            typecb.addItem(variable_icon(Categorical),
+                           "Categorical", Categorical)
             typecb.addItem(variable_icon(Real), "Numeric", Real)
             typecb.addItem(variable_icon(String), "Text", String)
             typecb.addItem(variable_icon(Time), "Time", Time)
@@ -1797,8 +1904,9 @@ class OWEditDomain(widget.OWWidget):
     description = "重命名特征，编辑特征和变量注释。"
     icon = "icons/EditDomain.svg"
     priority = 3125
-    keywords = ["rename", "drop", "biaji", "tezheng", 'bianjitezheng', 'yu', 'bianjiyu']
-    category = "Data"
+    keywords = ["rename", "drop", "reorder",
+                "order", "biaji", "tezheng", 'bianjitezheng']
+    category = "数据(Data)"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -1813,11 +1921,12 @@ class OWEditDomain(widget.OWWidget):
     settings_version = 2
 
     _domain_change_store = settings.ContextSetting({})
-    _selected_item = settings.ContextSetting(None)  # type: Optional[Tuple[str, int]]
+    _selected_item = settings.ContextSetting(
+        None)  # type: Optional[Tuple[str, int]]
     _merge_dialog_settings = settings.ContextSetting({})
     output_table_name = settings.ContextSetting("")
 
-    want_control_area = False
+    want_main_area = False
 
     def __init__(self):
         super().__init__()
@@ -1827,13 +1936,8 @@ class OWEditDomain(widget.OWWidget):
         self._invalidated = False
         self.typeindex = 0
 
-        mainlayout = self.mainArea.layout()
-        assert isinstance(mainlayout, QVBoxLayout)
-        layout = QHBoxLayout()
-        mainlayout.addLayout(layout)
-        box = QGroupBox("变量")
-        box.setLayout(QVBoxLayout())
-        layout.addWidget(box)
+        main = gui.hBox(self.controlArea, spacing=6)
+        box = gui.vBox(main, "变量")
 
         self.variables_model = VariableListModel(parent=self)
         self.variables_view = self.domain_view = QListView(
@@ -1847,53 +1951,41 @@ class OWEditDomain(widget.OWWidget):
         )
         box.layout().addWidget(self.variables_view)
 
-        box = QGroupBox("编辑", )
-        box.setLayout(QVBoxLayout(margin=4))
-        layout.addWidget(box)
-
+        box = gui.vBox(main, "编辑")
         self._editor = ReinterpretVariableEditor()
-
         box.layout().addWidget(self._editor)
 
         self.le_output_name = gui.lineEdit(
-            self.mainArea, self, "output_table_name", "输出表名: ",
-            box=True, orientation=Qt.Horizontal)
+            self.buttonsArea, self, "output_table_name", "输出表名: ",
+            orientation=Qt.Horizontal)
 
-        bbox = QDialogButtonBox()
-        bbox.setStyleSheet(
-            "button-layout: {:d};".format(QDialogButtonBox.MacLayout))
-        bapply = QPushButton(
-            "应用",
+        gui.rubber(self.buttonsArea)
+
+        bbox = gui.hBox(self.buttonsArea)
+        breset_all = gui.button(
+            bbox, self, "重置所有",
+            objectName="button-reset-all",
+            toolTip="Reset all variables to their input state.",
+            autoDefault=False,
+            callback=self.reset_all
+        )
+        breset = gui.button(
+            bbox, self, "重置所选内容",
+            objectName="button-reset",
+            toolTip="Rest selected variable to its input state.",
+            autoDefault=False,
+            callback=self.reset_selected
+        )
+        bapply = gui.button(
+            bbox, self, "应用",
             objectName="button-apply",
             toolTip="Apply changes and commit data on output.",
             default=True,
-            autoDefault=False
+            autoDefault=False,
+            callback=self.commit
         )
-        bapply.clicked.connect(self.commit)
-        breset = QPushButton(
-            "重置所选内容",
-            objectName="button-reset",
-            toolTip="Rest selected variable to its input state.",
-            autoDefault=False
-        )
-        breset.clicked.connect(self.reset_selected)
-        breset_all = QPushButton(
-            "全部重置",
-            objectName="button-reset-all",
-            toolTip="Reset all variables to their input state.",
-            autoDefault=False
-        )
-        breset_all.clicked.connect(self.reset_all)
 
-        bbox.addButton(bapply, QDialogButtonBox.AcceptRole)
-        bbox.addButton(breset, QDialogButtonBox.ResetRole)
-        bbox.addButton(breset_all, QDialogButtonBox.ResetRole)
-
-        mainlayout.addWidget(bbox)
         self.variables_view.setFocus(Qt.NoFocusReason)  # initial focus
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
 
     @Inputs.data
     def set_data(self, data):
@@ -1903,8 +1995,6 @@ class OWEditDomain(widget.OWWidget):
         self.data = data
 
         if self.data is not None:
-            self.info.set_input_summary(len(data),
-                                        format_summary_details(data))
             self.setup_model(data)
             self.le_output_name.setPlaceholderText(data.name)
             self.openContext(self.data)
@@ -1912,7 +2002,6 @@ class OWEditDomain(widget.OWWidget):
             self._restore()
         else:
             self.le_output_name.setPlaceholderText("")
-            self.info.set_input_summary(self.info.NoInput)
 
         self.commit()
 
@@ -2012,7 +2101,8 @@ class OWEditDomain(widget.OWWidget):
     def _on_selection_changed(self):
         self.selected_index = self.selected_var_index()
         if self.selected_index != -1:
-            self._selected_item = self.variables_model[self.selected_index].vtype.name_type()
+            self._selected_item = self.variables_model[self.selected_index].vtype.name_type(
+            )
         else:
             self._selected_item = None
         self.open_editor(self.selected_index)
@@ -2057,7 +2147,8 @@ class OWEditDomain(widget.OWWidget):
 
     def _store_transform(self, var, transform):
         # type: (Variable, List[Transform]) -> None
-        self._domain_change_store[deconstruct(var)] = [deconstruct(t) for t in transform]
+        self._domain_change_store[deconstruct(var)] = [
+            deconstruct(t) for t in transform]
 
     def _restore_transform(self, var):
         # type: (Variable) -> List[Transform]
@@ -2095,7 +2186,6 @@ class OWEditDomain(widget.OWWidget):
         data = self.data
         if data is None:
             self.Outputs.data.send(None)
-            self.info.set_output_summary(self.info.NoOutput)
             return
         model = self.variables_model
 
@@ -2111,8 +2201,6 @@ class OWEditDomain(widget.OWWidget):
                 and not any(requires_transform(var, trs)
                             for var, (_, trs) in zip(input_vars, state)):
             self.Outputs.data.send(data)
-            self.info.set_output_summary(len(data),
-                                         format_summary_details(data))
             return
 
         assert all(v_.vtype.name == v.name
@@ -2136,7 +2224,6 @@ class OWEditDomain(widget.OWWidget):
         if len(output_vars) != len({v.name for v in output_vars}):
             self.Error.duplicate_var_name()
             self.Outputs.data.send(None)
-            self.info.set_output_summary(self.info.NoOutput)
             return
 
         domain = data.domain
@@ -2148,7 +2235,7 @@ class OWEditDomain(widget.OWWidget):
             Xs = [v for v in vars_list[:nx] if v.is_primitive()]
             Ys = [v for v in vars_list[nx: nx + ny] if v.is_primitive()]
             Ms = vars_list[nx + ny:] + \
-                 [v for v in vars_list[:nx + ny] if not  v.is_primitive()]
+                [v for v in vars_list[:nx + ny] if not v.is_primitive()]
             return Orange.data.Domain(Xs, Ys, Ms)
 
         domain = construct_domain(output_vars)
@@ -2163,8 +2250,6 @@ class OWEditDomain(widget.OWWidget):
         if self.output_table_name:
             new_data.name = self.output_table_name
         self.Outputs.data.send(new_data)
-        self.info.set_output_summary(len(new_data),
-                                     format_summary_details(new_data))
 
     def sizeHint(self):
         sh = super().sizeHint()
@@ -2239,7 +2324,8 @@ class OWEditDomain(widget.OWWidget):
                         assert len(src.categories) == len(dst.categories)
                         trs.append(CategoriesMapping(
                             list(zip(src.categories, dst.categories))))
-                store.append((deconstruct(src), [deconstruct(tr) for tr in trs]))
+                store.append(
+                    (deconstruct(src), [deconstruct(tr) for tr in trs]))
             context.values["_domain_change_store"] = (dict(store), -2)
 
 
@@ -2461,8 +2547,8 @@ def requires_unlink(var: Orange.data.Variable, trs: List[Transform]) -> bool:
     # Variable is only unlinked if it has compute_value  or if it has other
     # transformations (that might had added compute_value)
     return trs is not None \
-           and any(isinstance(tr, Unlink) for tr in trs) \
-           and (var.compute_value is not None or len(trs) > 1)
+        and any(isinstance(tr, Unlink) for tr in trs) \
+        and (var.compute_value is not None or len(trs) > 1)
 
 
 def requires_transform(var: Orange.data.Variable, trs: List[Transform]) -> bool:
@@ -2509,7 +2595,7 @@ def apply_transform_discete(var, trs):
     dest_codes = positions(dest_values)
     if mapping is not None:
         # construct a lookup table
-        lookup = np.full(len(source_values), np.nan, dtype=np.float)
+        lookup = np.full(len(source_values), np.nan, dtype=float)
         for ci, cj in mapping:
             if ci is not None and cj is not None:
                 i, j = source_codes[ci], dest_codes[cj]
@@ -2561,14 +2647,19 @@ def apply_transform_time(var, trs):
 def apply_transform_string(var, trs):
     # type: (Orange.data.StringVariable, List[Transform]) -> Orange.data.Variable
     name, annotations = var.name, var.attributes
+    out_type = Orange.data.StringVariable
+    compute_value = Identity
     for tr in trs:
         if isinstance(tr, Rename):
             name = tr.name
         elif isinstance(tr, Annotate):
             annotations = _parse_attributes(tr.annotations)
-    variable = Orange.data.StringVariable(
-        name=name, compute_value=Identity(var)
-    )
+        elif isinstance(tr, StrpTime):
+            out_type = partial(
+                Orange.data.TimeVariable, have_date=tr.have_date, have_time=tr.have_time
+            )
+            compute_value = partial(ReparseTimeTransform, tr=tr)
+    variable = out_type(name=name, compute_value=compute_value(var))
     variable.attributes.update(annotations)
     return variable
 
@@ -2625,23 +2716,8 @@ def make_dict_mapper(
         arr = np.asanyarray(arr)
         if out is None and dtype is not None and arr.shape != ():
             out = np.empty_like(arr, dtype)
-        return _vmapper(arr, out, dtype=dtype, **kwargs)
+        return _vmapper(arr, out, dtype=dtype, casting="unsafe", **kwargs)
     return mapper
-
-
-def time_parse(values: Sequence[str], name="__"):
-    tvar = Orange.data.TimeVariable(name)
-    parse_time = ftry(tvar.parse, ValueError, np.nan)
-    _values = [parse_time(v) for v in values]
-    if np.all(np.isnan(_values)):
-        # try parsing it with pandas (like in transform)
-        dti = pd.to_datetime(values, errors="coerce")
-        _values = datetime_to_epoch(dti)
-        date_only = getattr(dti, "_is_dates_only", False)
-        if np.all(dti != pd.NaT):
-            tvar.have_date = True
-            tvar.have_time = not date_only
-    return tvar, _values
 
 
 as_string = np.frompyfunc(str, 1, 1)
@@ -2659,12 +2735,12 @@ def as_float_or_nan(
     where conversion failed with NaN.
     """
     if out is None:
-        out = np.full(arr.shape, np.nan, np.float if dtype is None else dtype)
+        out = np.full(arr.shape, np.nan, float if dtype is None else dtype)
     if np.issubdtype(arr.dtype, np.inexact) or \
             np.issubdtype(arr.dtype, np.integer):
         np.copyto(out, arr, casting="unsafe", where=where)
         return out
-    return _parse_float(arr, out, where=where, **kwargs)
+    return _parse_float(arr, out, where=where, casting="unsafe", **kwargs)
 
 
 def copy_attributes(dst: V, src: Orange.data.Variable) -> V:
@@ -2690,23 +2766,15 @@ def apply_reinterpret_d(var, tr, data):
     # type: (Orange.data.DiscreteVariable, ReinterpretTransform, ndarray) -> Orange.data.Variable
     if isinstance(tr, AsCategorical):
         return var
-    elif isinstance(tr, AsString):
+    elif isinstance(tr, (AsString, AsTime)):
+        # TimeVar will be interpreted by StrpTime later
         f = Lookup(var, np.array(var.values, dtype=object), unknown="")
-        rvar = Orange.data.StringVariable(
-            name=var.name, compute_value=f
-        )
+        rvar = Orange.data.StringVariable(name=var.name, compute_value=f)
     elif isinstance(tr, AsContinuous):
         f = Lookup(var, np.array(list(map(parse_float, var.values))),
                    unknown=np.nan)
         rvar = Orange.data.ContinuousVariable(
             name=var.name, compute_value=f, sparse=var.sparse
-        )
-    elif isinstance(tr, AsTime):
-        _tvar, values = time_parse(var.values)
-        f = Lookup(var, np.array(values), unknown=np.nan)
-        rvar = Orange.data.TimeVariable(
-            name=var.name, have_date=_tvar.have_date,
-            have_time=_tvar.have_time, compute_value=f,
         )
     else:
         assert False
@@ -2733,14 +2801,12 @@ def apply_reinterpret_c(var, tr, data: MArray):
     elif isinstance(tr, AsContinuous):
         return var
     elif isinstance(tr, AsString):
+        # TimeVar will be interpreted by StrpTime later
         tstr = ToStringTransform(var)
-        rvar = Orange.data.StringVariable(
-            name=var.name, compute_value=tstr
-        )
+        rvar = Orange.data.StringVariable(name=var.name, compute_value=tstr)
     elif isinstance(tr, AsTime):
         rvar = Orange.data.TimeVariable(
-            name=var.name, compute_value=Identity(var)
-        )
+            name=var.name, compute_value=Identity(var))
     else:
         assert False
     return copy_attributes(rvar, var)
@@ -2763,14 +2829,9 @@ def apply_reinterpret_s(var: Orange.data.StringVariable, tr, data: MArray):
         rvar = Orange.data.ContinuousVariable(
             var.name, compute_value=ToContinuousTransform(var)
         )
-    elif isinstance(tr, AsString):
+    elif isinstance(tr, (AsString, AsTime)):
+        # TimeVar will be interpreted by StrpTime later
         return var
-    elif isinstance(tr, AsTime):
-        tvar, _ = time_parse(np.unique(data.data[~data.mask]))
-        rvar = Orange.data.TimeVariable(
-            name=var.name, have_date=tvar.have_date, have_time=tvar.have_time,
-            compute_value=ReparseTimeTransform(var)
-        )
     else:
         assert False
     return copy_attributes(rvar, var)
@@ -2818,6 +2879,7 @@ class ToStringTransform(Transformation):
     """
     Transform a variable to string.
     """
+
     def transform(self, c):
         if self.variable.is_string:
             return c
@@ -2847,29 +2909,37 @@ class ToContinuousTransform(Transformation):
             raise TypeError
 
 
-def datetime_to_epoch(dti: pd.DatetimeIndex) -> np.ndarray:
+def datetime_to_epoch(dti: pd.DatetimeIndex, only_time) -> np.ndarray:
     """Convert datetime to epoch"""
-    data = dti.values.astype("M8[us]")
-    mask = np.isnat(data)
-    data = data.astype(float) / 1e6
-    data[mask] = np.nan
-    return data
+    delta = dti - (dti.normalize()
+                   if only_time else pd.Timestamp("1970-01-01"))
+    return (delta / pd.Timedelta("1s")).values
 
 
 class ReparseTimeTransform(Transformation):
     """
     Re-parse the column's string repr as datetime.
     """
+
+    def __init__(self, variable, tr):
+        super().__init__(variable)
+        self.tr = tr
+
     def transform(self, c):
-        c = column_str_repr(self.variable, c)
-        c = pd.to_datetime(c, errors="coerce")
-        return datetime_to_epoch(c)
+        # if self.formats is none guess format option is selected
+        formats = self.tr.formats if self.tr.formats is not None else [None]
+        for f in formats:
+            d = pd.to_datetime(c, errors="coerce", format=f)
+            if pd.notnull(d).any():
+                return datetime_to_epoch(d, only_time=not self.tr.have_date)
+        return np.nan
 
 
 class LookupMappingTransform(Transformation):
     """
     Map values via a dictionary lookup.
     """
+
     def __init__(
             self,
             variable: Orange.data.Variable,
@@ -2889,8 +2959,8 @@ class LookupMappingTransform(Transformation):
 
     def __eq__(self, other):
         return self.variable == other.variable \
-               and self.mapping == other.mapping \
-               and self.dtype == other.dtype
+            and self.mapping == other.mapping \
+            and self.dtype == other.dtype
 
     def __hash__(self):
         return hash((type(self), self.variable, self.mapping, self.dtype))

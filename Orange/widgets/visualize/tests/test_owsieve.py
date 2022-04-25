@@ -16,7 +16,6 @@ from Orange.widgets.visualize.owsieve import OWSieveDiagram
 from Orange.widgets.visualize.owsieve import ChiSqStats
 from Orange.widgets.visualize.owsieve import Discretize
 from Orange.widgets.widget import AttributeList
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
@@ -25,7 +24,7 @@ class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
         cls.titanic = Table("titanic")
         cls.iris = Table("iris")
@@ -141,15 +140,15 @@ class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
         Sparse support.
         """
         self.send_signal(self.widget.Inputs.data, self.iris)
-        self.assertEqual(len(self.widget.discrete_data.domain),
-                         len(self.iris.domain))
-        output = self.get_output("数据(Data)")
+        self.assertEqual(len(self.widget.discrete_data.domain.variables),
+                         len(self.iris.domain.variables))
+        output = self.get_output("Data")
         self.assertFalse(output.is_sparse())
 
         table = self.iris.to_sparse()
         self.send_signal(self.widget.Inputs.data, table)
-        self.assertEqual(len(self.widget.discrete_data.domain), 2)
-        output = self.get_output("数据(Data)")
+        self.assertEqual(len(self.widget.discrete_data.domain.variables), 2)
+        output = self.get_output("Data")
         self.assertTrue(output.is_sparse())
 
     @patch('Orange.widgets.visualize.owsieve.SieveRank.on_manual_change')
@@ -178,29 +177,6 @@ class TestOWSieveDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.assertTrue(self.widget.attr_box.isEnabled())
         self.assertTrue(self.widget.vizrank.isEnabled())
 
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        data = self.iris
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 if __name__ == "__main__":
     unittest.main()

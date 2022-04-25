@@ -8,12 +8,12 @@ from Orange.data import TimeVariable, Table
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.widget import Input
 
-from AnyQt.QtWidgets import QTreeWidget, \
-    QWidget, QPushButton, QListView, QVBoxLayout
+from AnyQt.QtWidgets import QTreeWidget, QWidget, QPushButton, QListView, QVBoxLayout
 from AnyQt.QtGui import QIcon
 from AnyQt.QtCore import QSize, pyqtSignal, QTimer
 
 from Orange.widgets.utils.itemmodels import VariableListModel
+
 # from orangecontrib.timeseries import Timeseries
 from .utils.highcharts import Highchart
 
@@ -25,19 +25,24 @@ class PlotConfigWidget(QWidget, gui.OWComponent):
     sigSelection = pyqtSignal(str, list)
 
     is_logarithmic = False
-    plot_types = {'线':'line', 
-                    '折线':'step line', 
-                    '柱':'column', 
-                    '面积':'area', 
-                    '样条曲线':'spline'}
-    plot_type = '线'
+    plot_types = {
+        "线": "line",
+        "折线": "step line",
+        "柱": "column",
+        "面积": "area",
+        "样条曲线": "spline",
+    }
+    plot_type = "线"
 
     def __init__(self, owwidget, ax, varmodel):
         QWidget.__init__(self, owwidget)
         gui.OWComponent.__init__(self)
 
         self.ax = ax
-        self.view = view = QListView(self, selectionMode=QTreeWidget.ExtendedSelection,)
+        self.view = view = QListView(
+            self,
+            selectionMode=QTreeWidget.ExtendedSelection,
+        )
         view.setModel(varmodel)
         selection = view.selectionModel()
         selection.selectionChanged.connect(self.selection_changed)
@@ -47,28 +52,40 @@ class PlotConfigWidget(QWidget, gui.OWComponent):
         self.setLayout(box)
 
         hbox = gui.hBox(self)
-        gui.comboBox(hbox, self, 'plot_type',
-                     label='类型:',
-                     orientation='horizontal',
-                     items=('线', '折线', '柱', '面积', '样条曲线'),
-                     sendSelectedValue=True,
-                     callback=lambda: self.sigType.emit(ax, self.plot_types[self.plot_type]))
+        gui.comboBox(
+            hbox,
+            self,
+            "plot_type",
+            label="类型:",
+            orientation="horizontal",
+            items=("线", "折线", "柱", "面积", "样条曲线"),
+            sendSelectedValue=True,
+            callback=lambda: self.sigType.emit(ax, self.plot_types[self.plot_type]),
+        )
         gui.rubber(hbox)
-        self.button_close = button = QPushButton('×', hbox,
-                                                 visible=False,
-                                                 minimumSize=QSize(20, 20),
-                                                 maximumSize=QSize(20, 20),
-                                                 styleSheet='''
+        self.button_close = button = QPushButton(
+            "×",
+            hbox,
+            visible=False,
+            minimumSize=QSize(20, 20),
+            maximumSize=QSize(20, 20),
+            styleSheet="""
                                                      QPushButton {
                                                          font-weight: bold;
                                                          font-size:14pt;
                                                          margin:0;
                                                          padding:0;
-                                                     }''')
+                                                     }""",
+        )
         button.clicked.connect(lambda: self.sigClosed.emit(ax, self))
         hbox.layout().addWidget(button)
-        gui.checkBox(self, self, 'is_logarithmic', '对数轴',
-                     callback=lambda: self.sigLogarithmic.emit(ax, self.is_logarithmic))
+        gui.checkBox(
+            self,
+            self,
+            "is_logarithmic",
+            "对数轴",
+            callback=lambda: self.sigLogarithmic.emit(ax, self.is_logarithmic),
+        )
         box.addWidget(view)
 
     # This is here because sometimes enterEvent/leaveEvent below were called
@@ -84,29 +101,32 @@ class PlotConfigWidget(QWidget, gui.OWComponent):
             self.button_close.setVisible(False)
 
     def selection_changed(self):
-        selection = [mi.model()[mi.row()]
-                     for mi in self.view.selectionModel().selectedIndexes()]
+        selection = [
+            mi.model()[mi.row()] for mi in self.view.selectionModel().selectedIndexes()
+        ]
         self.sigSelection.emit(self.ax, selection)
         self.sigType.emit(self.ax, self.plot_types[self.plot_type])
 
 
 class Highstock(Highchart):
-
     def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args,
-                         yAxis_lineWidth=2,
-                         yAxis_labels_x=6,
-                         yAxis_labels_y=-3,
-                         yAxis_labels_align_x='right',
-                         yAxis_title_text=None,
-                         enable_scrollbar = False,
-                         plotOptions_series_dataGrouping_groupPixelWidth=2,
-                         plotOptions_series_dataGrouping_approximation='high',
-                         plotOptions_areasplinerange_states_hover_lineWidthPlus=0,
-                         plotOptions_areasplinerange_tooltip_pointFormat='''
+        super().__init__(
+            parent,
+            *args,
+            yAxis_lineWidth=2,
+            yAxis_labels_x=6,
+            yAxis_labels_y=-3,
+            yAxis_labels_align_x="right",
+            yAxis_title_text=None,
+            enable_scrollbar=False,
+            plotOptions_series_dataGrouping_groupPixelWidth=2,
+            plotOptions_series_dataGrouping_approximation="high",
+            plotOptions_areasplinerange_states_hover_lineWidthPlus=0,
+            plotOptions_areasplinerange_tooltip_pointFormat="""
                             <span style="color:{point.color}">\u25CF</span>
-                            {series.name}: <b>{point.low:.2f} – {point.high:.2f}</b><br/>''',
-                         **kwargs)
+                            {series.name}: <b>{point.low:.2f} – {point.high:.2f}</b><br/>""",
+            **kwargs
+        )
         self.parent = parent
         self.axes = []
 
@@ -115,7 +135,8 @@ class Highstock(Highchart):
             return
         MARGIN = 2
         HEIGHT = (100 - (len(self.axes) - 1) * MARGIN) // len(self.axes)
-        self.evalJS('''
+        self.evalJS(
+            """
             var SKIP_AXES = 1,
                 HEIGHT = %(HEIGHT)f,
                 MARGIN = %(MARGIN)f;
@@ -129,37 +150,49 @@ class Highstock(Highchart):
             }
             chart.reflow();
             chart.redraw(false);
-        ''' % locals())
+        """
+            % locals()
+        )
 
     def addAxis(self):
         from random import random
-        ax = 'ax_' + str(random())[2:]
+
+        ax = "ax_" + str(random())[2:]
         self.axes.append(ax)
-        self.evalJS('''
+        self.evalJS(
+            """
             chart.addAxis({
                 id: '%(ax)s',
             }, false, false, false);
-        ''' % locals())
+        """
+            % locals()
+        )
         self._resizeAxes()
         # TODO: multiple series on the bottom navigator, http://jsfiddle.net/highcharts/SD4XN/
         return ax
 
     def add_legend(self):
-        self.evalJS('''chart.legend.options.enabled = true;''')
+        self.evalJS("""chart.legend.options.enabled = true;""")
 
     def removeAxis(self, ax):
         self.axes.remove(ax)
-        self.evalJS('''
+        self.evalJS(
+            """
             chart.get('%(ax)s').remove();
-        ''' % dict(ax=ax))
+        """
+            % dict(ax=ax)
+        )
         self._resizeAxes()
 
     def setXAxisType(self, ax_type):
-        self.evalJS('''
+        self.evalJS(
+            """
         for (var i=0; i<chart.xAxis.length; ++i) {
             chart.xAxis[i].update({type: '%s'});
         }
-        ''' % ax_type)
+        """
+            % ax_type
+        )
 
     def setSeries(self, ax, series):
         """TODO: Clean this shit up"""
@@ -176,11 +209,17 @@ class Highstock(Highchart):
             deltas.append(None)
             ci_percents.append(None)
 
-        self.exposeObject('series_' + ax, {'data': newseries,
-                                           'ci_percents': ci_percents,
-                                           'names': names,
-                                           'deltas': deltas})
-        self.evalJS('''
+        self.exposeObject(
+            "series_" + ax,
+            {
+                "data": newseries,
+                "ci_percents": ci_percents,
+                "names": names,
+                "deltas": deltas,
+            },
+        )
+        self.evalJS(
+            """
             var ax = chart.get('%(ax)s');
             chart.series
             .filter(function(s) { return s.yAxis == ax })
@@ -210,34 +249,44 @@ class Highstock(Highchart):
                 
             }
             chart.redraw(false);
-        ''' % dict(ax=ax))
+        """
+            % dict(ax=ax)
+        )
 
     def setLogarithmic(self, ax, is_logarithmic):
-        self.evalJS('''
+        self.evalJS(
+            """
             chart.get('%(ax)s').update({ type: '%(type)s', allowNegativeLog:
             %(negative)s, tickInterval: %(tick)s,
         });
-        ''' % dict(ax=ax, type='logarithmic' if is_logarithmic else 'linear',
-                   negative='true' if is_logarithmic else 'false',
-                   tick=1 if is_logarithmic else 'undefined'))
+        """
+            % dict(
+                ax=ax,
+                type="logarithmic" if is_logarithmic else "linear",
+                negative="true" if is_logarithmic else "false",
+                tick=1 if is_logarithmic else "undefined",
+            )
+        )
         if not is_logarithmic:
             # it is a workaround for Highcharts issue - Highcharts do not
             # un-mark data as null when changing graph from logarithmic to
             # linear
             self.evalJS(
-                '''
+                """
                 s = chart.get('%(ax)s').series;
                 s.forEach(function(series) {
                     series.data.forEach(function(point) {
                         point.update({'isNull': false});
                     });
                 });
-                ''' % dict(ax=ax)
+                """
+                % dict(ax=ax)
             )
 
     def setType(self, ax, type):
-        step, type = ('true', 'line') if type == 'step line' else ('false', type)
-        self.evalJS('''
+        step, type = ("true", "line") if type == "step line" else ("false", type)
+        self.evalJS(
+            """
             var ax = chart.get('%(ax)s');
             chart.series
             .filter(function(s) { return s.yAxis == ax; })
@@ -248,37 +297,39 @@ class Highstock(Highchart):
                 }, false);
             });
             chart.redraw(false);
-        ''' % locals())
+        """
+            % locals()
+        )
 
 
 class OWLineChart(widget.OWWidget):
-    name = '折线图(Line Chart)'
+    name = "折线图(Line Chart)"
     description = "以折线图形式观察某一列数据."
-    icon = 'icons/LineChart.svg'
+    icon = "icons/LineChart.svg"
     priority = 90
-    category = 'visualize'
-    keywords = ['zhexiantu']
+    category = "可视化(Visualize)"
+    keywords = ["zhexiantu"]
 
     class Inputs:
-        time_series = Input("数据(Data)", Table, replaces='Data')
+        time_series = Input("数据(Data)", Table, replaces="Data")
 
     attrs = settings.Setting({})  # Maps data.name -> [attrs]
 
-    graph_name = 'chart'
+    graph_name = "chart"
 
     def __init__(self):
         self.data = None
         self.plots = []
         self.configs = []
         self.varmodel = VariableListModel(parent=self)
-        icon = QIcon(join(dirname(__file__), 'icons', 'LineChart-plus.png'))
-        self.add_button = button = QPushButton(icon, '添加折线图', self)
+        icon = QIcon(join(dirname(__file__), "icons", "LineChart-plus.png"))
+        self.add_button = button = QPushButton(icon, "添加折线图", self)
         button.clicked.connect(self.add_plot)
         self.controlArea.layout().addWidget(button)
         self.configsArea = gui.vBox(self.controlArea)
         self.controlArea.layout().addStretch(1)
         # TODO: allow selecting ranges that are sent to output as subset table
-        self.chart = highstock = Highstock(self, highchart='StockChart')
+        self.chart = highstock = Highstock(self, highchart="StockChart")
         self.mainArea.layout().addWidget(highstock)
         # highstock.evalJS('Highcharts.setOptions({navigator: {enabled:false}});')
         highstock.chart(
@@ -287,7 +338,8 @@ class OWLineChart(widget.OWWidget):
             rangeSelector_enabled=False,
             rangeSelector_inputEnabled=False,
             # Disable bottom miniview navigator (it doesn't update)
-            navigator_enabled=False, )
+            navigator_enabled=False,
+        )
         QTimer.singleShot(0, self.add_plot)
         self.chart.add_legend()
 
@@ -300,8 +352,7 @@ class OWLineChart(widget.OWWidget):
         config.sigType.connect(self.chart.setType)
         config.sigClosed.connect(self.chart.removeAxis)
         config.sigClosed.connect(lambda ax, widget: widget.setParent(None))
-        config.sigClosed.connect(lambda ax, widget:
-                                 self.add_button.setDisabled(False))
+        config.sigClosed.connect(lambda ax, widget: self.add_button.setDisabled(False))
         self.configs.append(config)
         self.add_button.setDisabled(len(self.configs) >= 5)
         config.sigClosed.connect(lambda ax, widget: self.remove_plot(widget))
@@ -325,8 +376,11 @@ class OWLineChart(widget.OWWidget):
         # new_data = None if data is None else \
         #            Timeseries.from_data_table(data)
         new_data = data
-        if new_data is not None and self.data is not None \
-                and new_data.domain == self.data.domain:
+        if (
+            new_data is not None
+            and self.data is not None
+            and new_data.domain == self.data.domain
+        ):
             self.data = new_data
             for config in self.configs:
                 config.selection_changed()
@@ -344,11 +398,6 @@ class OWLineChart(widget.OWWidget):
         #     self.chart.evalJS('Highcharts.setOptions({global: {timezoneOffset: %d}});' % -offset_minutes)  # Why is this negative? It works.
         #     self.chart.chart() and
 
-        self.chart.setXAxisType(
-            'linear')
+        self.chart.setXAxisType("linear")
 
-        self.varmodel.wrap([var for var in data.domain.variables
-                            if var.is_continuous ])
-
-
-
+        self.varmodel.wrap([var for var in data.domain.variables if var.is_continuous])

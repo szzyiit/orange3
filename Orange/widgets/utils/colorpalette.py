@@ -60,7 +60,7 @@ class ColorPixmap(QIcon):
 class ColorPaletteDlg(QDialog, gui.OWComponent):
     shemaChanged = pyqtSignal()
 
-    def __init__(self, parent, windowTitle="调色板(Color Palette)"):
+    def __init__(self, parent, windowTitle="Color Palette"):
         super().__init__(parent, windowTitle=windowTitle)
 
         if PYQT_VERSION < 0x50000:
@@ -79,12 +79,12 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         self.mainArea = gui.vBox(self, spacing=4)
         self.layout().addWidget(self.mainArea)
         self.schemaCombo = gui.comboBox(
-            self.mainArea, self, "selectedSchemaIndex", box="保存的配置",
+            self.mainArea, self, "selectedSchemaIndex", box="Saved Profiles",
             callback=self.paletteSelected)
 
         self.hbox = gui.hBox(self)
-        self.okButton = gui.button(self.hbox, self, "确认", self.acceptChanges)
-        self.cancelButton = gui.button(self.hbox, self, "取消", self.reject)
+        self.okButton = gui.button(self.hbox, self, "OK", self.acceptChanges)
+        self.cancelButton = gui.button(self.hbox, self, "Cancel", self.reject)
         self.setMinimumWidth(230)
         self.resize(350, 200)
 
@@ -138,7 +138,7 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         _set("passThroughBlack", passThroughBlack)
         _set("passThroughBlackCheckbox", gui.checkBox(
             buttBox, self, "cont" + paletteName + "passThroughBlack",
-            "穿过黑色", callback=self.colorSchemaChange))
+            "Pass through black", callback=self.colorSchemaChange))
         self.contPaletteNames.append(paletteName)
 
     def createExtendedContinuousPalette(
@@ -207,7 +207,7 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
                 if type(colors) == dict:
                     colors = colors[max(colors.keys())]
                 dlg = PaletteEditor(colors, parent=self)
-                if dlg.exec_() and colors != dlg.getRgbColors():
+                if dlg.exec() and colors != dlg.getRgbColors():
                     self.__dict__["disc" + paletteName + "View"].setDiscPalette(dlg.getRgbColors())
                 self.__dict__["disc" + paletteName + "EditButt"].setChecked(0)
                 return
@@ -277,11 +277,11 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
         self.schemaCombo.clear()
 
         if not schemas or type(schemas) != list:
-            schemas = [("默认", self.getCurrentState())]
+            schemas = [("Default", self.getCurrentState())]
 
         self.colorSchemas = schemas
         self.schemaCombo.addItems([s[0] for s in schemas])
-        self.schemaCombo.addItem("将当前调色板另存为…")
+        self.schemaCombo.addItem("Save current palette as...")
         self.selectedSchemaIndex = selectedSchemaIndex
         self.schemaCombo.setCurrentIndex(self.selectedSchemaIndex)
         self.paletteSelected()
@@ -332,19 +332,19 @@ class ColorPaletteDlg(QDialog, gui.OWComponent):
 
         # if we selected "Save current palette as..." option then add another option to the list
         if self.selectedSchemaIndex == self.schemaCombo.count() - 1:
-            message = "命名当前颜色设置\n" \
-                      "按“取消”将取消更改并关闭对话框。"
+            message = "Name the current color settings.\n" \
+                      "Pressing 'Cancel' will cancel your changes and close the dialog."
             ok = 0
             while not ok:
-                text, ok = QInputDialog.getText(self, "命名颜色设置", message)
+                text, ok = QInputDialog.getText(self, "Name Your Color Settings", message)
                 if (ok):
                     newName = str(text)
                     oldNames = [str(self.schemaCombo.itemText(i)).lower()
                                 for i in range(self.schemaCombo.count() - 1)]
                     if newName.lower() == "default":
                         ok = False
-                        message = "无法更改'默认'设置。" \
-                                  "输入其他名称："
+                        message = "The 'Default' settings cannot be changed." \
+                                  "Enter a different name:"
                     elif newName.lower() in oldNames:
                         index = oldNames.index(newName.lower())
                         self.colorSchemas.pop(index)
@@ -415,7 +415,7 @@ class ColorPalleteListing(QDialog):
         self.buttons = []
         self.setMinimumWidth(400)
 
-        box = gui.vBox(space, "Information", addSpace=True)
+        box = gui.vBox(space, "Information")
         gui.widgetLabel(
             box,
             '<p align="center">This dialog shows a list of predefined '
@@ -423,7 +423,7 @@ class ColorPalleteListing(QDialog):
             'in Orange.<br/>You can select a palette by clicking on it.</p>'
         )
 
-        box = gui.vBox(space, "Default Palette", addSpace=True)
+        box = gui.vBox(space, "Default Palette")
 
         butt = _ColorButton(
             DefaultRGBColors, flat=True, toolTip="Default color palette",
@@ -436,7 +436,7 @@ class ColorPalleteListing(QDialog):
         for type in ["Qualitative", "Spectral", "Diverging", "Sequential", "Pastels"]:
             colorGroup = colorbrewer.colorSchemes.get(type.lower(), {})
             if colorGroup:
-                box = gui.vBox(space, type + " Palettes", addSpace=True)
+                box = gui.vBox(space, type + " Palettes")
                 items = sorted(colorGroup.items())
                 for key, colors in items:
                     butt = _ColorButton(colors, self, toolTip=key, flat=True,

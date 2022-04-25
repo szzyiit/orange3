@@ -7,8 +7,6 @@ import numpy as np
 from Orange.data import Table, Domain, ContinuousVariable
 from Orange.widgets.data.owneighbors import OWNeighbors, METRICS
 from Orange.widgets.tests.base import WidgetTest, ParameterMapping
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
 
 
 class TestOWNeighbors(WidgetTest):
@@ -109,73 +107,36 @@ class TestOWNeighbors(WidgetTest):
         widget = self.widget
         data = Table("iris")
         reference = data[:3]
-        data.X[0:10, 0] = np.nan
+        with data.unlocked():
+            data.X[0:10, 0] = np.nan
         self.send_signal(widget.Inputs.data, self.iris)
         self.send_signal(widget.Inputs.reference, reference)
         widget.apply_button.button.click()
         self.assertIsNotNone(self.get_output("邻近(Neighbors)"))
 
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        data, reference = Table("iris"), Table("iris")[:5]
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        data_list = [("Data", data), ("Reference", None)]
-        summary, details = "150, 0", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.reference, reference)
-        data_list = [("Data", data), ("Reference", reference)]
-        summary, details = "150, 5", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        data_list = [("Data", None), ("Reference", reference)]
-        summary, details = "0, 5", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.reference, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
     def test_compute_distances_apply_called(self):
         """Check compute distances and apply are called when receiving signal"""
         widget = self.widget
         cdist = widget.compute_distances = Mock()
-        apply = widget.unconditional_apply = Mock()
+        def_commit = widget.commit.now = Mock()
         self.widget.auto_apply = False
         data = Table("iris")
         self.send_signal(widget.Inputs.data, data)
         cdist.assert_called()
-        apply.assert_called()
+        def_commit.assert_called()
         cdist.reset_mock()
-        apply.reset_mock()
+        def_commit.reset_mock()
 
         self.send_signal(widget.Inputs.reference, data[:10])
         cdist.assert_called()
-        apply.assert_called()
+        def_commit.assert_called()
         cdist.reset_mock()
-        apply.reset_mock()
+        def_commit.reset_mock()
 
         self.send_signals([(widget.Inputs.data, data),
                            (widget.Inputs.reference, data[:10])])
         self.assertEqual(cdist.call_count, 1)
-        self.assertEqual(apply.call_count, 1)
+        self.assertEqual(def_commit.call_count, 1)
 
     def test_compute_distances_calls_distance(self):
         widget = self.widget
@@ -323,7 +284,6 @@ class TestOWNeighbors(WidgetTest):
         self.assertIsNone(self.get_output(widget.Outputs.data))
 
         self.send_signal(widget.Inputs.data, data[:15])
-        widget.apply()
         self.assertFalse(widget.Warning.all_data_as_reference.is_shown())
         self.assertTrue(widget.Info.removed_references.is_shown())
         self.assertIsNotNone(self.get_output(widget.Outputs.data))
@@ -337,9 +297,9 @@ class TestOWNeighbors(WidgetTest):
 
         domain = Domain([ContinuousVariable("a")])
         domain_ref = Domain([ContinuousVariable("b")])
-        data = Table(domain, np.random.rand(2, len(domain)))
+        data = Table(domain, np.random.rand(2, len(domain.variables)))
         reference = Table(
-            domain_ref, np.random.rand(1, len(domain_ref)))
+            domain_ref, np.random.rand(1, len(domain_ref.variables)))
 
         # no error if one or both of the signals is missing
         self.send_signal(w.Inputs.data, data)
@@ -363,7 +323,7 @@ class TestOWNeighbors(WidgetTest):
 
         # different number of attributes
         domain_ref = Domain([ContinuousVariable("a"), ContinuousVariable("b")])
-        reference = Table(domain_ref, np.random.rand(1, len(domain_ref)))
+        reference = Table(domain_ref, np.random.rand(1, len(domain_ref.variables)))
 
         # error disappears when data is set to None
         self.send_signal(w.Inputs.data, data)

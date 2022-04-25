@@ -8,7 +8,6 @@ from Orange.widgets.widget import Input
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.save.owsavebase import OWSaveBase
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 _userhome = os.path.expanduser(f"~{os.sep}")
@@ -18,11 +17,10 @@ class OWSave(OWSaveBase):
     name = "保存数据(Save Data)"
     description = "将数据保存到输出文件。"
     icon = "icons/Save.svg"
-    category = "Data"
-    keywords = ["export"]
-    keywords = ['baocun']
+    category = "数据(Data)"
+    keywords = ["export", 'baocun']
 
-    settings_version = 2
+    settings_version = 3
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -32,19 +30,16 @@ class OWSave(OWSaveBase):
 
     add_type_annotations = Setting(True)
 
-    builtin_order = [TabReader, CSVReader, PickleReader, ExcelReader, XlsReader]
+    builtin_order = [TabReader, CSVReader,
+                     PickleReader, ExcelReader, XlsReader]
 
     def __init__(self):
         super().__init__(2)
-
-        self.info.set_input_summary(self.info.NoInput)
-
         self.grid.addWidget(
             gui.checkBox(
                 None, self, "add_type_annotations",
                 "向表头添加类型批注",
-                tooltip=
-                "Some formats (Tab-delimited, Comma-separated) can include \n"
+                tooltip="Some formats (Tab-delimited, Comma-separated) can include \n"
                 "additional information about variables types in header rows.",
                 callback=self.update_messages),
             0, 0, 1, 2)
@@ -72,6 +67,9 @@ class OWSave(OWSaveBase):
         self.on_new_input()
 
     def do_save(self):
+        if self.writer is None:
+            super().do_save()  # This will do nothing but indicate an error
+            return
         if self.data.is_sparse() and not self.writer.SUPPORT_SPARSE_DATA:
             return
         self.writer.write(self.filename, self.data, self.add_type_annotations)
@@ -80,12 +78,8 @@ class OWSave(OWSaveBase):
         super().update_messages()
         self.Error.unsupported_sparse(
             shown=self.data is not None and self.data.is_sparse()
-            and self.filename and not self.writer.SUPPORT_SPARSE_DATA)
-
-    def update_status(self):
-        summary = len(self.data) if self.data else self.info.NoInput
-        details = format_summary_details(self.data) if self.data else ""
-        self.info.set_input_summary(summary, details)
+            and self.filename
+            and self.writer is not None and not self.writer.SUPPORT_SPARSE_DATA)
 
     def send_report(self):
         self.report_data_brief(self.data)
@@ -126,12 +120,21 @@ class OWSave(OWSaveBase):
         if version < 2:
             migrate_to_version_2()
 
+        if version < 3:
+            if settings.get("add_type_annotations") and \
+                    settings.get("stored_name") and \
+                    os.path.splitext(settings["stored_name"])[1] == ".xlsx":
+                settings["add_type_annotations"] = False
+
     def initial_start_dir(self):
         if self.filename and os.path.exists(os.path.split(self.filename)[0]):
             return self.filename
         else:
             data_name = getattr(self.data, 'name', '')
             if data_name:
+                if self.writer is None:
+                    self.filter = self.default_filter()
+                assert self.writer is not None
                 data_name += self.writer.EXTENSIONS[0]
             return os.path.join(self.last_dir or _userhome, data_name)
 
@@ -146,7 +149,7 @@ class OWSave(OWSaveBase):
         valid = self.valid_filters()
         if self.data is None or not self.data.is_sparse() \
                 or (self.filter in valid
-                        and valid[self.filter].SUPPORT_SPARSE_DATA):
+                    and valid[self.filter].SUPPORT_SPARSE_DATA):
             return self.filter
         return next(iter(valid))
 

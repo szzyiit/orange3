@@ -1,7 +1,8 @@
 # Test methods with long descriptive names can omit docstrings
 # Test internal methods
 # pylint: disable=missing-docstring, protected-access
-
+import copy
+import pickle
 import unittest
 from unittest.mock import Mock
 import warnings
@@ -99,8 +100,9 @@ class TestDiscreteDistribution(unittest.TestCase):
 
     def test_fallback_with_weights_and_nan(self):
         d = data.Table("zoo")
-        d.set_weights(np.random.uniform(0., 1., size=len(d)))
-        d.Y[::10] = np.nan
+        with d.unlocked():
+            d.set_weights(np.random.uniform(0., 1., size=len(d)))
+            d.Y[::10] = np.nan
 
         default = distribution.Discrete(d, "type")
         d._compute_distributions = Mock(side_effect=NotImplementedError)
@@ -109,6 +111,32 @@ class TestDiscreteDistribution(unittest.TestCase):
         np.testing.assert_almost_equal(
             np.asarray(fallback), np.asarray(default))
         np.testing.assert_almost_equal(fallback.unknowns, default.unknowns)
+
+    def test_pickle(self):
+        d = data.Table("zoo")
+        d1 = distribution.Discrete(d, 0)
+        dc = pickle.loads(pickle.dumps(d1))
+        # This always worked because `other` wasn't required to have `unknowns`
+        self.assertEqual(d1, dc)
+        # This failed before implementing `__reduce__`
+        self.assertEqual(dc, d1)
+        self.assertEqual(hash(d1), hash(dc))
+        # Test that `dc` has the required attributes
+        self.assertEqual(dc.variable, d1.variable)
+        self.assertEqual(dc.unknowns, d1.unknowns)
+
+    def test_deepcopy(self):
+        d = data.Table("zoo")
+        d1 = distribution.Discrete(d, 0)
+        dc = copy.deepcopy(d1)
+        # This always worked because `other` wasn't required to have `unknowns`
+        self.assertEqual(d1, dc)
+        # This failed before implementing `__deepcopy__`
+        self.assertEqual(dc, d1)
+        self.assertEqual(hash(d1), hash(dc))
+        # Test that `dc` has the required attributes
+        self.assertEqual(dc.variable, d1.variable)
+        self.assertEqual(dc.unknowns, d1.unknowns)
 
     def test_equality(self):
         d = data.Table("zoo")
@@ -206,7 +234,8 @@ class TestDiscreteDistribution(unittest.TestCase):
 
     def test_array_with_unknowns(self):
         d = data.Table("zoo")
-        d.Y[0] = np.nan
+        with d.unlocked():
+            d.Y[0] = np.nan
         disc = distribution.Discrete(d, "type")
         self.assertIsInstance(disc, np.ndarray)
         self.assertEqual(disc.unknowns, 1)
@@ -284,6 +313,30 @@ class TestContinuousDistribution(unittest.TestCase):
         self.assertIsNone(disc2.variable)
         self.assertEqual(disc2.unknowns, 0)
         assert_dist_equal(disc2, dd)
+
+    def test_pickle(self):
+        d1 = distribution.Continuous(self.iris, 0)
+        dc = pickle.loads(pickle.dumps(d1))
+        # This always worked because `other` wasn't required to have `unknowns`
+        self.assertEqual(d1, dc)
+        # This failed before implementing `__reduce__`
+        self.assertEqual(dc, d1)
+        self.assertEqual(hash(d1), hash(dc))
+        # Test that `dc` has the required attributes
+        self.assertEqual(dc.variable, d1.variable)
+        self.assertEqual(dc.unknowns, d1.unknowns)
+
+    def test_deepcopy(self):
+        d1 = distribution.Continuous(self.iris, 0)
+        dc = copy.deepcopy(d1)
+        # This always worked because `other` wasn't required to have `unknowns`
+        self.assertEqual(d1, dc)
+        # This failed before implementing `__deepcopy__`
+        self.assertEqual(dc, d1)
+        self.assertEqual(hash(d1), hash(dc))
+        # Test that `dc` has the required attributes
+        self.assertEqual(dc.variable, d1.variable)
+        self.assertEqual(dc.unknowns, d1.unknowns)
 
     def test_hash(self):
         d = self.iris
@@ -473,7 +526,8 @@ class TestDomainDistribution(unittest.TestCase):
         assert_dist_and_unknowns(ddist[18], [[0, 2], [4, 1]])
         assert_dist_and_unknowns(ddist[19], zeros)
 
-        d.set_weights(np.array([1, 2, 3, 4, 5]))
+        with d.unlocked():
+            d.set_weights(np.array([1, 2, 3, 4, 5]))
         ddist = distribution.get_distributions(d)
 
         self.assertEqual(len(ddist), 20)
@@ -508,7 +562,9 @@ class TestDomainDistribution(unittest.TestCase):
         # repeat with nan values
         assert d.metas.dtype.kind == "O"
         assert d.metas[0, 1] == 0
-        d.metas[0, 1] = np.nan
+
+        with d.unlocked():
+            d.metas[0, 1] = np.nan
         dist, nanc = d._compute_distributions([variable])[0]
         assert_dist_equal(dist, [2, 3, 2])
         self.assertEqual(nanc, 1)

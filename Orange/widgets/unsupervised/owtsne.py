@@ -255,7 +255,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
     icon = "icons/TSNE.svg"
     priority = 920
     keywords = ["tsne"]
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     settings_version = 4
     perplexity = ContextSetting(30)
@@ -292,28 +292,31 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
         self.tsne_embedding = None  # type: Optional[manifold.TSNEModel]
         self.iterations_done = 0    # type: int
 
+    @property
+    def effective_data(self):
+        return self.data.transform(Domain(self.effective_variables))
+
     def _add_controls(self):
         self._add_controls_start_box()
         super()._add_controls()
 
     def _add_controls_start_box(self):
-        box = gui.vBox(self.controlArea, True)
+        box = gui.vBox(self.controlArea, box="优化")
         form = QFormLayout(
             labelAlignment=Qt.AlignLeft,
             formAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
-            verticalSpacing=10,
         )
 
         self.perplexity_spin = gui.spin(
             box, self, "perplexity", 1, 500, step=1, alignment=Qt.AlignRight,
-            callback=self._invalidate_affinities,
+            callback=self._invalidate_affinities, addToLayout=False
         )
         self.controls.perplexity.setDisabled(self.multiscale)
         form.addRow("困惑度(Perplexity):", self.perplexity_spin)
         form.addRow(gui.checkBox(
-            box, self, "multiscale", label="保留全局结构(Preserve global structure)",
-            callback=self._multiscale_changed,
+            box, self, "multiscale", label="保留全局结构",
+            callback=self._multiscale_changed, addToLayout=False
         ))
 
         sbe = gui.hBox(self.controlArea, False, addToLayout=False)
@@ -338,7 +341,6 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
 
         box.layout().addLayout(form)
 
-        gui.separator(box, 10)
         self.run_button = gui.button(box, self, "开始", callback=self._toggle_run)
 
     def _multiscale_changed(self):
@@ -420,7 +422,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
         if self.task is not None:
             self.cancel()
             self.run_button.setText("Resume")
-            self.commit()
+            self.commit.deferred()
         # Resume task
         else:
             self.run()
@@ -585,7 +587,7 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
             self.__ensure_task_same_for_embedding(task)
             assert task.tsne_embedding is self.tsne_embedding
 
-        self.commit()
+        self.commit.deferred()
 
     def _get_projection_data(self):
         if self.data is None:
@@ -598,7 +600,8 @@ class OWtSNE(OWDataProjectionWidget, ConcurrentWidgetMixin):
                 self.data.domain.metas + self._get_projection_variables()
             )
         )
-        data.metas[:, -2:] = self.get_embedding()
+        with data.unlocked(data.metas):
+            data.metas[:, -2:] = self.get_embedding()
         if self.tsne_embedding is not None:
             data.domain = Domain(
                 self.data.domain.attributes,

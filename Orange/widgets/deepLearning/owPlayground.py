@@ -10,7 +10,7 @@ class OWPlayground(OWWidget):
     icon = "icons/playground.png"
     priority = 10
     keywords = ['youlechang', 'shenduxuexi']
-    category = 'deeplearning'
+    category = '深度学习(DeepLearning)'
 
     resizing_enabled = False
 

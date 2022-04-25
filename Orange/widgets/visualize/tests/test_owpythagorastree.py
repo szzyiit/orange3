@@ -11,7 +11,6 @@ from Orange.modelling import TreeLearner
 from Orange.regression.random_forest import RandomForestRegressionLearner
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
 from Orange.widgets.tests.utils import simulate
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owpythagorastree import OWPythagorasTree
 from Orange.widgets.visualize.owpythagoreanforest import OWPythagoreanForest
 from Orange.widgets.visualize.pythagorastreeviewer import (
@@ -105,7 +104,7 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
         cls.model = tree(cls.data)
         cls.model.instances = cls.data
 
-        cls.signal_name = "树(Tree)"
+        cls.signal_name = "Tree"
         cls.signal_data = cls.model
 
         # Set up for widget tests
@@ -195,15 +194,15 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
 
         self.send_signal(self.widget.Inputs.tree, self.titanic)
         # No size adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, '正常')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Normal')
         self.assertFalse(self.widget.log_scale_box.isEnabled(),
                          'Should be disabled when no size adjustment')
         # Square root adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, '平方根')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Square root')
         self.assertFalse(self.widget.log_scale_box.isEnabled(),
                          'Should be disabled when square root size adjustment')
         # Log adjustment
-        simulate.combobox_activate_item(self.widget.size_calc_combo, '对数')
+        simulate.combobox_activate_item(self.widget.size_calc_combo, 'Logarithmic')
         self.assertTrue(self.widget.log_scale_box.isEnabled(),
                         'Should be enabled when square root size adjustment')
 
@@ -300,7 +299,7 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
 
     def test_label_on_tree_connect_and_disconnect(self):
         w = self.widget
-        regex = r'节点:(.+)\s*深度:(.+)'
+        regex = r'Nodes:(.+)\s*Depth:(.+)'
         # Should contain no info by default
         self.assertNotRegex(
             self.widget.infolabel.text(), regex,
@@ -413,23 +412,6 @@ class TestOWPythagorasTree(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(self.widget.Inputs.tree, iris_tree)
         self.assertEqual(2, self.widget.target_class_index)
 
-    def test_summary(self):
-        """Check if the status bar updates"""
-        info = self.widget.info
-        no_output = "No data on output"
-
-        self.send_signal(self.widget.Inputs.tree, self.titanic)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.tree, None)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 if __name__ == "__main__":
     unittest.main()

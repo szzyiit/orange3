@@ -12,7 +12,6 @@ from Orange.data import Table, DiscreteVariable, Domain, ContinuousVariable, \
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
 from Orange.widgets.visualize.owmosaic import OWMosaicDisplay
 from Orange.widgets.tests.utils import simulate
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWMosaicDisplay(WidgetTest, WidgetOutputsTestMixin):
@@ -21,7 +20,7 @@ class TestOWMosaicDisplay(WidgetTest, WidgetOutputsTestMixin):
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -183,31 +182,6 @@ class TestOWMosaicDisplay(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(w.Inputs.data, data, widget=w)
         self.assertEqual(w.selection, {1})
         self.assertIsNotNone(self.get_output(w.Outputs.selected_data, widget=w))
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        data = Table("zoo")
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 
 # Derive from WidgetTest to simplify creation of the Mosaic widget, although
@@ -464,7 +438,7 @@ class MosaicVizRankTests(WidgetTest):
                    [1, 4, 6], [1, 5, 7], [1, 6, 7]]
         table = Table("titanic")
         self.send_signal(self.widget.Inputs.data, table)
-        color_vars = ["(皮尔逊残差)"] + [str(x) for x in table.domain.variables]
+        color_vars = ["(Pearson residuals)"] + [str(x) for x in table.domain.variables]
         for i, cv in enumerate(color_vars):
             idx = self.widget.cb_attr_color.findText(cv)
             self.widget.cb_attr_color.setCurrentIndex(idx)
@@ -472,12 +446,12 @@ class MosaicVizRankTests(WidgetTest):
             simulate.combobox_activate_index(self.widget.controls.variable_color, idx, 0)
             discrete_data = self.widget.discrete_data
 
-            if color == "(皮尔逊残差)":
+            if color == "(Pearson residuals)":
                 self.assertIsNone(discrete_data.domain.class_var)
             else:
                 self.assertEqual(color, str(discrete_data.domain.class_var))
 
-            output = self.get_output("数据(Data)")
+            output = self.get_output("Data")
             self.assertEqual(output.domain.class_var, table.domain.class_var)
 
             for ma in range(i == 0, 7):

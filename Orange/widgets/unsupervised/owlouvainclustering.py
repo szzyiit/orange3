@@ -23,11 +23,10 @@ from Orange.projection import PCA
 from Orange.widgets import widget, gui, report
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.annotated_data import add_columns, \
-    ANNOTATED_DATA_SIGNAL_Chinese_NAME
+    ANNOTATED_DATA_SIGNAL_NAME
 from Orange.widgets.utils.concurrent import FutureWatcher
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg
 
 try:
@@ -50,7 +49,8 @@ class OWLouvainClustering(widget.OWWidget):
     description = "检测最近邻居网络或者邻居的社区"
     icon = "icons/LouvainClustering.svg"
     priority = 2110
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
+
 
     settings_version = 2
 
@@ -61,7 +61,7 @@ class OWLouvainClustering(widget.OWWidget):
         data = Input("数据(Data)", Table, default=True, replaces=['Data'])
 
     class Outputs:
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, default=True, replaces=['Data'])
+        annotated_data = Output("数据(Data)", Table, default=True, replaces=['Data'])
         if Network is not None:
             graph = Output("网络(Network)", Network, replaces=['Network'])
 
@@ -101,18 +101,16 @@ class OWLouvainClustering(widget.OWWidget):
 
         # Set up UI
         info_box = gui.vBox(self.controlArea, "信息")
-        self.info_label = gui.widgetLabel(info_box, "没有输入数据。")  # type: QLabel
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        self.info_label = gui.widgetLabel(info_box, "无输入.")  # type: QLabel
 
         preprocessing_box = gui.vBox(self.controlArea, "预处理")
         self.normalize_cbx = gui.checkBox(
             preprocessing_box, self, "normalize", label="归一化数据",
-            callback=self._invalidate_preprocessed_data,
+            callback=self._invalidate_preprocessed_data, attribute=Qt.WA_LayoutUsesWidgetRect
         )  # type: QCheckBox
         self.apply_pca_cbx = gui.checkBox(
-            preprocessing_box, self, "apply_pca", label="应用PCA预处理",
-            callback=self._apply_pca_changed,
+            preprocessing_box, self, "apply_pca", label="PCA预处理",
+            callback=self._apply_pca_changed, attribute=Qt.WA_LayoutUsesWidgetRect
         )  # type: QCheckBox
         self.pca_components_slider = gui.hSlider(
             preprocessing_box, self, "pca_components", label="PCA成分: ", minValue=2,
@@ -142,7 +140,7 @@ class OWLouvainClustering(widget.OWWidget):
             "retrieve less clusters."
         )
         self.apply_button = gui.auto_apply(
-            self.controlArea, self, "auto_commit", box=None,
+            self.buttonsArea, self, "auto_commit",
             commit=lambda: self.commit(), callback=lambda: self._on_auto_commit_changed()
         )  # type: QWidget
 
@@ -369,7 +367,7 @@ class OWLouvainClustering(widget.OWWidget):
 
         # Display the number of found clusters in the UI
         num_clusters = len(np.unique(self.partition))
-        self.info_label.setText("找到 %d 个群集." % num_clusters)
+        self.info_label.setText("找到 %d 个簇." % num_clusters)
 
         self._send_data()
 
@@ -390,11 +388,8 @@ class OWLouvainClustering(widget.OWWidget):
 
         new_domain = add_columns(domain, metas=[cluster_var])
         new_table = self.data.transform(new_domain)
-        new_table.get_column_view(cluster_var)[0][:] = new_partition
-
-        summary = len(new_table) if new_table else self.info.NoOutput
-        details = format_summary_details(new_table) if new_table else ""
-        self.info.set_output_summary(summary, details)
+        with new_table.unlocked(new_table.metas):
+            new_table.get_column_view(cluster_var)[0][:] = new_partition
 
         self.Outputs.annotated_data.send(new_table)
 
@@ -411,7 +406,6 @@ class OWLouvainClustering(widget.OWWidget):
         self.Error.clear()
 
         prev_data, self.data = self.data, data
-        self._set_input_summary()
         # Make sure to properly enable/disable slider based on `apply_pca` setting
         self.controls.pca_components.setEnabled(self.apply_pca)
 
@@ -422,7 +416,6 @@ class OWLouvainClustering(widget.OWWidget):
 
         self.cancel()
         # Clear the outputs
-        self.info.set_output_summary(self.info.NoOutput)
         self.Outputs.annotated_data.send(None)
         if Network is not None:
             self.Outputs.graph.send(None)
@@ -448,11 +441,6 @@ class OWLouvainClustering(widget.OWWidget):
         self.info_label.setText("Clustering not yet run.")
 
         self.commit()
-
-    def _set_input_summary(self):
-        summary = len(self.data) if self.data else self.info.NoInput
-        details = format_summary_details(self.data) if self.data else ""
-        self.info.set_input_summary(summary, details)
 
     def clear(self):
         self.__cancel_task(wait=False)

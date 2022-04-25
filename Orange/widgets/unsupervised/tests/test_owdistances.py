@@ -11,21 +11,23 @@ from Orange.misc import DistMatrix
 from Orange.widgets.unsupervised.owdistances import OWDistances, METRICS, \
     DistanceRunner
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestDistanceRunner(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.iris = Table("iris")[::5]
-        cls.iris.X[0, 2] = np.nan
-        cls.iris.X[1, 3] = np.nan
-        cls.iris.X[2, 1] = np.nan
-        cls.zoo = Table("zoo")[::5]
-        cls.zoo.X[0, 2] = np.nan
-        cls.zoo.X[1, 3] = np.nan
-        cls.zoo.X[2, 1] = np.nan
+        cls.iris = Table("iris")[::5].copy()
+        with cls.iris.unlocked():
+            cls.iris.X[0, 2] = np.nan
+            cls.iris.X[1, 3] = np.nan
+            cls.iris.X[2, 1] = np.nan
+
+        cls.zoo = Table("zoo")[::5].copy()
+        with cls.zoo.unlocked():
+            cls.zoo.X[0, 2] = np.nan
+            cls.zoo.X[1, 3] = np.nan
+            cls.zoo.X[2, 1] = np.nan
 
     def test_run(self):
         state = Mock()
@@ -67,13 +69,10 @@ class TestDistanceRunner(unittest.TestCase):
 
 
 class TestOWDistances(WidgetTest):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.iris = Table("iris")[::5]
-        cls.titanic = Table("titanic")[::10]
-
     def setUp(self):
+        super().setUp()
+        self.iris = Table("iris")[::5].copy()
+        self.titanic = Table("titanic")[::10].copy()
         self.widget = self.create_widget(OWDistances)
 
     def test_distance_combo(self):
@@ -172,14 +171,14 @@ class TestOWDistances(WidgetTest):
         self.assertFalse(w.normalized_dist)
 
     def test_negative_values_bhattacharyya(self):
-        self.iris.X[0, 0] *= -1
+        with self.iris.unlocked():
+            self.iris.X[0, 0] *= -1
         for self.widget.metric_idx, (_, metric) in enumerate(METRICS):
             if metric == distance.Bhattacharyya:
                 break
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.wait_until_finished()
         self.assertTrue(self.widget.Error.distances_value_error.is_shown())
-        self.iris.X[0, 0] *= -1
 
     def test_limit_mahalanobis(self):
         def assert_error_shown():
@@ -229,26 +228,35 @@ class TestOWDistances(WidgetTest):
         self.send_signal(widget.Inputs.data, self.iris)
         assert_no_error()
 
-    def test_summary(self):
-        """Check if the status bar updates"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
+    def test_discrete_in_metas(self):
+        domain = self.iris.domain
+        data = self.iris.transform(
+            Domain(domain.attributes[:-1] + (domain.class_var, ),
+                   [],
+                   domain.attributes[-1:])
+        )
+        for self.widget.metric_idx, (_, metric) in enumerate(METRICS):
+            if metric == distance.Cosine:
+                break
+        self.send_signal(self.widget.Inputs.data, data)
+        self.wait_until_finished()
+        out = self.get_output(self.widget.Outputs.distances)
+        out_domain = out.row_items.domain
+        self.assertEqual(out_domain.attributes, domain.attributes[:-1])
+        self.assertEqual(out_domain.metas,
+                         (domain.attributes[-1], domain.class_var))
 
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.data, self.iris)
-        summary, details = f"{len(self.iris)}", format_summary_details(
-            self.iris)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.distances)
-        summary = f"{output.shape[0]}×{output.shape[1]}"
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, summary)
+    def test_non_binary_in_metas(self):
+        for self.widget.metric_idx, (_, metric) in enumerate(METRICS):
+            if metric == distance.Jaccard:
+                break
+        zoo = Table("zoo")[:20]
+        self.send_signal(self.widget.Inputs.data, zoo)
+        self.wait_until_finished()
+        out = self.get_output(self.widget.Outputs.distances)
+        domain = zoo.domain
+        out_domain = out.row_items.domain
+        self.assertEqual(out_domain.metas, (domain["name"], domain["legs"]))
 
 
 if __name__ == "__main__":

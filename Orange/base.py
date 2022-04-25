@@ -136,7 +136,11 @@ class Learner(ReprableWithPreprocessors):
         progress_callback(0.1, "Fitting...")
         model = self._fit_model(data)
         model.used_vals = [np.unique(y).astype(int) for y in data.Y[:, None].T]
-        model.domain = data.domain
+        if not hasattr(model, "domain") or model.domain is None:
+            # some models set domain themself and it should be respected
+            # e.g. calibration learners set the base_learner's domain which
+            # would be wrongly overwritten if we set it here for any model
+            model.domain = data.domain
         model.supports_multiclass = self.supports_multiclass
         model.name = self.name
         model.original_domain = origdomain
@@ -432,7 +436,7 @@ class Model(Reprable):
         # Call the predictor
         backmappers = None
         n_values = []
-        if isinstance(data, (np.ndarray, scipy.sparse.csr.csr_matrix)):
+        if isinstance(data, (np.ndarray, scipy.sparse.csr_matrix)):
             prediction = self.predict(data)
         elif isinstance(data, Table):
             backmappers, n_values = self.get_backmappers(data)
@@ -660,6 +664,13 @@ class CatGBModel(Model, metaclass=WrapperMeta):
         self.cat_model = cat_model
         self.cat_features = cat_features
 
+    def __call__(self, data, ret=Model.Value):
+        if isinstance(data, Table):
+            with data.force_unlocked(data.X):
+                return super().__call__(data, ret)
+        else:
+            return super().__call__(data, ret)
+
     def predict(self, X):
         if self.cat_features:
             X = X.astype(str)
@@ -820,17 +831,18 @@ class CatGBBaseLearner(Learner, metaclass=WrapperMeta):
         return m
 
     def fit_storage(self, data: Table):
-        domain, X, Y, W = data.domain, data.X, data.Y.reshape(-1), None
-        if self.supports_weights and data.has_weights():
-            W = data.W.reshape(-1)
-        # pylint: disable=not-callable
-        clf = self.__wraps__(**self.params)
-        cat_features = [i for i, attr in enumerate(domain.attributes)
-                        if attr.is_discrete]
-        if cat_features:
-            X = X.astype(str)
-        cat_model = clf.fit(X, Y, cat_features=cat_features, sample_weight=W)
-        return self.__returns__(cat_model, cat_features, domain)
+        with data.force_unlocked(data.X):
+            domain, X, Y, W = data.domain, data.X, data.Y.reshape(-1), None
+            if self.supports_weights and data.has_weights():
+                W = data.W.reshape(-1)
+            # pylint: disable=not-callable
+            clf = self.__wraps__(**self.params)
+            cat_features = [i for i, attr in enumerate(domain.attributes)
+                            if attr.is_discrete]
+            if cat_features:
+                X = X.astype(str)
+            cat_model = clf.fit(X, Y, cat_features=cat_features, sample_weight=W)
+            return self.__returns__(cat_model, cat_features, domain)
 
     def __getattr__(self, item):
         try:

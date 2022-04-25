@@ -5,11 +5,11 @@ from types import SimpleNamespace as namespace
 import numpy as np
 
 from AnyQt.QtCore import Qt, QRectF, QLineF, QPoint
-from AnyQt.QtGui import QColor
+from AnyQt.QtGui import QPalette
 
 import pyqtgraph as pg
 
-from Orange.data import Table
+from Orange.data import Table, Domain
 from Orange.projection import FreeViz
 from Orange.projection.freeviz import FreeVizModel
 from Orange.widgets import widget, gui, settings
@@ -75,7 +75,7 @@ class OWFreeVizGraph(OWGraphWithAnchors):
         mask = np.linalg.norm(points, axis=1) > self.scaled_radius
         xi, yi = points[mask].T
         distances = (xi - pos.x()) ** 2 + (yi - pos.y()) ** 2
-        if len(distances) and np.min(distances) < self.DISTANCE_DIFF ** 2:
+        if len(distances) and np.min(distances) < self.DISTANCE_DIFF**2:
             return np.flatnonzero(mask)[np.argmin(distances)]
         return None
 
@@ -105,13 +105,16 @@ class OWFreeVizGraph(OWGraphWithAnchors):
         if self.circle_item is not None:
             r = self.scaled_radius
             self.circle_item.setRect(QRectF(-r, -r, 2 * r, 2 * r))
-            pen = pg.mkPen(QColor(Qt.lightGray), width=1, cosmetic=True)
+            color = self.plot_widget.palette().color(QPalette.Disabled, QPalette.Text)
+            pen = pg.mkPen(color, width=1, cosmetic=True)
             self.circle_item.setPen(pen)
 
     def _add_indicator_item(self, anchor_idx):
         x, y = self.anchor_items[anchor_idx].get_xy()
-        dx = (self.view_box.childGroup.mapToDevice(QPoint(1, 0)) -
-              self.view_box.childGroup.mapToDevice(QPoint(-1, 0))).x()
+        dx = (
+            self.view_box.childGroup.mapToDevice(QPoint(1, 0))
+            - self.view_box.childGroup.mapToDevice(QPoint(-1, 0))
+        ).x()
         self.indicator_item = MoveIndicator(x, y, 600 / dx)
         self.plot_widget.addItem(self.indicator_item)
 
@@ -132,7 +135,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     icon = "icons/Freeviz.svg"
     priority = 240
     keywords = ["viz"]
-    category = 'visualize'
+    category = "可视化(Visualize)"
 
     settings_version = 3
     initialization = settings.Setting(InitType.Circular)
@@ -140,18 +143,22 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     graph = settings.SettingProvider(OWFreeVizGraph)
 
     class Error(OWAnchorProjectionWidget.Error):
-        no_class_var = widget.Msg("Data has no target variable")
+        no_class_var = widget.Msg("Data must have a target variable.")
+        multiple_class_vars = widget.Msg("Data must have a single target variable.")
         not_enough_class_vars = widget.Msg(
-            "Target variable is not at least binary")
+            "Target variable must have at least two unique values."
+        )
         features_exceeds_instances = widget.Msg(
-            "Number of features exceeds the number of instances.")
+            "Number of features exceeds the number of instances."
+        )
         too_many_data_instances = widget.Msg("Data is too large.")
         constant_data = widget.Msg("All data columns are constant.")
-        not_enough_features = widget.Msg("At least two features are required")
+        not_enough_features = widget.Msg("At least two features are required.")
 
     class Warning(OWAnchorProjectionWidget.Warning):
-        removed_features = widget.Msg("Categorical features with more than"
-                                      " two values are not shown.")
+        removed_features = widget.Msg(
+            "Categorical features with more than" " two values are not shown."
+        )
 
     def __init__(self):
         OWAnchorProjectionWidget.__init__(self)
@@ -161,23 +168,45 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.__add_controls_start_box()
         super()._add_controls()
         self.gui.add_control(
-            self._effects_box, gui.hSlider, "隐藏半径(Hide radius):", master=self.graph,
-            value="hide_radius", minValue=0, maxValue=100, step=10,
-            createLabel=False, callback=self.__radius_slider_changed
+            self._effects_box,
+            gui.hSlider,
+            "隐藏半径:",
+            master=self.graph,
+            value="hide_radius",
+            minValue=0,
+            maxValue=100,
+            step=10,
+            createLabel=False,
+            callback=self.__radius_slider_changed,
         )
 
     def __add_controls_start_box(self):
-        box = gui.vBox(self.controlArea, box=True)
+        box = gui.vBox(self.controlArea, box="Optimize", spacing=0)
         gui.comboBox(
-            box, self, "initialization", label="初始化:",
-            items=InitType.items(), orientation=Qt.Horizontal,
-            labelWidth=90, callback=self.__init_combo_changed)
+            box,
+            self,
+            "initialization",
+            label="初始化:",
+            items=InitType.items(),
+            orientation=Qt.Horizontal,
+            labelWidth=90,
+            callback=self.__init_combo_changed,
+        )
         self.run_button = gui.button(box, self, "开始", self._toggle_run)
 
     @property
     def effective_variables(self):
-        return [a for a in self.data.domain.attributes
-                if a.is_continuous or a.is_discrete and len(a.values) == 2]
+        return [
+            a
+            for a in self.data.domain.attributes
+            if a.is_continuous or a.is_discrete and len(a.values) == 2
+        ]
+
+    @property
+    def effective_data(self):
+        return self.data.transform(
+            Domain(self.effective_variables, self.data.domain.class_vars)
+        )
 
     def __radius_slider_changed(self):
         self.graph.update_radius()
@@ -186,7 +215,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.Error.proj_error.clear()
         self.init_projection()
         self.setup_plot()
-        self.commit()
+        self.commit.deferred()
         if self.task is not None:
             self._run()
 
@@ -194,8 +223,8 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         if self.task is not None:
             self.cancel()
             self.graph.set_sample_size(None)
-            self.run_button.setText("重新开始")
-            self.commit()
+            self.run_button.setText("继续")
+            self.commit.deferred()
         else:
             self._run()
 
@@ -222,7 +251,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.projection = result.projection
         self.graph.set_sample_size(None)
         self.run_button.setText("开始")
-        self.commit()
+        self.commit.deferred()
 
     def on_exception(self, ex: Exception):
         self.Error.proj_error(ex)
@@ -230,6 +259,7 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
         self.run_button.setText("开始")
 
     # OWAnchorProjectionWidget
+    @OWAnchorProjectionWidget.Inputs.data
     def set_data(self, data):
         super().set_data(data)
         self.graph.set_sample_size(None)
@@ -239,11 +269,12 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
     def init_projection(self):
         if self.data is None:
             return
-        anchors = FreeViz.init_radial(len(self.effective_variables)) \
-            if self.initialization == InitType.Circular \
+        anchors = (
+            FreeViz.init_radial(len(self.effective_variables))
+            if self.initialization == InitType.Circular
             else FreeViz.init_random(len(self.effective_variables), 2)
-        self.projector = FreeViz(scale=False, center=False,
-                                 initial=anchors, maxiter=10)
+        )
+        self.projector = FreeViz(scale=False, center=False, initial=anchors, maxiter=10)
         data = self.projector.preprocess(self.effective_data)
         self.projector.domain = data.domain
         self.projector.components_ = anchors.T
@@ -258,10 +289,12 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
 
         super().check_data()
         if self.data is not None:
-            class_var, domain = self.data.domain.class_var, self.data.domain
-            if class_var is None:
+            class_vars, domain = self.data.domain.class_vars, self.data.domain
+            if not class_vars:
                 error(self.Error.no_class_var)
-            elif class_var.is_discrete and len(np.unique(self.data.Y)) < 2:
+            elif len(class_vars) > 1:
+                error(self.Error.multiple_class_vars)
+            elif class_vars[0].is_discrete and len(np.unique(self.data.Y)) < 2:
                 error(self.Error.not_enough_class_vars)
             elif len(self.data.domain.attributes) < 2:
                 error(self.Error.not_enough_features)
@@ -319,12 +352,19 @@ class MoveIndicator(pg.GraphicsObject):
     def __init__(self, x, y, scene_size, parent=None):
         super().__init__(parent)
         self.arrows = [
-            pg.ArrowItem(pos=(x - scene_size * 0.07 * np.cos(np.radians(ang)),
-                              y + scene_size * 0.07 * np.sin(np.radians(ang))),
-                         parent=self, angle=ang,
-                         headLen=13, tipAngle=45,
-                         brush=pg.mkColor(128, 128, 128))
-            for ang in (0, 90, 180, 270)]
+            pg.ArrowItem(
+                pos=(
+                    x - scene_size * 0.07 * np.cos(np.radians(ang)),
+                    y + scene_size * 0.07 * np.sin(np.radians(ang)),
+                ),
+                parent=self,
+                angle=ang,
+                headLen=13,
+                tipAngle=45,
+                brush=pg.mkColor(128, 128, 128),
+            )
+            for ang in (0, 90, 180, 270)
+        ]
 
     def paint(self, painter, option, widget):
         pass

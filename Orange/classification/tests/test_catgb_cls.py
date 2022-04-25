@@ -2,12 +2,16 @@ import unittest
 
 import numpy as np
 
-from Orange.classification import CatGBClassifier
+try:
+    from Orange.classification import CatGBClassifier
+except ImportError:
+    CatGBClassifier = None
 from Orange.data import Table
 from Orange.evaluation import CrossValidation, CA
 from Orange.preprocess.score import Scorer
 
 
+@unittest.skipIf(CatGBClassifier is None, "Missing 'catboost' package")
 class TestCatGBClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -110,6 +114,31 @@ class TestCatGBClassifier(unittest.TestCase):
         model(data)
         np.testing.assert_array_equal(data.X, X)
         self.assertEqual(data.X.dtype, X.dtype)
+
+    def test_doesnt_modify_data(self):
+        # catgb is called with force-unlocked table, so let us (attempt to)
+        # test it doesn't actually change it
+        data = Table("iris")
+        with data.unlocked():
+            data[0, 0] = 0
+            data[1, 0] = np.nan
+            data[:, 1] = 0
+            data[:, 2] = np.nan
+            data.Y[0] = np.nan
+        x, y = data.X.copy(), data.Y.copy()
+        booster = CatGBClassifier()
+        model = booster(data)
+        model(data)
+        np.testing.assert_equal(data.X, x)
+        np.testing.assert_equal(data.Y, y)
+
+        with data.unlocked():
+            data = data.to_sparse()
+        x = data.X.copy()
+        booster = CatGBClassifier()
+        model = booster(data)
+        model(data)
+        np.testing.assert_equal(data.X.data, x.data)
 
 
 if __name__ == "__main__":

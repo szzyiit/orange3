@@ -7,15 +7,15 @@ from copy import deepcopy
 
 import numpy as np
 
+from AnyQt.QtCore import Qt
+
 from Orange.data import (Table, Domain, StringVariable,
                          ContinuousVariable)
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin
 from Orange.widgets.utils.annotated_data import (ANNOTATED_DATA_FEATURE_NAME)
-from Orange.widgets.utils.state_summary import (format_multiple_summaries,
-                                                format_summary_details)
-from Orange.widgets.visualize.owvenndiagram import (OWVennDiagram, get_perm,
-                                                    arrays_equal, pad_columns)
-
+from Orange.widgets.visualize.owvenndiagram import (
+    OWVennDiagram, get_perm, arrays_equal, pad_columns,
+    IDENTITY_STR, EQUALITY_STR)
 
 
 class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
@@ -37,10 +37,11 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
     def test_rows_id(self):
         data = Table('zoo')
         data1 = deepcopy(data)
-        data1[:, 1] = 1
+        with data1.unlocked():
+            data1[:, 1] = 1
         self.widget.rowwise = True
         self.send_signal(self.signal_name, data1[:10], 1)
-        self.widget.selected_feature = None
+        self.widget.selected_feature = IDENTITY_STR
         self.send_signal(self.signal_name, data[5:10], 2)
 
         self.assertIsNone(self.get_output(self.widget.Outputs.selected_data))
@@ -108,12 +109,76 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.assertIsNone(self.get_output(self.widget.Outputs.selected_data))
         self.assertIsNone(self.get_output(self.widget.Outputs.annotated_data))
 
+    def test_equality(self):
+        self.widget.rowwise = True
+        data1 = Table.from_numpy(None, np.arange(20).reshape(20, 1))
+        data2 = Table.from_numpy(None, np.arange(10, 25).reshape(15, 1))
+        self.send_signal(self.signal_name, data1, 1)
+        self.send_signal(self.signal_name, data2, 2)
+
+        self.widget.vennwidget.vennareas()[3].setSelected(True)
+        self.assertFalse(bool(self.get_output(self.widget.Outputs.selected_data)))
+
+        self.widget.selected_feature = EQUALITY_STR
+        self.widget._on_inputAttrActivated()
+        self.assertEqual(
+            set(self.get_output(self.widget.Outputs.selected_data).X.flatten()),
+            set(range(10, 20)))
+
+    def test_disable_duplicates(self):
+        cb = self.widget.output_duplicates_cb
+        data1 = Table.from_numpy(None, np.arange(20).reshape(20, 1))
+        data2 = Table.from_numpy(None, np.arange(10, 25).reshape(15, 1))
+        self.send_signal(self.signal_name, data1, 1)
+        self.send_signal(self.signal_name, data2, 2)
+        self.assertFalse(cb.isEnabled())
+
+        data = Table("zoo")
+        self.send_signal(self.signal_name, data, 1)
+        self.send_signal(self.signal_name, data, 2)
+        for self.widget.selected_feature in (IDENTITY_STR, EQUALITY_STR):
+            self.widget._on_inputAttrActivated()
+            self.assertFalse(cb.isEnabled())
+
+        self.widget.selected_feature = \
+            self.widget.controls.selected_feature.model()[2]
+        self.widget._on_inputAttrActivated()
+        self.assertTrue(cb.isEnabled())
+
+        self.widget.rowwise = False
+        self.widget._on_matching_changed()
+        self.assertFalse(cb.isEnabled())
+
+    def test_disable_match_equality(self):
+        model = self.widget.controls.selected_feature.model()
+        row0 = model.index(0, 0)
+        row1 = model.index(1, 0)
+        data = Table("zoo")
+
+        self.assertTrue(model.flags(row0) & Qt.ItemIsEnabled)
+        self.assertTrue(model.flags(row1) & Qt.ItemIsEnabled)
+
+        self.send_signal(self.signal_name, data, 1)
+        self.assertTrue(model.flags(row0) & Qt.ItemIsEnabled)
+        self.assertTrue(model.flags(row1) & Qt.ItemIsEnabled)
+
+        self.send_signal(self.signal_name, data, 2)
+        self.assertTrue(model.flags(row0) & Qt.ItemIsEnabled)
+        self.assertTrue(model.flags(row1) & Qt.ItemIsEnabled)
+
+        data1 = Table.from_numpy(None, np.arange(20).reshape(20, 1))
+        self.widget.selected_feature = EQUALITY_STR
+        self.send_signal(self.signal_name, data1, 3)
+        self.assertEqual(self.widget.selected_feature, IDENTITY_STR)
+        self.assertTrue(model.flags(row0) & Qt.ItemIsEnabled)
+        self.assertFalse(model.flags(row1) & Qt.ItemIsEnabled)
+
     def test_multiple_input_over_cols(self):
         self.widget.rowwise = False
         selected_atr_name = 'Selected'
         input2 = self.data.transform(Domain([self.data.domain.attributes[0]],
                                             self.data.domain.class_vars,
-                                            self.data.domain.metas))
+                                            self.data.domain.metas)).copy()
         self.send_signal(self.signal_name, self.data, (1, 'Data', None))
         self.send_signal(self.signal_name, input2, (2, 'Data', None))
 
@@ -136,7 +201,8 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
                                       input2.metas)
 
         #domain matches but the values do not
-        input2.X = input2.X - 1
+        with input2.unlocked(input2.X):
+            input2.X = input2.X - 1
         self.send_signal(self.signal_name, input2, (2, 'Data', None))
         self.widget.vennwidget.vennareas()[3].setSelected(True)
         annotated = self.get_output(self.widget.Outputs.annotated_data)
@@ -151,6 +217,28 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.assertFalse(out_domain[2].attributes[selected_atr_name])
         self.assertFalse(out_domain[3].attributes[selected_atr_name])
         self.assertFalse(out_domain[4].attributes[selected_atr_name])
+
+    def test_test_explicit_closing(self):
+        data = self.data[:3]
+        self.widget.rowwise = True
+        self.send_signal(self.signal_name, data[:1], 1)
+        self.send_signal(self.signal_name, data[1:2], 2)
+        self.send_signal(self.signal_name, data[2:3], 3)
+        out = self.get_output(self.widget.Outputs.annotated_data)
+        np.testing.assert_array_equal(out.ids, data[:3].ids)
+
+        self.send_signal(self.signal_name, None, 2)
+        out = self.get_output(self.widget.Outputs.annotated_data)
+        np.testing.assert_array_equal(out.ids, data[0:3:2].ids)
+
+        self.send_signal(self.signal_name, data[1:2], 2)
+        out = self.get_output(self.widget.Outputs.annotated_data)
+        np.testing.assert_array_equal(out.ids, data[:3].ids)
+
+        self.send_signal(self.signal_name,
+                         self.widget.Inputs.data.closing_sentinel, 1)
+        out = self.get_output(self.widget.Outputs.annotated_data)
+        np.testing.assert_array_equal(out.ids, data[1:3].ids)
 
     def test_no_data(self):
         """Check that the widget doesn't crash on empty data"""
@@ -173,7 +261,7 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(self.signal_name, self.data[:0], 3)
 
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_commit') as commit:
+        with patch.object(self.widget.commit, 'now') as commit:
             self.widget.autocommit = False
             commit.reset_mock()
             self.send_signal(self.signal_name, self.data[:100], 1)
@@ -221,7 +309,8 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(self.signal_name, self.data, 6)
         self.assertTrue(self.widget.Error.too_many_inputs.is_shown())
 
-        self.send_signal(self.signal_name, None, 6)
+        self.send_signal(self.signal_name,
+                         self.widget.Inputs.data.closing_sentinel, 6)
         self.assertFalse(self.widget.Error.too_many_inputs.is_shown())
 
     def test_no_attributes(self):
@@ -234,73 +323,17 @@ class TestOWVennDiagram(WidgetTest, WidgetOutputsTestMixin):
         out = self.get_output(self.widget.Outputs.annotated_data)
         self.assertEqual(len(out), len(table))
 
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
+    def test_migration_to_3(self):
+        settings = {"selected_feature": None}
+        OWVennDiagram.migrate_settings(settings, 1)
+        self.assertEqual(settings["selected_feature"], IDENTITY_STR)
 
-        zoo = Table("zoo")
-        data_list = [("zoo", zoo)]
-        self.send_signal(self.widget.Inputs.data, zoo, 1)
-        summary, details = "101", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
+        settings = {}
+        OWVennDiagram.migrate_settings(settings, 1)
+        self.assertEqual(settings["selected_feature"], IDENTITY_STR)
 
-        iris = Table("iris")
-        data_list = [("zoo", zoo), ("iris", iris)]
-        self.send_signal(self.widget.Inputs.data, iris, 2)
-        summary, details = "101, 150", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        brown = Table("brown-selected")
-        data_list = [("zoo", zoo), ("iris", iris), ("brown-selected", brown)]
-        self.send_signal(self.widget.Inputs.data, brown, 3)
-        summary, details = "101, 150, 186", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None, 1)
-        data_list = [("iris", iris), ("brown-selected", brown)]
-        summary, details = "150, 186", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None, 2)
-        self.send_signal(self.widget.Inputs.data, None, 3)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 class TestVennUtilities(unittest.TestCase):
-
     def test_array_equals_cols(self):
         a = np.array([1, 2], dtype=np.float64)
         b = np.array([1, np.nan], dtype=np.float64)

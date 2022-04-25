@@ -82,7 +82,7 @@ class TestOWPythagoreanForest(WidgetTest):
 
     def test_info_label(self):
         w = self.widget
-        regex = r'树:(.+)'
+        regex = r'Trees:(.+)'
         # If no forest on input, display a message saying that
         self.assertNotRegex(w.ui_info.text(), regex,
                             'Initial info should not contain info on trees')

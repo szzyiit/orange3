@@ -1,18 +1,14 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring,unsubscriptable-object
 import unittest
-from unittest.mock import Mock
 
 import numpy as np
-
-from orangewidget.widget import StateInfo
 
 from Orange.data import Table, DiscreteVariable, ContinuousVariable, Domain
 from Orange.preprocess import transformation
 from Orange.widgets.data import owcontinuize
 from Orange.widgets.data.owcontinuize import OWContinuize, WeightedIndicator
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWContinuize(WidgetTest):
@@ -26,7 +22,7 @@ class TestOWContinuize(WidgetTest):
         widget.multinomial_treatment = 1
 
         self.send_signal(self.widget.Inputs.data, data)
-        widget.unconditional_commit()
+        widget.commit.now()
         imp_data = self.get_output(self.widget.Outputs.data)
         np.testing.assert_equal(imp_data.X, data.X)
         np.testing.assert_equal(imp_data.Y, data.Y)
@@ -34,40 +30,19 @@ class TestOWContinuize(WidgetTest):
         widget.continuous_treatment = 1
         self.send_signal(self.widget.Inputs.data,
                          Table.from_domain(data.domain))
-        widget.unconditional_commit()
+        widget.commit.now()
         imp_data = self.get_output(self.widget.Outputs.data)
         self.assertEqual(len(imp_data), 0)
 
         self.send_signal(self.widget.Inputs.data, None)
-        widget.unconditional_commit()
+        widget.commit.now()
         imp_data = self.get_output(self.widget.Outputs.data)
         self.assertIsNone(imp_data)
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data = Table("iris")
-        input_sum = self.widget.info.set_input_summary = Mock()
-        output_sum = self.widget.info.set_output_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(len(data),
-                                     format_summary_details(data))
-        output = self.get_output(self.widget.Outputs.data)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-
-        input_sum.reset_mock()
-        output_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_once()
-        self.assertIsInstance(input_sum.call_args[0][0], StateInfo.Empty)
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
 
     def test_continuous(self):
         table = Table("housing")
         self.send_signal(self.widget.Inputs.data, table)
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
 
     def test_one_column_equal_values(self):
         """
@@ -76,12 +51,13 @@ class TestOWContinuize(WidgetTest):
         GH-2144
         """
         table = Table("iris")
-        table = table[:, 1]
-        table[:] = 42.0
+        table = table[:, 1].copy()
+        with table.unlocked():
+            table[:] = 42.0
         self.send_signal(self.widget.Inputs.data, table)
         # Normalize.NormalizeBySD
         self.widget.continuous_treatment = 2
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
 
     def test_one_column_nan_values_normalize_sd(self):
         """
@@ -91,15 +67,18 @@ class TestOWContinuize(WidgetTest):
         GH-2144
         """
         table = Table("iris")
-        table[:, 2] = np.NaN
+        with table.unlocked():
+            table[:, 2] = np.NaN
         self.send_signal(self.widget.Inputs.data, table)
         # Normalize.NormalizeBySD
         self.widget.continuous_treatment = 2
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
+
         table = Table("iris")
-        table[1, 2] = np.NaN
+        with table.unlocked():
+            table[1, 2] = np.NaN
         self.send_signal(self.widget.Inputs.data, table)
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
 
     def test_one_column_nan_values_normalize_span(self):
         """
@@ -108,15 +87,18 @@ class TestOWContinuize(WidgetTest):
         GH-2144
         """
         table = Table("iris")
-        table[:, 2] = np.NaN
+        with table.unlocked():
+            table[:, 2] = np.NaN
         self.send_signal(self.widget.Inputs.data, table)
         # Normalize.NormalizeBySpan
         self.widget.continuous_treatment = 1
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
+
         table = Table("iris")
-        table[1, 2] = np.NaN
+        with table.unlocked():
+            table[1, 2] = np.NaN
         self.send_signal(self.widget.Inputs.data, table)
-        self.widget.unconditional_commit()
+        self.widget.commit.now()
 
     def test_disable_normalize_sparse(self):
         def assert_enabled(enabled):

@@ -12,13 +12,13 @@ from AnyQt.QtWidgets import QLineEdit, QTableView, QSlider, \
     QComboBox, QStyledItemDelegate, QWidget, QDateTimeEdit, QHBoxLayout, \
     QDoubleSpinBox, QSizePolicy, QStyleOptionViewItem, QLabel, QMenu, QAction
 
+from orangewidget.gui import Slider
+
 from Orange.data import DiscreteVariable, ContinuousVariable, \
     TimeVariable, Table, StringVariable, Variable, Domain
 from Orange.widgets import gui
 from Orange.widgets.utils.itemmodels import TableModel
 from Orange.widgets.settings import Setting
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
@@ -116,7 +116,7 @@ class ContinuousVariableEditor(VariableEditor):
             minimumWidth=70,
             sizePolicy=sp_spin,
         )
-        self._slider = QSlider(
+        self._slider = Slider(
             parent,
             minimum=self.__map_to_slider(self._min_value),
             maximum=self.__map_to_slider(self._max_value),
@@ -451,8 +451,8 @@ class OWCreateInstance(OWWidget):
     name = "创建实例(Create Instance)"
     description = "从样本数据集中交互创建实例。"
     icon = "icons/CreateInstance.svg"
-    category = "Data"
-    keywords = ['chuangjian', 'shili', 'shuju', 'yangben']
+    category = "变换(Transform)"
+    keywords = ["simulator", 'chuangjian']
     priority = 4000
 
     class Inputs:
@@ -503,7 +503,7 @@ class OWCreateInstance(OWWidget):
         self.model.dataHasNanColumn.connect(self.Information.nans_removed)
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setFilterKeyColumn(-1)
-        self.proxy_model.setFilterCaseSensitivity(False)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.proxy_model.setSourceModel(self.model)
         self.view.setModel(self.proxy_model)
 
@@ -511,7 +511,7 @@ class OWCreateInstance(OWWidget):
         vbox.layout().addWidget(self.filter_edit)
         vbox.layout().addWidget(self.view)
 
-        box = gui.hBox(vbox)
+        box = gui.hBox(vbox, objectName="buttonBox")
         gui.rubber(box)
         for action, name in zip(self.ACTIONS, self.ACTIONS_NAME):
             gui.button(
@@ -521,24 +521,19 @@ class OWCreateInstance(OWWidget):
             )
         gui.rubber(box)
 
-        box = gui.auto_apply(self.controlArea, self, "auto_commit")
-        box.button.setFixedWidth(180)
-        box.layout().insertStretch(0)
-        # pylint: disable=unnecessary-lambda
-        append = gui.checkBox(None, self, "append_to_data",
-                              "将此实例追加到输入数据",
-                              callback=lambda: self.commit())
-        box.layout().insertWidget(0, append)
+        gui.checkBox(self.buttonsArea, self, "append_to_data",
+                     "将此实例追加到输入数据",
+                     callback=self.commit.deferred)
+        gui.rubber(self.buttonsArea)
+        gui.auto_apply(self.buttonsArea, self, "auto_commit")
 
-        self._set_input_summary()
-        self._set_output_summary()
         self.settingsAboutToBePacked.connect(self.pack_settings)
 
     def __filter_edit_changed(self):
         self.proxy_model.setFilterFixedString(self.filter_edit.text().strip())
 
     def __table_data_changed(self):
-        self.commit()
+        self.commit.deferred()
 
     def __menu_requested(self, point: QPoint):
         index = self.view.indexAt(point)
@@ -602,14 +597,13 @@ class OWCreateInstance(OWWidget):
 
             self.model.setData(index, value, ValueRole)
         self.model.dataChanged.connect(self.__table_data_changed)
-        self.commit()
+        self.commit.deferred()
 
     @Inputs.data
     def set_data(self, data: Table):
         self.data = data
-        self._set_input_summary()
         self._set_model_data()
-        self.unconditional_commit()
+        self.commit.now()
 
     def _set_model_data(self):
         self.Information.nans_removed.clear()
@@ -627,61 +621,44 @@ class OWCreateInstance(OWWidget):
     @Inputs.reference
     def set_reference(self, data: Table):
         self.reference = data
-        self._set_input_summary()
 
-    def _set_input_summary(self):
-        n_data = len(self.data) if self.data else 0
-        n_refs = len(self.reference) if self.reference else 0
-        summary, details, kwargs = self.info.NoInput, "", {}
-
-        if self.data or self.reference:
-            summary = f"{self.info.format_number(n_data)}, " \
-                      f"{self.info.format_number(n_refs)}"
-            data_list = [("Data", self.data), ("Reference", self.reference)]
-            details = format_multiple_summaries(data_list)
-            kwargs = {"format": Qt.RichText}
-        self.info.set_input_summary(summary, details, **kwargs)
-
-    def _set_output_summary(self, data: Optional[Table] = None):
-        if data:
-            summary, details = len(data), format_summary_details(data)
-        else:
-            summary, details = self.info.NoOutput, ""
-        self.info.set_output_summary(summary, details)
-
+    @gui.deferred
     def commit(self):
         output_data = None
         if self.data:
             output_data = self._create_data_from_values()
             if self.append_to_data:
                 output_data = self._append_to_data(output_data)
-        self._set_output_summary(output_data)
         self.Outputs.data.send(output_data)
 
     def _create_data_from_values(self) -> Table:
         data = Table.from_domain(self.data.domain, 1)
-        data.name = "created"
-        data.X[:] = np.nan
-        data.Y[:] = np.nan
-        for i, m in enumerate(self.data.domain.metas):
-            data.metas[:, i] = "" if m.is_string else np.nan
+        with data.unlocked():
+            data.name = "created"
+            if data.X.size:
+                data.X[:] = np.nan
+            if data.Y.size:
+                data.Y[:] = np.nan
+            for i, m in enumerate(self.data.domain.metas):
+                data.metas[:, i] = "" if m.is_string else np.nan
 
-        values = self._get_values()
-        for var_name, value in values.items():
-            data[:, var_name] = value
+            values = self._get_values()
+            for var_name, value in values.items():
+                data[:, var_name] = value
         return data
 
     def _append_to_data(self, data: Table) -> Table:
         assert self.data
         assert len(data) == 1
 
-        var = DiscreteVariable("源ID", values=(self.data.name, data.name))
+        var = DiscreteVariable("Source ID", values=(self.data.name, data.name))
         data = Table.concatenate([self.data, data], axis=0)
         domain = Domain(data.domain.attributes, data.domain.class_vars,
                         data.domain.metas + (var,))
         data = data.transform(domain)
-        data.metas[: len(self.data), -1] = 0
-        data.metas[len(self.data):, -1] = 1
+        with data.unlocked(data.metas):
+            data.metas[: len(self.data), -1] = 0
+            data.metas[len(self.data):, -1] = 1
         return data
 
     def _get_values(self) -> Dict[str, Union[str, float]]:

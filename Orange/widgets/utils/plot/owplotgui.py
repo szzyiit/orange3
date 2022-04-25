@@ -1,4 +1,4 @@
-'''
+"""
 
 .. index:: plot
 
@@ -23,15 +23,25 @@ This module contains functions and classes for creating GUI elements commonly us
 .. autoclass:: OrangeWidgets.plot.OWPlotGUI
     :members:
 
-'''
+"""
 
 import os
 
 from AnyQt.QtWidgets import (
-    QWidget, QToolButton, QVBoxLayout, QHBoxLayout, QGridLayout, QMenu,
-    QAction, QSizePolicy, QLabel, QStyledItemDelegate, QStyle, QListView
+    QWidget,
+    QToolButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QMenu,
+    QAction,
+    QSizePolicy,
+    QLabel,
+    QStyledItemDelegate,
+    QStyle,
+    QListView,
 )
-from AnyQt.QtGui import QIcon, QColor, QFont
+from AnyQt.QtGui import QIcon, QFont, QPalette
 from AnyQt.QtCore import Qt, pyqtSignal, QSize, QRect, QPoint, QMimeData
 
 from Orange.data import ContinuousVariable, DiscreteVariable
@@ -41,12 +51,26 @@ from Orange.widgets.utils.listfilter import variables_filter
 from Orange.widgets.utils.itemmodels import DomainModel, VariableListModel
 
 from .owconstants import (
-    NOTHING, ZOOMING, SELECT, SELECT_POLYGON, PANNING, SELECTION_ADD,\
-    SELECTION_REMOVE, SELECTION_TOGGLE, SELECTION_REPLACE)
+    NOTHING,
+    ZOOMING,
+    SELECT,
+    SELECT_POLYGON,
+    PANNING,
+    SELECTION_ADD,
+    SELECTION_REMOVE,
+    SELECTION_TOGGLE,
+    SELECTION_REPLACE,
+)
 
-__all__ = ["variables_selection",
-           "OrientedWidget", "OWToolbar", "StateButtonContainer",
-           "OWAction", "OWButton", "OWPlotGUI"]
+__all__ = [
+    "variables_selection",
+    "OrientedWidget",
+    "OWToolbar",
+    "StateButtonContainer",
+    "OWAction",
+    "OWButton",
+    "OWPlotGUI",
+]
 
 
 SIZE_POLICY_ADAPTING = (QSizePolicy.Expanding, QSizePolicy.Ignored)
@@ -99,8 +123,8 @@ class VariableSelectionModel(VariableListModel):
         if len(indexlist) != 1:
             return None
         mime = QMimeData()
-        mime.setData(self.MIME_TYPE, b'see properties: item_index')
-        mime.setProperty('item_index', indexlist[0])
+        mime.setData(self.MIME_TYPE, b"see properties: item_index")
+        mime.setProperty("item_index", indexlist[0])
         return mime
 
     def dropMimeData(self, mime, action, row, column, parent):
@@ -108,7 +132,7 @@ class VariableSelectionModel(VariableListModel):
             return True  # pragma: no cover
         if not mime.hasFormat(self.MIME_TYPE):
             return False  # pragma: no cover
-        prev_index = mime.property('item_index')
+        prev_index = mime.property("item_index")
         if prev_index is None:
             return False
         var = self[prev_index.row()]
@@ -142,15 +166,17 @@ class VariablesDelegate(QStyledItemDelegate):
         if option.state & QStyle.State_MouseOver:
             if not full_selection or (full_selection and is_selected):
                 txt = [" 添加 ", " 删除 "][is_selected]
-                txtw = painter.fontMetrics().width(txt)
+                txtw = painter.fontMetrics().horizontalAdvance(txt)
                 painter.save()
                 painter.setPen(Qt.NoPen)
-                painter.setBrush(QColor("#ccc"))
-                brect = QRect(rect.x() + rect.width() - 8 - txtw, rect.y(),
-                              txtw, rect.height())
+                painter.setBrush(option.palette.brush(QPalette.Button))
+                brect = QRect(
+                    rect.x() + rect.width() - 8 - txtw, rect.y(), txtw, rect.height()
+                )
                 painter.drawRoundedRect(brect, 4, 4)
-                painter.restore()
+                painter.setPen(option.palette.color(QPalette.ButtonText))
                 painter.drawText(brect, Qt.AlignCenter, txt)
+                painter.restore()
 
         painter.save()
         double_pen = painter.pen()
@@ -179,7 +205,8 @@ class VariableSelectionView(QListView):
     def __init__(self, *args, acceptedType=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.setSizePolicy(
-            QSizePolicy(QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+            QSizePolicy(QSizePolicy.Minimum, QSizePolicy.MinimumExpanding)
+        )
         self.setMinimumHeight(10)
         self.setMouseTracking(True)
         self.setAttribute(Qt.WA_Hover)
@@ -194,9 +221,10 @@ class VariableSelectionView(QListView):
         self.setUniformItemSizes(True)
 
         self.setItemDelegate(VariablesDelegate())
+        self.setMinimumHeight(50)
 
     def sizeHint(self):
-        return QSize(1, 50)
+        return QSize(1, 150)
 
     def mouseMoveEvent(self, e):
         super().mouseMoveEvent(e)
@@ -218,15 +246,15 @@ def variables_selection(widget, master, model):
         view.selectionModel().clearSelection()
 
     filter_edit, view = variables_filter(
-        model=model, parent=master, view_type=VariableSelectionView)
+        model=model, parent=master, view_type=VariableSelectionView
+    )
     proxy = view.model()
     proxy.setSortRole(model.SortRole)
     model.selection_changed.connect(update_list)
     model.dataChanged.connect(update_list)
     model.modelReset.connect(update_list)
     model.rowsInserted.connect(update_list)
-    view.clicked.connect(
-        lambda index: model.toggle_item(proxy.mapToSource(index)))
+    view.clicked.connect(lambda index: model.toggle_item(proxy.mapToSource(index)))
     master.contextOpened.connect(update_list)
     widget.layout().addWidget(filter_edit)
     widget.layout().addSpacing(4)
@@ -234,9 +262,10 @@ def variables_selection(widget, master, model):
 
 
 class OrientedWidget(QWidget):
-    '''
-        A simple QWidget with a box layout that matches its ``orientation``.
-    '''
+    """
+    A simple QWidget with a box layout that matches its ``orientation``.
+    """
+
     def __init__(self, orientation, parent):
         QWidget.__init__(self, parent)
         if orientation == Qt.Vertical:
@@ -245,25 +274,27 @@ class OrientedWidget(QWidget):
             self._layout = QHBoxLayout()
         self.setLayout(self._layout)
 
+
 class OWToolbar(OrientedWidget):
-    '''
-        A toolbar is a container that can contain any number of buttons.
+    """
+    A toolbar is a container that can contain any number of buttons.
 
-        :param gui: Used to create containers and buttons
-        :type gui: :obj:`.OWPlotGUI`
+    :param gui: Used to create containers and buttons
+    :type gui: :obj:`.OWPlotGUI`
 
-        :param text: The name of this toolbar
-        :type text: str
+    :param text: The name of this toolbar
+    :type text: str
 
-        :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
-        :type tex: int
+    :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
+    :type tex: int
 
-        :param buttons: A list of button identifiers to be added to this toolbar
-        :type buttons: list of (int or tuple)
+    :param buttons: A list of button identifiers to be added to this toolbar
+    :type buttons: list of (int or tuple)
 
-        :param parent: The toolbar's parent widget
-        :type parent: :obj:`.QWidget`
-    '''
+    :param parent: The toolbar's parent widget
+    :type parent: :obj:`.QWidget`
+    """
+
     def __init__(self, gui, text, orientation, buttons, parent, nomargin=False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
@@ -273,11 +304,13 @@ class OWToolbar(OrientedWidget):
         while i < n:
             if buttons[i] == gui.StateButtonsBegin:
                 state_buttons = []
-                for j in range(i+1, n):
+                for j in range(i + 1, n):
                     if buttons[j] == gui.StateButtonsEnd:
-                        s = gui.state_buttons(orientation, state_buttons, self, nomargin)
+                        s = gui.state_buttons(
+                            orientation, state_buttons, self, nomargin
+                        )
                         self.buttons.update(s.buttons)
-                        self.groups[buttons[i+1]] = s
+                        self.groups[buttons[i + 1]] = s
                         i = j
                         self.layout().addStretch()
                         break
@@ -296,7 +329,13 @@ class OWToolbar(OrientedWidget):
     def select_state(self, state):
         # SELECT_RECTANGLE = SELECT
         # SELECT_RIGHTCLICK = SELECT
-        state_buttons = {NOTHING: 11, ZOOMING: 11, SELECT: 13, SELECT_POLYGON: 13, PANNING: 12}
+        state_buttons = {
+            NOTHING: 11,
+            ZOOMING: 11,
+            SELECT: 13,
+            SELECT_POLYGON: 13,
+            PANNING: 12,
+        }
         self.buttons[state_buttons[state]].click()
 
     def select_selection_behaviour(self, selection_behaviour):
@@ -308,22 +347,23 @@ class OWToolbar(OrientedWidget):
 
 
 class StateButtonContainer(OrientedWidget):
-    '''
-        This class can contain any number of checkable buttons, of which only one can be selected
-        at any time.
+    """
+    This class can contain any number of checkable buttons, of which only one can be selected
+    at any time.
 
-        :param gui: Used to create containers and buttons
-        :type gui: :obj:`.OWPlotGUI`
+    :param gui: Used to create containers and buttons
+    :type gui: :obj:`.OWPlotGUI`
 
-        :param buttons: A list of button identifiers to be added to this toolbar
-        :type buttons: list of (int or tuple)
+    :param buttons: A list of button identifiers to be added to this toolbar
+    :type buttons: list of (int or tuple)
 
-        :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
-        :type tex: int
+    :param orientation: The orientation of this toolbar, either Qt.Vertical or Qt.Horizontal
+    :type tex: int
 
-        :param parent: The toolbar's parent widget
-        :type parent: :obj:`.QWidget`
-    '''
+    :param parent: The toolbar's parent widget
+    :type parent: :obj:`.QWidget`
+    """
+
     def __init__(self, gui, orientation, buttons, parent, nomargin=False):
         OrientedWidget.__init__(self, orientation, parent)
         self.buttons = {}
@@ -350,13 +390,22 @@ class StateButtonContainer(OrientedWidget):
         if enabled and self._clicked_button:
             self._clicked_button.click()
 
+
 class OWAction(QAction):
-    '''
-      A :obj:`QAction` with convenience methods for calling a callback or
-      setting an attribute of the plot.
-    '''
-    def __init__(self, plot, icon_name=None, attr_name='', attr_value=None, callback=None,
-                 parent=None):
+    """
+    A :obj:`QAction` with convenience methods for calling a callback or
+    setting an attribute of the plot.
+    """
+
+    def __init__(
+        self,
+        plot,
+        icon_name=None,
+        attr_name="",
+        attr_value=None,
+        callback=None,
+        parent=None,
+    ):
         QAction.__init__(self, parent)
 
         if type(callback) == str:
@@ -370,8 +419,12 @@ class OWAction(QAction):
             self.triggered.connect(self.set_attribute)
         if icon_name:
             self.setIcon(
-                QIcon(os.path.join(os.path.dirname(__file__),
-                                   "../../icons", icon_name + '.png')))
+                QIcon(
+                    os.path.join(
+                        os.path.dirname(__file__), "../../icons", icon_name + ".png"
+                    )
+                )
+            )
             self.setIconVisibleInMenu(True)
 
     def set_attribute(self, clicked):
@@ -379,9 +432,10 @@ class OWAction(QAction):
 
 
 class OWButton(QToolButton):
-    '''
-        A custom tool button which signal when its down state changes
-    '''
+    """
+    A custom tool button which signal when its down state changes
+    """
+
     downChanged = pyqtSignal(bool)
 
     def __init__(self, action=None, parent=None):
@@ -397,65 +451,65 @@ class OWButton(QToolButton):
 
 
 class OWPlotGUI:
-    '''
-        This class contains functions to create common user interface elements (QWidgets)
-        for configuration and interaction with the ``plot``.
+    """
+    This class contains functions to create common user interface elements (QWidgets)
+    for configuration and interaction with the ``plot``.
 
-        It provides shorter versions of some methods in :obj:`.gui` that are directly related to an
-        :obj:`.OWPlot` object.
+    It provides shorter versions of some methods in :obj:`.gui` that are directly related to an
+    :obj:`.OWPlot` object.
 
-        Normally, you don't have to construct this class manually. Instead, first create the plot,
-        then use the :attr:`.OWPlot.gui` attribute.
+    Normally, you don't have to construct this class manually. Instead, first create the plot,
+    then use the :attr:`.OWPlot.gui` attribute.
 
-        Most methods in this class have similar arguments, so they are explaned here in a single
-        place.
+    Most methods in this class have similar arguments, so they are explaned here in a single
+    place.
 
-        :param widget: The parent widget which will contain the newly created widget.
-        :type widget: QWidget
+    :param widget: The parent widget which will contain the newly created widget.
+    :type widget: QWidget
 
-        :param id: If ``id`` is an ``int``, a button is constructed from the default table.
-                   Otherwise, ``id`` must be tuple with 5 or 6 elements. These elements
-                   are explained in the next table.
-        :type id: int or tuple
+    :param id: If ``id`` is an ``int``, a button is constructed from the default table.
+               Otherwise, ``id`` must be tuple with 5 or 6 elements. These elements
+               are explained in the next table.
+    :type id: int or tuple
 
-        :param ids: A list of widget identifiers
-        :type ids: list of id
+    :param ids: A list of widget identifiers
+    :type ids: list of id
 
-        :param text: The text displayed on the widget
-        :type text: str
+    :param text: The text displayed on the widget
+    :type text: str
 
-        When using widgets that are specific to your visualization and not included here, you have
-        to provide your
-        own widgets id's. They are a tuple with the following members:
+    When using widgets that are specific to your visualization and not included here, you have
+    to provide your
+    own widgets id's. They are a tuple with the following members:
 
-        :param id: An optional unique identifier for the widget.
-                   This is only needed if you want to retrive this widget using
-                   :obj:`.OWToolbar.buttons`.
-        :type id: int or str
+    :param id: An optional unique identifier for the widget.
+               This is only needed if you want to retrive this widget using
+               :obj:`.OWToolbar.buttons`.
+    :type id: int or str
 
-        :param text: The text to be displayed on or next to the widget
-        :type text: str
+    :param text: The text to be displayed on or next to the widget
+    :type text: str
 
-        :param attr_name: Name of attribute which will be set when the button is clicked.
-                          If this widget is checkable, its check state will be set
-                          according to the current value of this attribute.
-                          If this parameter is empty or None, no attribute will be read or set.
-        :type attr_name: str
+    :param attr_name: Name of attribute which will be set when the button is clicked.
+                      If this widget is checkable, its check state will be set
+                      according to the current value of this attribute.
+                      If this parameter is empty or None, no attribute will be read or set.
+    :type attr_name: str
 
-        :param attr_value: The value that will be assigned to the ``attr_name`` when the button is
-        clicked.
-        :type attr: any
+    :param attr_value: The value that will be assigned to the ``attr_name`` when the button is
+    clicked.
+    :type attr: any
 
-        :param callback: Function to be called when the button is clicked.
-                         If a string is passed as ``callback``, a method by that name of ``plot``
-                         will be called.
-                         If this parameter is empty or ``None``, no function will be called
-        :type callback: str or function
+    :param callback: Function to be called when the button is clicked.
+                     If a string is passed as ``callback``, a method by that name of ``plot``
+                     will be called.
+                     If this parameter is empty or ``None``, no function will be called
+    :type callback: str or function
 
-        :param icon_name: The filename of the icon for this widget, without the '.png' suffix.
-        :type icon_name: str
+    :param icon_name: The filename of the icon for this widget, without the '.png' suffix.
+    :type icon_name: str
 
-    '''
+    """
 
     JITTER_SIZES = [0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10]
 
@@ -463,14 +517,21 @@ class OWPlotGUI:
         self._master = master
         self._plot = master.graph
         self.color_model = DomainModel(
-            placeholder="(相同的颜色)", valid_types=DomainModel.PRIMITIVE)
+            placeholder="(相同的颜色)", valid_types=DomainModel.PRIMITIVE
+        )
         self.shape_model = DomainModel(
-            placeholder="(相同形状)", valid_types=DiscreteVariable)
+            placeholder="(相同形状)", valid_types=DiscreteVariable
+        )
         self.size_model = DomainModel(
-            placeholder="(相同大小)", valid_types=ContinuousVariable)
+            placeholder="(相同大小)", valid_types=ContinuousVariable
+        )
         self.label_model = DomainModel(placeholder="(没有标签)")
-        self.points_models = [self.color_model, self.shape_model,
-                              self.size_model, self.label_model]
+        self.points_models = [
+            self.color_model,
+            self.shape_model,
+            self.size_model,
+            self.label_model,
+        ]
 
     Spacing = 0
 
@@ -530,44 +591,71 @@ class OWPlotGUI:
         StateButtonsEnd,
         Spacing,
         SendSelection,
-        ClearSelection
+        ClearSelection,
     ]
 
     _buttons = {
-        Zoom: ('缩放', 'state', ZOOMING, None, 'Dlg_zoom'),
-        ZoomReset: ('重置缩放', None, None, None, 'Dlg_zoom_reset'),
-        Pan: ('抓取', 'state', PANNING, None, 'Dlg_pan_hand'),
-        SimpleSelect: ('选择', 'state', SELECT, None, 'Dlg_arrow'),
-        Select: ('Select', 'state', SELECT, None, 'Dlg_arrow'),
-        SelectionAdd: ('Add to selection', 'selection_behavior', SELECTION_ADD, None,
-                       'Dlg_select_add'),
-        SelectionRemove: ('Remove from selection', 'selection_behavior', SELECTION_REMOVE, None,
-                          'Dlg_select_remove'),
-        SelectionToggle: ('Toggle selection', 'selection_behavior', SELECTION_TOGGLE, None,
-                          'Dlg_select_toggle'),
-        SelectionOne: ('Replace selection', 'selection_behavior', SELECTION_REPLACE, None,
-                       'Dlg_arrow'),
-        SendSelection: ('Send selection', None, None, 'send_selection', 'Dlg_send'),
-        ClearSelection: ('Clear selection', None, None, 'clear_selection', 'Dlg_clear'),
-        ShufflePoints: ('ShufflePoints', None, None, 'shuffle_points', 'Dlg_sort')
+        Zoom: ("缩放", "state", ZOOMING, None, "Dlg_zoom"),
+        ZoomReset: ("重置缩放", None, None, None, "Dlg_zoom_reset"),
+        Pan: ("抓取", "state", PANNING, None, "Dlg_pan_hand"),
+        SimpleSelect: ("选择", "state", SELECT, None, "Dlg_arrow"),
+        Select: ("Select", "state", SELECT, None, "Dlg_arrow"),
+        SelectionAdd: (
+            "Add to selection",
+            "selection_behavior",
+            SELECTION_ADD,
+            None,
+            "Dlg_select_add",
+        ),
+        SelectionRemove: (
+            "Remove from selection",
+            "selection_behavior",
+            SELECTION_REMOVE,
+            None,
+            "Dlg_select_remove",
+        ),
+        SelectionToggle: (
+            "Toggle selection",
+            "selection_behavior",
+            SELECTION_TOGGLE,
+            None,
+            "Dlg_select_toggle",
+        ),
+        SelectionOne: (
+            "Replace selection",
+            "selection_behavior",
+            SELECTION_REPLACE,
+            None,
+            "Dlg_arrow",
+        ),
+        SendSelection: ("Send selection", None, None, "send_selection", "Dlg_send"),
+        ClearSelection: ("Clear selection", None, None, "clear_selection", "Dlg_clear"),
+        ShufflePoints: ("ShufflePoints", None, None, "shuffle_points", "Dlg_sort"),
     }
 
     _check_boxes = {
-        AnimatePlot : ('Animate plot', 'animate_plot', 'update_animations'),
-        AnimatePoints : ('Animate points', 'animate_points', 'update_animations'),
-        AntialiasPlot : ('Antialias plot', 'antialias_plot', 'update_antialiasing'),
-        AntialiasPoints : ('Antialias points', 'antialias_points', 'update_antialiasing'),
-        AntialiasLines : ('Antialias lines', 'antialias_lines', 'update_antialiasing'),
-        AutoAdjustPerformance : ('Disable effects for large datasets', 'auto_adjust_performance',
-                                 'update_performance')
+        AnimatePlot: ("Animate plot", "animate_plot", "update_animations"),
+        AnimatePoints: ("Animate points", "animate_points", "update_animations"),
+        AntialiasPlot: ("Antialias plot", "antialias_plot", "update_antialiasing"),
+        AntialiasPoints: (
+            "Antialias points",
+            "antialias_points",
+            "update_antialiasing",
+        ),
+        AntialiasLines: ("Antialias lines", "antialias_lines", "update_antialiasing"),
+        AutoAdjustPerformance: (
+            "Disable effects for large datasets",
+            "auto_adjust_performance",
+            "update_performance",
+        ),
     }
 
-    '''
+    """
         The list of built-in buttons. It is a map of
         id : (name, attr_name, attr_value, callback, icon_name)
 
         .. seealso:: :meth:`.tool_button`
-    '''
+    """
 
     def _get_callback(self, name, master=None):
         if type(name) == str:
@@ -576,14 +664,18 @@ class OWPlotGUI:
             return name
 
     def _check_box(self, widget, value, label, cb_name, stateWhenDisabled=None):
-        '''
-            Adds a :obj:`.QCheckBox` to ``widget``.
-            When the checkbox is toggled, the attribute ``value`` of the plot object is set to
-            the checkbox' check state, and the callback ``cb_name`` is called.
-        '''
-        args = dict(master=self._plot, value=value, label=label,
-                    callback=self._get_callback(cb_name, self._plot),
-                    stateWhenDisabled=stateWhenDisabled)
+        """
+        Adds a :obj:`.QCheckBox` to ``widget``.
+        When the checkbox is toggled, the attribute ``value`` of the plot object is set to
+        the checkbox' check state, and the callback ``cb_name`` is called.
+        """
+        args = dict(
+            master=self._plot,
+            value=value,
+            label=label,
+            callback=self._get_callback(cb_name, self._plot),
+            stateWhenDisabled=stateWhenDisabled,
+        )
         if isinstance(widget.layout(), QGridLayout):
             widget = widget.layout()
         if isinstance(widget, QGridLayout):
@@ -594,67 +686,87 @@ class OWPlotGUI:
             return gui.checkBox(widget, **args)
 
     def antialiasing_check_box(self, widget):
-        '''
-            Creates a check box that toggles the Antialiasing of the plot
-        '''
-        self._check_box(widget, 'use_antialiasing', 'Use antialiasing', 'update_antialiasing')
+        """
+        Creates a check box that toggles the Antialiasing of the plot
+        """
+        self._check_box(
+            widget, "use_antialiasing", "Use antialiasing", "update_antialiasing"
+        )
 
     def jitter_size_slider(self, widget, label="抖动: "):
         return self.add_control(
-            widget, gui.valueSlider, label,
-            master=self._plot, value='jitter_size',
+            widget,
+            gui.valueSlider,
+            label,
+            master=self._plot,
+            value="jitter_size",
             values=getattr(self._plot, "jitter_sizes", self.JITTER_SIZES),
-            callback=self._plot.update_jittering)
+            callback=self._plot.update_jittering,
+        )
 
     def jitter_numeric_check_box(self, widget):
         self._check_box(
             widget=widget,
-            value="jitter_continuous", label="Jitter numeric values",
-            cb_name="update_jittering")
+            value="jitter_continuous",
+            label="抖动数值数据",
+            cb_name="update_jittering",
+        )
 
     def show_legend_check_box(self, widget):
-        '''
-            Creates a check box that shows and hides the plot legend
-        '''
-        self._check_box(widget, 'show_legend', '显示图例',
-                        'update_legend_visibility')
+        """
+        Creates a check box that shows and hides the plot legend
+        """
+        self._check_box(widget, "show_legend", "显示图例", "update_legend_visibility")
 
     def tooltip_shows_all_check_box(self, widget):
         gui.checkBox(
-            widget=widget, master=self._master, value="tooltip_shows_all",
-            label='鼠标悬停时显示所有数据')
+            widget=widget,
+            master=self._master,
+            value="tooltip_shows_all",
+            label="鼠标悬停时显示所有数据",
+        )
 
     def class_density_check_box(self, widget):
-        self._master.cb_class_density = \
-            self._check_box(widget=widget, value="class_density",
-                            label="显示颜色区域",
-                            cb_name=self._plot.update_density,
-                            stateWhenDisabled=False)
+        self._master.cb_class_density = self._check_box(
+            widget=widget,
+            value="class_density",
+            label="显示颜色区域",
+            cb_name=self._plot.update_density,
+            stateWhenDisabled=False,
+        )
 
     def regression_line_check_box(self, widget):
-        self._master.cb_reg_line = \
-            self._check_box(widget=widget, value="show_reg_line",
-                            label="显示回归线",
-                            cb_name=self._plot.update_regression_line)
+        self._master.cb_reg_line = self._check_box(
+            widget=widget,
+            value="show_reg_line",
+            label="显示回归线",
+            cb_name=self._plot.update_regression_line,
+        )
 
     def label_only_selected_check_box(self, widget):
-        self._check_box(widget=widget, value="label_only_selected",
-                        label="仅标记所选内容和子集",
-                        cb_name=self._plot.update_labels)
+        self._check_box(
+            widget=widget,
+            value="label_only_selected",
+            label="仅标记所选内容和子集",
+            cb_name=self._plot.update_labels,
+        )
 
     def filled_symbols_check_box(self, widget):
-        self._check_box(widget, 'show_filled_symbols', '显示填充符号',
-                        'update_filled_symbols')
+        self._check_box(
+            widget,
+            "show_filled_symbols",
+            "显示填充符号",
+            "update_filled_symbols",
+        )
 
     def grid_lines_check_box(self, widget):
-        self._check_box(widget, 'show_grid', '显示网格线',
-                        'update_grid_visibility')
+        self._check_box(widget, "show_grid", "显示网格线", "update_grid_visibility")
 
     def animations_check_box(self, widget):
-        '''
-            Creates a check box that enabled or disables animations
-        '''
-        self._check_box(widget, 'use_animations', 'Use animations', 'update_animations')
+        """
+        Creates a check box that enabled or disables animations
+        """
+        self._check_box(widget, "use_animations", "Use animations", "update_animations")
 
     def add_control(self, widget, control, label, **args):
         if isinstance(widget.layout(), QGridLayout):
@@ -668,54 +780,80 @@ class OWPlotGUI:
         else:
             return control(widget, label=label, **args)
 
-    def _slider(self, widget, value, label, min_value, max_value, step, cb_name,
-                show_number=False):
+    def _slider(
+        self,
+        widget,
+        value,
+        label,
+        min_value,
+        max_value,
+        step,
+        cb_name,
+        show_number=False,
+    ):
         return self.add_control(
-            widget, gui.hSlider, label,
-            master=self._plot, value=value, minValue=min_value,
-            maxValue=max_value, step=step, createLabel=show_number,
-            callback=self._get_callback(cb_name, self._master))
+            widget,
+            gui.hSlider,
+            label,
+            master=self._plot,
+            value=value,
+            minValue=min_value,
+            maxValue=max_value,
+            step=step,
+            createLabel=show_number,
+            callback=self._get_callback(cb_name, self._master),
+        )
 
     def point_size_slider(self, widget, label="符号大小: "):
-        '''
-            Creates a slider that controls point size
-        '''
-        return self._slider(widget, 'point_width', label, 1, 20, 1, 'sizes_changed')
+        """
+        Creates a slider that controls point size
+        """
+        return self._slider(widget, "point_width", label, 1, 20, 1, "sizes_changed")
 
     def alpha_value_slider(self, widget, label="不透明度: "):
-        '''
-            Creates a slider that controls point transparency
-        '''
-        return self._slider(widget, 'alpha_value', label, 0, 255, 10, 'colors_changed')
+        """
+        Creates a slider that controls point transparency
+        """
+        return self._slider(widget, "alpha_value", label, 0, 255, 10, "colors_changed")
 
     def _combo(self, widget, value, label, cb_name, items=(), model=None):
         return self.add_control(
-            widget, gui.comboBox, label,
-            master=self._master, value=value, items=items, model=model,
+            widget,
+            gui.comboBox,
+            label,
+            master=self._master,
+            value=value,
+            items=items,
+            model=model,
             callback=self._get_callback(cb_name, self._master),
             orientation=Qt.Horizontal,
-            sendSelectedValue=True, contentsLength=12,
-            labelWidth=50, searchable=True)
+            sendSelectedValue=True,
+            contentsLength=12,
+            labelWidth=50,
+            searchable=True,
+        )
 
     def color_value_combo(self, widget, label="颜色: "):
         """Creates a combo box that controls point color"""
-        self._combo(widget, "attr_color", label, "colors_changed",
-                    model=self.color_model)
+        self._combo(
+            widget, "attr_color", label, "colors_changed", model=self.color_model
+        )
 
     def shape_value_combo(self, widget, label="形状: "):
         """Creates a combo box that controls point shape"""
-        self._combo(widget, "attr_shape", label, "shapes_changed",
-                    model=self.shape_model)
+        self._combo(
+            widget, "attr_shape", label, "shapes_changed", model=self.shape_model
+        )
 
     def size_value_combo(self, widget, label="大小: "):
         """Creates a combo box that controls point size"""
-        self._combo(widget, "attr_size", label, "sizes_changed",
-                    model=self.size_model)
+        self._combo(widget, "attr_size", label, "sizes_changed", model=self.size_model)
 
     def label_value_combo(self, widget, label="标签: "):
         """Creates a combo box that controls point label"""
-        self._combo(widget, "attr_label", label, "labels_changed",
-                    model=self.label_model)
+        self._combo(
+            widget, "attr_label", label, "labels_changed", model=self.label_model
+        )
 
     def box_spacing(self, widget):
         if isinstance(widget.layout(), QGridLayout):
@@ -727,38 +865,30 @@ class OWPlotGUI:
         else:
             gui.separator(widget)
 
-    def point_properties_box(self, widget, box=True):
-        '''
-            Creates a box with controls for common point properties.
-            Currently, these properties are point size and transparency.
-        '''
+    def point_properties_box(self, widget, box="属性"):
+        """
+        Creates a box with controls for common point properties.
+        Currently, these properties are point size and transparency.
+        """
         box = self.create_gridbox(widget, box)
-        self.add_widgets([
-            self.Color,
-            self.Shape,
-            self.Size,
-            self.Label,
-            self.LabelOnlySelected], box)
+        self.add_widgets(
+            [self.Color, self.Shape, self.Size, self.Label, self.LabelOnlySelected], box
+        )
         return box
 
-    def effects_box(self, widget, box=True):
+    def effects_box(self, widget, box=False):
         """
         Create a box with controls for common plot settings
         """
         box = self.create_gridbox(widget, box)
-        self.add_widgets([
-            self.PointSize,
-            self.AlphaValue,
-            self.JitterSizeSlider], box)
+        self.add_widgets([self.PointSize, self.AlphaValue, self.JitterSizeSlider], box)
         return box
 
     def plot_properties_box(self, widget, box=None):
         """
         Create a box with controls for common plot settings
         """
-        return self.create_box([
-            self.ClassDensity,
-            self.ShowLegend], widget, box, True)
+        return self.create_box([self.ClassDensity, self.ShowLegend], widget, box, False)
 
     _functions = {
         ShowFilledSymbols: filled_symbols_check_box,
@@ -776,8 +906,8 @@ class OWPlotGUI:
         Shape: shape_value_combo,
         Size: size_value_combo,
         Label: label_value_combo,
-        Spacing: box_spacing
-        }
+        Spacing: box_spacing,
+    }
 
     def add_widget(self, id, widget):
         if id in self._functions:
@@ -791,12 +921,13 @@ class OWPlotGUI:
             self.add_widget(id, widget)
 
     def create_box(self, ids, widget, box, name):
-        '''
-            Creates a :obj:`.QGroupBox` with text ``name`` and adds it to ``widget``.
-            The ``ids`` argument is a list of widget ID's that will be added to this box
-        '''
+        """
+        Creates a :obj:`.QGroupBox` with text ``name`` and adds it to ``widget``.
+        The ``ids`` argument is a list of widget ID's that will be added to this box
+        """
         if box is None:
-            box = gui.vBox(widget, name)
+            kwargs = {}
+            box = gui.vBox(widget, name, margin=True, contentsMargins=(8, 4, 8, 4))
         self.add_widgets(ids, box)
         return box
 
@@ -804,10 +935,12 @@ class OWPlotGUI:
         grid = QGridLayout()
         grid.setColumnMinimumWidth(0, 50)
         grid.setColumnStretch(1, 1)
-        box = gui.widgetBox(widget, box=box, orientation=grid)
+        b = gui.widgetBox(widget, box=box, orientation=grid)
+        if not box:
+            b.setContentsMargins(8, 4, 8, 4)
         # This must come after calling widgetBox, since widgetBox overrides it
         grid.setVerticalSpacing(8)
-        return box
+        return b
 
     def _expand_id(self, id):
         if type(id) == int:
@@ -820,18 +953,26 @@ class OWPlotGUI:
         return id, name, attr_name, attr_value, callback, icon_name
 
     def tool_button(self, id, widget):
-        '''
-            Creates an :obj:`.OWButton` and adds it to the parent ``widget``.
-        '''
+        """
+        Creates an :obj:`.OWButton` and adds it to the parent ``widget``.
+        """
         id, name, attr_name, attr_value, callback, icon_name = self._expand_id(id)
         if id == OWPlotGUI.Select:
-            b = self.menu_button(self.Select,
-                                 [self.SelectionOne, self.SelectionAdd,
-                                  self.SelectionRemove, self.SelectionToggle],
-                                 widget)
+            b = self.menu_button(
+                self.Select,
+                [
+                    self.SelectionOne,
+                    self.SelectionAdd,
+                    self.SelectionRemove,
+                    self.SelectionToggle,
+                ],
+                widget,
+            )
         else:
             b = OWButton(parent=widget)
-            ac = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=b)
+            ac = OWAction(
+                self._plot, icon_name, attr_name, attr_value, callback, parent=b
+            )
             b.setDefaultAction(ac)
         b.setToolTip(name)
         if widget.layout() is not None:
@@ -839,10 +980,12 @@ class OWPlotGUI:
         return b
 
     def menu_button(self, main_action_id, ids, widget):
-        '''
-            Creates an :obj:`.OWButton` with a popup-menu and adds it to the parent ``widget``.
-        '''
-        id, _, attr_name, attr_value, callback, icon_name = self._expand_id(main_action_id)
+        """
+        Creates an :obj:`.OWButton` with a popup-menu and adds it to the parent ``widget``.
+        """
+        id, _, attr_name, attr_value, callback, icon_name = self._expand_id(
+            main_action_id
+        )
         b = OWButton(parent=widget)
         m = QMenu(b)
         b.setMenu(m)
@@ -851,13 +994,16 @@ class OWPlotGUI:
         m.triggered[QAction].connect(b.setDefaultAction)
 
         if main_action_id:
-            main_action = OWAction(self._plot, icon_name, attr_name, attr_value, callback,
-                                   parent=b)
+            main_action = OWAction(
+                self._plot, icon_name, attr_name, attr_value, callback, parent=b
+            )
             m.triggered.connect(main_action.trigger)
 
         for id in ids:
             id, _, attr_name, attr_value, callback, icon_name = self._expand_id(id)
-            a = OWAction(self._plot, icon_name, attr_name, attr_value, callback, parent=m)
+            a = OWAction(
+                self._plot, icon_name, attr_name, attr_value, callback, parent=m
+            )
             m.addAction(a)
             b._actions[id] = a
 
@@ -866,28 +1012,27 @@ class OWPlotGUI:
         elif main_action_id:
             b.setDefaultAction(main_action)
 
-
         b.setPopupMode(QToolButton.MenuButtonPopup)
         b.setMinimumSize(40, 30)
         return b
 
     def state_buttons(self, orientation, buttons, widget, nomargin=False):
-        '''
-            This function creates a set of checkable buttons and connects them so that only one
-            may be checked at a time.
-        '''
+        """
+        This function creates a set of checkable buttons and connects them so that only one
+        may be checked at a time.
+        """
         c = StateButtonContainer(self, orientation, buttons, widget, nomargin)
         if widget.layout() is not None:
             widget.layout().addWidget(c)
         return c
 
     def toolbar(self, widget, text, orientation, buttons, nomargin=False):
-        '''
-            Creates an :obj:`.OWToolbar` with the specified ``text``, ``orientation``
-            and ``buttons`` and adds it to ``widget``.
+        """
+        Creates an :obj:`.OWToolbar` with the specified ``text``, ``orientation``
+        and ``buttons`` and adds it to ``widget``.
 
-            .. seealso:: :obj:`.OWToolbar`
-        '''
+        .. seealso:: :obj:`.OWToolbar`
+        """
         t = OWToolbar(self, text, orientation, buttons, widget, nomargin)
         if nomargin:
             t.layout().setContentsMargins(0, 0, 0, 0)
@@ -895,28 +1040,45 @@ class OWPlotGUI:
             widget.layout().addWidget(t)
         return t
 
-    def zoom_select_toolbar(self, widget, text='Zoom / Select', orientation=Qt.Horizontal,
-                            buttons=default_zoom_select_buttons, nomargin=False):
+    def zoom_select_toolbar(
+        self,
+        widget,
+        text="Zoom / Select",
+        orientation=Qt.Horizontal,
+        buttons=default_zoom_select_buttons,
+        nomargin=False,
+    ):
         t = self.toolbar(widget, text, orientation, buttons, nomargin)
         t.buttons[self.SimpleSelect].click()
         return t
 
     def theme_combo_box(self, widget):
-        c = gui.comboBox(widget, self._plot, "theme_name", "Theme",
-                         callback=self._plot.update_theme, sendSelectedValue=1)
-        c.addItem('Default')
-        c.addItem('Light')
-        c.addItem('Dark')
+        c = gui.comboBox(
+            widget,
+            self._plot,
+            "theme_name",
+            "Theme",
+            callback=self._plot.update_theme,
+            sendSelectedValue=1,
+        )
+        c.addItem("Default")
+        c.addItem("Light")
+        c.addItem("Dark")
         return c
 
     def box_zoom_select(self, parent):
         box_zoom_select = gui.vBox(parent, "缩放/选择")
         zoom_select_toolbar = self.zoom_select_toolbar(
-            box_zoom_select, nomargin=True,
-            buttons=[self.StateButtonsBegin,
-                     self.SimpleSelect, self.Pan, self.Zoom,
-                     self.StateButtonsEnd,
-                     self.ZoomReset]
+            box_zoom_select,
+            nomargin=True,
+            buttons=[
+                self.StateButtonsBegin,
+                self.SimpleSelect,
+                self.Pan,
+                self.Zoom,
+                self.StateButtonsEnd,
+                self.ZoomReset,
+            ],
         )
         buttons = zoom_select_toolbar.buttons
         buttons[self.Zoom].clicked.connect(self._plot.zoom_button_clicked)

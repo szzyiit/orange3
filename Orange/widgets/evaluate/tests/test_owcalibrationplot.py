@@ -102,7 +102,6 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         res = copy.copy(self.results)
         res.row_indices = res.row_indices[:0]
         res.actual = res.actual[:0]
-        res.predicted = res.predicted[:, 0]
         res.probabilities = res.probabilities[:, :0, :]
         self.send_signal(widget.Inputs.evaluation_results, self.results)
         self.assertFalse(widget.Error.empty_input.is_shown())
@@ -125,7 +124,6 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         res.domain = Domain([], ContinuousVariable("y"))
         res.row_indices = res.row_indices[:0]
         res.actual = res.actual[:0]
-        res.predicted = res.predicted[:, 0]
         res.probabilities = res.probabilities[:, :0, :]
         self.send_signal(widget.Inputs.evaluation_results, self.results)
         self.assertFalse(widget.Error.non_discrete_target.is_shown())
@@ -617,6 +615,7 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         results = self.lenses_results
         results.folds = [slice(0, 5), slice(5, 19)]
         results.models = results.models.repeat(2, axis=0)
+        results.actual = results.actual.copy()
         results.actual[:3] = 0
         results.probabilities[1, 3:5] = np.nan
         # after this, model 1 has just negative instances in fold 0
@@ -639,6 +638,19 @@ class TestOWCalibrationPlot(WidgetTest, EvaluateTest):
         self.assertTrue(widget.Warning.omitted_nan_prob_points.is_shown())
         self._set_list_selection(widget.controls.selected_classifiers, [0, 2])
         self.assertFalse(widget.Warning.omitted_folds.is_shown())
+
+    @patch("Orange.widgets.evaluate.owcalibrationplot.ThresholdClassifier")
+    @patch("Orange.widgets.evaluate.owcalibrationplot.CalibratedLearner")
+    def test_no_folds(self, *_):
+        """Don't crash on malformed Results with folds=None"""
+        widget = self.widget
+
+        self.results.folds = None
+        self.send_signal(widget.Inputs.evaluation_results, self.results)
+        widget.selected_classifiers = [0]
+        widget.commit.now()
+        self.assertIsNotNone(self.get_output(widget.Outputs.calibrated_model))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -43,6 +43,7 @@ class OWSaveBase(widget.OWWidget, openclass=True):
 
     class Error(widget.OWWidget.Error):
         no_file_name = widget.Msg("File name is not set.")
+        unsupported_format = widget.Msg("File format is unsupported.\n{}")
         general_error = widget.Msg("{}")
 
     want_main_area = False
@@ -80,27 +81,27 @@ class OWSaveBase(widget.OWWidget, openclass=True):
 
         # This cannot be done outside because `filters` is defined by subclass
         if not self.filter:
-            self.filter = next(iter(self.get_filters()))
+            self.filter = self.default_filter()
 
         self.grid = grid = QGridLayout()
-        gui.widgetBox(self.controlArea, orientation=grid)
+        gui.widgetBox(self.controlArea, orientation=grid, box=True)
         grid.addWidget(
             gui.checkBox(
                 None, self, "auto_save", "接收到新数据自动保存",
                 callback=self.update_messages),
             start_row, 0, 1, 2)
-        grid.setRowMinimumHeight(start_row + 1, 8)
         self.bt_save = gui.button(
-            None, self,
+            self.buttonsArea, self,
             label=f"另存为 {self.stored_name}" if self.stored_name else "保存",
             callback=self.save_file)
-        grid.addWidget(self.bt_save, start_row + 2, 0)
-        grid.addWidget(
-            gui.button(None, self, "另存为 ...", callback=self.save_file_as),
-            start_row + 2, 1)
+        gui.button(self.buttonsArea, self, "另存为 ...", callback=self.save_file_as)
 
         self.adjustSize()
         self.update_messages()
+
+    def default_filter(self):
+        """Returns the first filter in the list"""
+        return next(iter(self.get_filters()))
 
     @property
     def last_dir(self):
@@ -130,7 +131,7 @@ class OWSaveBase(widget.OWWidget, openclass=True):
             if os.path.exists(self.stored_path):
                 self.auto_save = False
                 return self.stored_path
-        elif workflow_dir:
+        elif workflow_dir is not None:
             return os.path.normpath(
                 os.path.join(workflow_dir, self.stored_path))
 
@@ -162,13 +163,20 @@ class OWSaveBase(widget.OWWidget, openclass=True):
     @property
     def writer(self):
         """
-        Return the active writer
+        Return the active writer or None if there is no writer for this filter
 
         The base class uses this property only in `do_save` to find the writer
         corresponding to the filter. Derived classes (e.g. OWSave) may also use
         it elsewhere.
+
+        Filter may not exist if it comes from settings saved in Orange with
+        some add-ons that are not (or no longer) present, or if support for
+        some extension was dropped, like the old Excel format.
         """
-        return self.get_filters()[self.filter]
+        filters = self.get_filters()
+        if self.filter not in filters:
+            return None
+        return filters[self.filter]
 
     def on_new_input(self):
         """
@@ -198,6 +206,7 @@ class OWSaveBase(widget.OWWidget, openclass=True):
             return
         self.filename = filename
         self.filter = selected_filter
+        self.Error.unsupported_format.clear()
         self.bt_save.setText(f"Save as {self.stored_name}")
         self.update_messages()
         self._try_save()
@@ -237,6 +246,9 @@ class OWSaveBase(widget.OWWidget, openclass=True):
         a single format.
         """
         # This method is separated out because it will usually be overriden
+        if self.writer is None:
+            self.Error.unsupported_format(self.filter)
+            return
         self.writer.write(self.filename, self.data)
 
     def update_messages(self):

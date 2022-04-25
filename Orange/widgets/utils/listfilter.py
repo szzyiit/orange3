@@ -1,4 +1,4 @@
-from AnyQt.QtWidgets import QListView, QLineEdit, QCompleter
+from AnyQt.QtWidgets import QListView, QLineEdit, QCompleter, QAbstractItemView
 from AnyQt.QtGui import QDrag
 from AnyQt.QtCore import (
     Qt, QObject, QEvent, QModelIndex,
@@ -77,13 +77,20 @@ class VariablesListItemView(QListView):
             elif (supported_actions & Qt.CopyAction and
                   self.dragDropMode() != self.InternalMove):
                 default_action = Qt.CopyAction
-            res = drag.exec_(supported_actions, default_action)
+            res = drag.exec(supported_actions, default_action)
             if res == Qt.MoveAction:
                 selected = self.selectionModel().selectedIndexes()
                 rows = list(map(QModelIndex.row, selected))
                 for s1, s2 in reversed(list(slices(rows))):
                     delslice(self.model(), s1, s2)
             self.dragDropActionDidComplete.emit(res)
+
+    def dropEvent(self, event):
+        # Bypass QListView.dropEvent on Qt >= 5.15.2.
+        # Because `startDrag` is overridden and does not dispatch to base
+        # implementation then `dropEvent` would need to be overridden also
+        # (private `d->dropEventMoved` state tracking due to QTBUG-87057 fix).
+        QAbstractItemView.dropEvent(self, event)
 
     def dragEnterEvent(self, event):
         """
@@ -208,8 +215,8 @@ def variables_filter(model, parent=None, accepted_type=Orange.data.Variable,
     original_completer_items = []
 
     filter_edit = QLineEdit()
-    filter_edit.setToolTip("过滤可用变量列表.")
-    filter_edit.setPlaceholderText("过滤")
+    filter_edit.setToolTip("Filter the list of available variables.")
+    filter_edit.setPlaceholderText("Filter")
 
     completer_model = QStringListModel()
     completer = QCompleter(completer_model, filter_edit)

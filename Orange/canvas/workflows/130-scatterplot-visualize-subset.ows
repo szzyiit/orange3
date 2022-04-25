@@ -1,19 +1,19 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="一些可视化部件，如散点图和几个数据项目的小部件，可以在数据子集显示数据实例。 在这个工作流程中，散点图可视化输入数据文件中的数据，同时也标记了已在数据表被选择的数据点（选择的行）&#10;&#10;同样地，如果散点图和数据表都打开的话，此工作流程有最佳工作效果" title="数据子集可视化" version="2.0">
+<scheme description="Some visualization widgets, like Scatter Plot and several data project widgets, can expose the data instances in the data subset. In this workflow, Scatter Plot visualize the data from the input data file, but also marks the data points that have been selected in the Data Table (selected rows).&#10;&#10;Again, this workflow works best if both Scatter Plot and Data Table are open." title="Visualization of Data Subsets" version="2.0">
 	<nodes>
-		<node id="0" name="文件(File)" position="(45.0, 155.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
-		<node id="1" name="散点图(Scatter Plot)" position="(446.0, 153.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="散点图" version="" />
-		<node id="2" name="数据表(Data Table)" position="(236.0, 262.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
+		<node id="0" name="File" position="(45.0, 155.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
+		<node id="1" name="Scatter Plot" position="(446.0, 153.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot" version="" />
+		<node id="2" name="Data Table" position="(236.0, 262.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
 		<link enabled="true" id="2" sink_channel="Data Subset" sink_node_id="1" source_channel="Selected Data" source_node_id="2" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="12" id="0" rect="(56.0, 340.0, 150.0, 60.0)" type="text/plain">（1）打开数据表并选择数据实例或实例子集（使用shift键）。</text>
-		<text font-family="Helvetica" font-size="12" id="1" rect="(384.0, 20.0, 150.0, 48.0)" type="text/plain">（2）打开散点图小部件，观察从数据表中所选择的子集。</text>
-		<text font-family="Helvetica" font-size="12" id="2" rect="(373.0, 285.0, 164.0, 60.0)" type="text/plain">双击此通道以检查数据表中的数据是否确实作为数据子集提供。</text>
+		<text font-family="Helvetica" font-size="12" id="0" rect="(56.0, 340.0, 150.0, 60.0)" type="text/plain">(1) Open the Data Table and select a data instance or a subset of instances (use shift key).</text>
+		<text font-family="Helvetica" font-size="12" id="1" rect="(384.0, 20.0, 150.0, 48.0)" type="text/plain">(2) Open the Scatter Plot to observe the selected subset from Data Table.</text>
+		<text font-family="Helvetica" font-size="12" id="2" rect="(373.0, 285.0, 164.0, 60.0)" type="text/plain">Double click on this channel to check that data from Data Table is indeed fed as a data subset.</text>
 		<arrow end="(199.99999999999994, 281.0)" fill="#C1272D" id="3" start="(124.99999999999996, 326.0)" />
 		<arrow end="(446.0, 123.0)" fill="#C1272D" id="4" start="(446.0, 68.0)" />
 		<arrow end="(341.0, 221.0)" fill="#39B54A" id="5" start="(405.0, 284.0)" />

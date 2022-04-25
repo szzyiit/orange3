@@ -10,9 +10,7 @@ from sklearn.exceptions import ConvergenceWarning
 from AnyQt.QtCore import Qt, QModelIndex
 
 from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
-from Orange.preprocess import Continuize
 from Orange.widgets.utils import colorpalettes
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.visualize.owheatmap import OWHeatMap, Clustering
 from Orange.widgets.tests.base import WidgetTest, WidgetOutputsTestMixin, datasets
 
@@ -35,7 +33,7 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         cls.titanic = Table("titanic")
         cls.brown_selected = Table("brown-selected")
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -145,7 +143,8 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         # Pearson distance used for clustering of columns does not
         # handle all zero columns well
         iris = Table("iris")
-        iris[:, 0] = 0
+        with iris.unlocked():
+            iris[:, 0] = 0
 
         self.widget.col_clustering = True
         self.widget.set_dataset(iris)
@@ -188,7 +187,7 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         self.widget.set_row_clustering(Clustering.Clustering)
 
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_commit') as commit:
+        with patch.object(self.widget.commit, 'now') as commit:
             self.widget.auto_commit = False
             commit.reset_mock()
             self.send_signal(self.widget.Inputs.data, self.titanic)
@@ -207,6 +206,20 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(w.Inputs.data, iris, widget=w)
         self.assertEqual(len(self.get_output(w.Outputs.selected_data)), 21)
 
+    def test_saved_selection_when_not_possible(self):
+        # Has stored selection but ot enough columns for clustering.
+        iris = Table("iris")[:, ["petal width"]]
+        w = self.create_widget(
+            OWHeatMap, stored_settings={
+                "__version__": 3,
+                "col_clustering_method": "Clustering",
+                "selected_rows": [1, 2, 3],
+            }
+        )
+        self.send_signal(w.Inputs.data, iris)
+        out = self.get_output(w.Outputs.selected_data)
+        self.assertSequenceEqual(list(out.ids), list(iris.ids[[1, 2, 3]]))
+
     def test_set_split_var(self):
         data = self.brown_selected[::3]
         w = self.widget
@@ -220,7 +233,8 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
 
     def test_set_split_var_missing(self):
         data = self.brown_selected[::3].copy()
-        data.Y[::5] = np.nan
+        with data.unlocked():
+            data.Y[::5] = np.nan
         w = self.widget
         self.send_signal(self.widget.Inputs.data, data, widget=w)
         self.assertIs(w.split_by_var, data.domain.class_var)
@@ -248,7 +262,8 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
 
     def test_set_split_column_key_missing(self):
         data = self._brown_selected_10()
-        data.Y[:5] = np.nan
+        with data.unlocked():
+            data.Y[:5] = np.nan
         data_t = data.transpose(data)
         function = data.domain["function"]
         w = self.widget
@@ -330,15 +345,17 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
 
     def test_row_color_annotations_with_na(self):
         widget = self.widget
-        data =  self._brown_selected_10()
-        data.Y[:3] = np.nan
-        data.metas[:3, -1] = np.nan
+        data = self._brown_selected_10()
+        with data.unlocked():
+            data.Y[:3] = np.nan
+            data.metas[:3, -1] = np.nan
         self.send_signal(widget.Inputs.data, data, widget=widget)
         widget.set_annotation_color_var(data.domain["function"])
         self.assertTrue(widget.scene.widget.right_side_colors[0].isVisible())
         widget.set_annotation_color_var(data.domain["diau g"])
-        data.Y[:] = np.nan
-        data.metas[:, -1] = np.nan
+        with data.unlocked():
+            data.Y[:] = np.nan
+            data.metas[:, -1] = np.nan
         self.send_signal(widget.Inputs.data, data, widget=widget)
         widget.set_annotation_color_var(data.domain["function"])
         widget.set_annotation_color_var(data.domain["diau g"])
@@ -361,45 +378,23 @@ class TestOWHeatMap(WidgetTest, WidgetOutputsTestMixin):
     def test_col_color_annotations_with_na(self):
         widget = self.widget
         data = self._brown_selected_10()
-        data.Y[:3] = np.nan
-        data.metas[:3, -1] = np.nan
+        with data.unlocked():
+            data.Y[:3] = np.nan
+            data.metas[:3, -1] = np.nan
         data_t = data.transpose(data)
         self.send_signal(widget.Inputs.data, data_t, widget=widget)
         widget.set_column_annotation_color_var(data.domain["function"])
         self.assertTrue(widget.scene.widget.top_side_colors[0].isVisible())
         widget.set_column_annotation_color_var(data.domain["diau g"])
-        data.Y[:] = np.nan
-        data.metas[:, -1] = np.nan
+        with data.unlocked():
+            data.Y[:] = np.nan
+            data.metas[:, -1] = np.nan
         data_t = data.transpose(data)
         self.send_signal(widget.Inputs.data, data_t, widget=widget)
         widget.set_column_annotation_color_var(data.domain["function"])
         widget.set_column_annotation_color_var(data.domain["diau g"])
         widget.set_column_annotation_color_var(None)
         self.assertFalse(widget.scene.widget.top_side_colors[0].isVisible())
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        data = self.housing
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self._select_data()
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 
 if __name__ == "__main__":

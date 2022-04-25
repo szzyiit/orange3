@@ -25,7 +25,7 @@ class CNNPredict(OWWidget):
     # icon source: https://dryicons.com/icon/crystal-ball-icon-11458
     icon = "icons/predicts.svg"
     keywords = ['yuce', 'juanji', 'shenjingwangluo', 'shenduxuexi']
-    category = 'deeplearning'
+    category = '深度学习(DeepLearning)'
 
     want_main_area = False
 

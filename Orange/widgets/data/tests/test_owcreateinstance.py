@@ -3,18 +3,18 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from AnyQt.QtCore import QDateTime, QDate, QTime, QPoint
-from AnyQt.QtWidgets import QWidget, QLineEdit, QStyleOptionViewItem, QMenu
+from AnyQt.QtCore import QDateTime, QDate, QTime, QPoint, QObject
+from AnyQt.QtWidgets import QWidget, QLineEdit, QStyleOptionViewItem, QMenu, \
+    QPushButton
 
 from orangewidget.tests.base import GuiTest
+
 from Orange.data import Table, ContinuousVariable, Domain, DiscreteVariable, \
     TimeVariable
 from Orange.widgets.data.owcreateinstance import OWCreateInstance, \
     DiscreteVariableEditor, ContinuousVariableEditor, StringVariableEditor, \
     TimeVariableEditor, VariableDelegate, VariableItemModel, ValueRole
 from Orange.widgets.tests.base import WidgetTest, datasets
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
 
 
 class TestOWCreateInstance(WidgetTest):
@@ -51,60 +51,20 @@ class TestOWCreateInstance(WidgetTest):
 
         self.assertEqual(output.domain.attributes, self.data.domain.attributes)
         self.assertEqual(output.domain.class_vars, self.data.domain.class_vars)
-        self.assertIn("源ID", [m.name for m in output.domain.metas])
+        self.assertIn("Source ID", [m.name for m in output.domain.metas])
         self.assertTupleEqual(output.domain.metas[0].values,
                               ("iris", "created"))
-
-    def test_summary(self):
-        info = self.widget.info
-        reference = self.data[:1]
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.data, self.data)
-        data_list = [("Data", self.data), ("Reference", None)]
-        summary, details = "150, 0", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-
-        output = self.get_output(self.widget.Outputs.data)
-        details = format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, "151")
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.reference, reference)
-        data_list = [("Data", self.data), ("Reference", reference)]
-        summary, details = "150, 1", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        data_list = [("Data", None), ("Reference", reference)]
-        summary, details = "0, 1", format_multiple_summaries(data_list)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.reference, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
 
     def _get_init_buttons(self, widget=None):
         if not widget:
             widget = self.widget
-        box = widget.controlArea.layout().itemAt(0).widget().children()[3]
-        return box.children()[1:]
+        return widget.findChild(QObject, "buttonBox").findChildren(QPushButton)
 
     def test_initialize_buttons(self):
         self.widget.controls.append_to_data.setChecked(False)
         self.send_signal(self.widget.Inputs.data, self.data)
         self.send_signal(self.widget.Inputs.reference, self.data[:1])
-        output = self.get_output(self.widget.Outputs.data)
+        output = self.get_output(self.widget.Outputs.data).copy()
 
         buttons = self._get_init_buttons()
 
@@ -118,7 +78,8 @@ class TestOWCreateInstance(WidgetTest):
 
         buttons[1].click()  # Mean
         output_mean = self.get_output(self.widget.Outputs.data)
-        output.X = np.round(np.mean(self.data.X, axis=0), 1).reshape(1, 4)
+        with output.unlocked():
+            output.X = np.round(np.mean(self.data.X, axis=0), 1).reshape(1, 4)
         self.assert_table_equal(output_mean, output)
 
         buttons[2].click()  # Random
@@ -137,15 +98,15 @@ class TestOWCreateInstance(WidgetTest):
         self.assert_table_equal(output_random, output)
 
     def test_initialize_buttons_commit_once(self):
-        self.widget.commit = self.widget.unconditional_commit = Mock()
+        self.widget.commit.deferred = self.widget.commit.now = Mock()
         self.send_signal(self.widget.Inputs.data, self.data)
         self.send_signal(self.widget.Inputs.reference, self.data[:1])
-        self.widget.unconditional_commit.assert_called_once()
+        self.widget.commit.now.assert_called_once()
 
-        self.widget.commit.reset_mock()
+        self.widget.commit.now.reset_mock()
         buttons = self._get_init_buttons()
         buttons[3].click()  # Input
-        self.widget.commit.assert_called_once()
+        self.widget.commit.deferred.assert_called_once()
 
     def test_table(self):
         self.send_signal(self.widget.Inputs.data, self.data)
@@ -189,7 +150,8 @@ class TestOWCreateInstance(WidgetTest):
 
     def test_missing_values_reference(self):
         reference = self.data[:1].copy()
-        reference[:] = np.nan
+        with reference.unlocked():
+            reference[:] = np.nan
         self.send_signal(self.widget.Inputs.data, self.data)
         self.send_signal(self.widget.Inputs.reference, reference)
         output1 = self.get_output(self.widget.Outputs.data)
@@ -200,7 +162,8 @@ class TestOWCreateInstance(WidgetTest):
 
     def test_saved_workflow(self):
         data = self.data
-        data.X[:, 0] = np.nan
+        with data.unlocked():
+            data.X[:, 0] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
         buttons = self._get_init_buttons()
         buttons[2].click()  # Random
@@ -213,17 +176,17 @@ class TestOWCreateInstance(WidgetTest):
         self.assert_table_equal(output1, output2)
 
     def test_commit_once(self):
-        self.widget.commit = self.widget.unconditional_commit = Mock()
+        self.widget.commit.now = self.widget.commit.deferred = Mock()
         self.send_signal(self.widget.Inputs.data, self.data)
-        self.widget.unconditional_commit.assert_called_once()
+        self.widget.commit.now.assert_called_once()
 
-        self.widget.commit.reset_mock()
+        self.widget.commit.now.reset_mock()
         self.send_signal(self.widget.Inputs.data, None)
-        self.widget.commit.assert_called_once()
+        self.widget.commit.deferred.assert_called_once()
 
-        self.widget.commit.reset_mock()
+        self.widget.commit.deferred.reset_mock()
         self.send_signal(self.widget.Inputs.data, self.data)
-        self.widget.commit.assert_called_once()
+        self.widget.commit.deferred.assert_called_once()
 
     def test_context_menu(self):
         self.send_signal(self.widget.Inputs.data, self.data)

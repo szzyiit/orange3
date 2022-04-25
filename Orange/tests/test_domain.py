@@ -1,6 +1,5 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring
-import warnings
 from time import time
 from numbers import Real
 from itertools import starmap, chain
@@ -11,15 +10,14 @@ from numpy.testing import assert_array_equal
 
 from Orange.data import (
     ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable,
-    Variable, Domain, Table, DomainConversion)
+    Domain, Table, DomainConversion)
 from Orange.data.domain import filter_visible
 from Orange.preprocess import Continuize, Impute
 from Orange.tests.base import create_pickling_tests
-from Orange.util import OrangeDeprecationWarning
 
 
 def create_domain(*ss):
-    vars = dict(
+    vars_ = dict(
         age=ContinuousVariable(name="AGE"),
         gender=DiscreteVariable(name="Gender", values=("M", "F")),
         incomeA=ContinuousVariable(name="incomeA"),
@@ -31,7 +29,7 @@ def create_domain(*ss):
         arrival=TimeVariable("arrival"))
 
     def map_vars(s):
-        return [vars[x] for x in s]
+        return [vars_[x] for x in s]
     return Domain(*[map_vars(s) for s in ss])
 
 
@@ -249,7 +247,7 @@ class TestDomainInit(unittest.TestCase):
 
     def test_index_error(self):
         d = Domain((age, gender, income), metas=(ssn, race))
-        for idx in (3, np.int(3), -3, np.int(-3), incomeA, "no_such_thing"):
+        for idx in (3, np.int64(3), -3, np.int32(-3), incomeA, "no_such_thing"):
             with self.assertRaises(ValueError):
                 d.index(idx)
 
@@ -272,21 +270,14 @@ class TestDomainInit(unittest.TestCase):
             [] in d
 
     def test_iter(self):
-        with warnings.catch_warnings(record=True):
-            warnings.simplefilter("error")
+        d = Domain((age, gender, income), metas=(ssn,))
+        self.assertEqual(list(d), [age, gender, income, ssn])
 
-            d = Domain((age, gender, income), metas=(ssn,))
-            with self.assertRaises(OrangeDeprecationWarning):
-                list(d)
+        d = Domain((age, ), metas=(ssn,))
+        self.assertEqual(list(d), [age, ssn])
 
-            warnings.simplefilter("ignore")
-            self.assertEqual([var for var in d], [age, gender, income])
-
-            d = Domain((age, ), metas=(ssn,))
-            self.assertEqual([var for var in d], [age])
-
-            d = Domain((), metas=(ssn,))
-            self.assertEqual([var for var in d], [])
+        d = Domain((), metas=(ssn,))
+        self.assertEqual(list(d), [ssn])
 
     def test_str(self):
         cases = (

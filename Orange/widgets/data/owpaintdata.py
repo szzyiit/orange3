@@ -30,7 +30,7 @@ from Orange.widgets.utils import itemmodels, colorpalettes
 
 from Orange.util import scale, namegen
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
+from Orange.widgets.visualize.utils.plotutils import PlotWidget
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 
 
@@ -129,7 +129,7 @@ def delete(command, data, ):
         condition = indices_to_mask(command.indices, len(data))
     else:
         indices = np.asarray(command.indices)
-        if indices.dtype == np.bool:
+        if indices.dtype == bool:
             condition = indices
         else:
             condition = indices_to_mask(indices, len(data))
@@ -276,6 +276,7 @@ class PenTool(DataTool):
     """
     Add points on a path specified with a mouse drag.
     """
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.editingStarted.emit()
@@ -359,6 +360,7 @@ class MagnetTool(DataTool):
     """
     Draw points closer to the mouse position.
     """
+
     def __init__(self, parent, plot):
         super().__init__(parent, plot)
         self.__timer = QTimer(self, interval=50)
@@ -398,6 +400,7 @@ class JitterTool(DataTool):
     """
     Jitter points around the mouse position.
     """
+
     def __init__(self, parent, plot):
         super().__init__(parent, plot)
         self.__timer = QTimer(self, interval=50)
@@ -513,7 +516,8 @@ class SelectTool(DataTool):
 
     def activate(self):
         if self._item is None:
-            self._item = _RectROI((0, 0), (0, 0), pen=(25, 25, 25))
+            pen = self._plot.palette().color(QPalette.Text)
+            self._item = _RectROI((0, 0), (0, 0), pen=pen)
             self._item.setAcceptedMouseButtons(Qt.LeftButton)
             self._item.setVisible(False)
             self._item.setCursor(Qt.OpenHandCursor)
@@ -564,8 +568,7 @@ class ClearTool(DataTool):
 
     def activate(self):
         self.editingStarted.emit()
-        self.issueCommand.emit(SelectRegion(self._plot.rect()))
-        self.issueCommand.emit(DeleteSelection())
+        self.issueCommand.emit(DeleteIndices(slice(None, None, None)))
         self.editingFinished.emit()
 
 
@@ -574,6 +577,7 @@ class SimpleUndoCommand(QUndoCommand):
     :param function redo: A function expressing a redo action.
     :param function undo: A function expressing a undo action.
     """
+
     def __init__(self, redo, undo, parent=None):
         super().__init__(parent)
         self.redo = redo
@@ -583,6 +587,7 @@ class SimpleUndoCommand(QUndoCommand):
 class UndoCommand(QUndoCommand):
     """An QUndoCommand applying a data transformation operation
     """
+
     def __init__(self, command, model, parent=None, text=None):
         super().__init__(parent,)
         self._command = command
@@ -742,8 +747,8 @@ class OWPaintData(OWWidget):
     description = "通过在平面上绘制数据点来创建数据。"
     icon = "icons/PaintData.svg"
     priority = 60
-    keywords = ["create", "draw", 'huizhi', 'hua']
-    category = "Data"
+    keywords = ["create", "draw", 'huizhi']
+    category = "变换(Transform)"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -765,6 +770,7 @@ class OWPaintData(OWWidget):
     data = Setting(None, schema_only=True)
     labels = Setting(["C1", "C2"], schema_only=True)
 
+    buttons_area_orientation = Qt.Vertical
     graph_name = "plot"
 
     class Warning(OWWidget.Warning):
@@ -819,25 +825,24 @@ class OWPaintData(OWWidget):
         self.tools_cache = {}
 
         self._init_ui()
-        self.commit()
+        self.commit.now()
 
     def _init_ui(self):
         namesBox = gui.vBox(self.controlArea, "名称")
 
         hbox = gui.hBox(namesBox, margin=0, spacing=0)
-        gui.lineEdit(hbox, self, "attr1", "变量 X:",
+        gui.lineEdit(hbox, self, "attr1", "变量 X: ",
                      controlWidth=80, orientation=Qt.Horizontal,
                      callback=self._attr_name_changed)
         gui.separator(hbox, 21)
         hbox = gui.hBox(namesBox, margin=0, spacing=0)
-        attr2 = gui.lineEdit(hbox, self, "attr2", "变量 Y:",
+        attr2 = gui.lineEdit(hbox, self, "attr2", "变量 Y: ",
                              controlWidth=80, orientation=Qt.Horizontal,
                              callback=self._attr_name_changed)
         gui.separator(hbox)
         gui.checkBox(hbox, self, "hasAttr2", '', disables=attr2,
                      labelWidth=0,
                      callback=self.set_dimensions)
-        gui.separator(namesBox)
 
         gui.widgetLabel(namesBox, "标签")
         self.classValuesView = listView = gui.ListViewWithSizeHint(
@@ -865,9 +870,8 @@ class OWPaintData(OWWidget):
         actionsWidget.layout().setSpacing(1)
         namesBox.layout().addWidget(actionsWidget)
 
-        tBox = gui.vBox(self.controlArea, "工具", addSpace=True)
-        buttonBox = gui.hBox(tBox)
-        toolsBox = gui.widgetBox(buttonBox, orientation=QGridLayout())
+        tBox = gui.vBox(self.buttonsArea, "工具")
+        toolsBox = gui.widgetBox(tBox, orientation=QGridLayout())
 
         self.toolActions = QActionGroup(self)
         self.toolActions.setExclusive(True)
@@ -891,7 +895,7 @@ class OWPaintData(OWWidget):
             button.setDefaultAction(action)
             self.toolButtons.append((button, tool))
 
-            toolsBox.layout().addWidget(button, i / 3, i % 3)
+            toolsBox.layout().addWidget(button, i // 3, i % 3)
             self.toolActions.addAction(action)
 
         for column in range(3):
@@ -907,7 +911,6 @@ class OWPaintData(OWWidget):
         self.addActions([undo, redo])
         self.undo_stack.indexChanged.connect(self.invalidate)
 
-        gui.separator(tBox)
         indBox = gui.indentedBox(tBox, sep=8)
         form = QFormLayout(
             formAlignment=Qt.AlignLeft,
@@ -917,34 +920,33 @@ class OWPaintData(OWWidget):
         indBox.layout().addLayout(form)
         slider = gui.hSlider(
             indBox, self, "brushRadius", minValue=1, maxValue=100,
-            createLabel=False
+            createLabel=False, addToLayout=False
         )
-        form.addRow("半径：", slider)
+        form.addRow("半径:", slider)
 
         slider = gui.hSlider(
             indBox, self, "density", None, minValue=1, maxValue=100,
-            createLabel=False
+            createLabel=False, addToLayout=False
         )
 
-        form.addRow("强度：", slider)
+        form.addRow("强度:", slider)
 
         slider = gui.hSlider(
             indBox, self, "symbol_size", None, minValue=1, maxValue=100,
-            createLabel=False, callback=self.set_symbol_size
+            createLabel=False, callback=self.set_symbol_size, addToLayout=False
         )
 
-        form.addRow("符号：", slider)
+        form.addRow("符号:", slider)
 
         self.btResetToInput = gui.button(
             tBox, self, "重置为输入数据", self.reset_to_input)
         self.btResetToInput.setDisabled(True)
 
-        gui.auto_send(self.controlArea, self, "autocommit")
+        gui.auto_send(self.buttonsArea, self, "autocommit")
 
         # main area GUI
         viewbox = PaintViewBox(enableMouse=False)
-        self.plotview = pg.PlotWidget(background="w", viewBox=viewbox)
-        self.plotview.sizeHint = lambda: QSize(200, 100)  # Minimum size for 1-d painting
+        self.plotview = PlotWidget(viewBox=viewbox)
         self.plot = self.plotview.getPlotItem()
 
         axis_color = self.palette().color(QPalette.Text)
@@ -970,9 +972,6 @@ class OWPaintData(OWWidget):
 
         self.mainArea.layout().addWidget(self.plotview)
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
         # enable brush tool
         self.toolActions.actions()[0].setChecked(True)
         self.set_current_tool(self.TOOLS[0][2])
@@ -987,11 +986,13 @@ class OWPaintData(OWWidget):
         if self.hasAttr2:
             self.plot.setYRange(0, 1, padding=0.01)
             self.plot.showAxis('left')
-            self.plotview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            self.plotview.setSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Minimum)
         else:
             self.plot.setYRange(-.5, .5, padding=0.01)
             self.plot.hideAxis('left')
-            self.plotview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+            self.plotview.setSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Maximum)
         self._replot()
         for button, tool in self.toolButtons:
             if tool.only2d:
@@ -1011,13 +1012,11 @@ class OWPaintData(OWWidget):
                     data = None
                 elif len(data.domain.attributes) > 2:
                     self.Information.use_first_two()
-                self.info.set_input_summary(len(data), format_summary_details(data))
             self.input_data = data
             self.btResetToInput.setDisabled(data is None)
             return bool(data)
 
         if not _check_and_set_data(data):
-            self.info.set_input_summary(self.info.NoInput)
             return
 
         X = np.array([scale(vals) for vals in data.X[:, :2].T]).T
@@ -1041,7 +1040,7 @@ class OWPaintData(OWWidget):
         else:
             self.input_data = np.column_stack((X, y))
         self.reset_to_input()
-        self.unconditional_commit()
+        self.commit.now()
 
     def reset_to_input(self):
         """Reset the painting to input data if present."""
@@ -1071,7 +1070,7 @@ class OWPaintData(OWWidget):
         else:  # set_dimensions already calls _replot, no need to call it again
             self._replot()
 
-        self.commit()
+        self.commit.deferred()
 
     def add_new_class_label(self, undoable=True):
 
@@ -1223,7 +1222,10 @@ class OWPaintData(OWWidget):
             data = create_data(cmd.pos.x(), cmd.pos.y(),
                                self.brushRadius / 1000,
                                int(1 + self.density / 20), cmd.rstate)
-            self._add_command(Append([QPointF(*p) for p in zip(*data.T)]))
+            data = data[(np.min(data, axis=1) >= 0)
+                        & (np.max(data, axis=1) <= 1), :]
+            if data.size:
+                self._add_command(Append([QPointF(*p) for p in zip(*data.T)]))
         elif isinstance(cmd, Jitter):
             point = np.array([cmd.pos.x(), cmd.pos.y()])
             delta = - apply_jitter(self.__buffer[:, :2], point,
@@ -1270,14 +1272,14 @@ class OWPaintData(OWWidget):
 
     def invalidate(self):
         self.data = self.__buffer.tolist()
-        self.commit()
+        self.commit.deferred()
 
+    @gui.deferred
     def commit(self):
         self.Warning.renamed_vars.clear()
 
         if not self.data:
             self.Outputs.data.send(None)
-            self.info.set_output_summary(self.info.NoOutput)
             return
         data = np.array(self.data)
         if self.hasAttr2:
@@ -1308,7 +1310,6 @@ class OWPaintData(OWWidget):
 
         data.name = self.table_name
         self.Outputs.data.send(data)
-        self.info.set_output_summary(len(data), format_summary_details(data))
 
     def sizeHint(self):
         sh = super().sizeHint()

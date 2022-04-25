@@ -5,17 +5,19 @@ from orangewidget.utils.signals import (
     Default, NonDefault, Single, Multiple, Dynamic, Explicit
 )
 from orangewidget.widget import (
-    OWBaseWidget, Message, Msg, StateInfo, Input, Output,
+    OWBaseWidget, Message, Msg, StateInfo, Input, Output, MultiInput
 )
 
 from Orange.widgets.utils.progressbar import ProgressBarMixin
 from Orange.widgets.report import DataReport as Report
 from Orange.widgets.utils.signals import AttributeList
 
+# import this to register auto_summary functions
+import Orange.widgets.utils.state_summary  # pylint: disable=unused-import
 
 __all__ = [
-    "OWWidget", "Input", "Output", "AttributeList", "Message", "Msg",
-    "StateInfo",
+    "OWWidget", "Input", "Output", "MultiInput", "AttributeList", "Message",
+    "Msg", "StateInfo",
 
     # these are re-exported here for legacy reasons. Use Input/Output instead.
     "InputSignal", "OutputSignal",

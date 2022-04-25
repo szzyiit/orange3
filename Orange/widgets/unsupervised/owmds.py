@@ -43,7 +43,7 @@ def run_mds(matrix: DistMatrix, max_iter: int, step_size: int, init_type: int,
     iterations_done = 0
     init = embedding
     state.set_status("Running...")
-    oldstress = np.finfo(np.float).max
+    oldstress = np.finfo(float).max
 
     while True:
         step_iter = min(max_iter - iterations_done, step_size)
@@ -158,7 +158,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
     description = "由距离矩阵构造的多维尺度二维数据投影。"
     icon = "icons/MDS.svg"
     keywords = ["multidimensional scaling", "multi dimensional scaling"]
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs(OWDataProjectionWidget.Inputs):
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
@@ -226,21 +226,22 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         )
 
     def _add_controls_optimization(self):
-        box = gui.vBox(self.controlArea, box=True)
-        self.run_button = gui.button(box, self, "开始", self._toggle_run)
+        box = gui.vBox(self.controlArea, box="优化", spacing=0)
+        hbox = gui.hBox(box, margin=0)
+        gui.button(hbox, self, "PCA", callback=self.do_PCA, autoDefault=False)
+        gui.button(hbox, self, "随机", callback=self.do_random, autoDefault=False)
+        gui.button(hbox, self, "抖动", callback=self.do_jitter, autoDefault=False)
         gui.comboBox(box, self, "refresh_rate", label="刷新: ",
                      orientation=Qt.Horizontal,
                      items=[t for t, _ in OWMDS.RefreshRate],
                      callback=self.__refresh_rate_combo_changed)
-        hbox = gui.hBox(box, margin=0)
-        gui.button(hbox, self, "主成分分析(PCA)", callback=self.do_PCA)
-        gui.button(hbox, self, "随机(Randomize)", callback=self.do_random)
-        gui.button(hbox, self, "抖动(Jitter)", callback=self.do_jitter)
+        self.run_button = gui.button(box, self, "开始", self._toggle_run)
 
     def __refresh_rate_combo_changed(self):
         if self.task is not None:
             self._run()
 
+    @Inputs.data
     def set_data(self, data):
         """Set the input dataset.
 
@@ -341,8 +342,8 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
     def _toggle_run(self):
         if self.task is not None:
             self.cancel()
-            self.run_button.setText("重新开始(Resume)")
-            self.commit()
+            self.run_button.setText("继续")
+            self.commit.deferred()
         else:
             self._run()
 
@@ -380,7 +381,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         self.embedding = result.embedding
         self.graph.resume_drawing_pairs()
         self.run_button.setText("开始")
-        self.commit()
+        self.commit.deferred()
 
     def on_exception(self, ex: Exception):
         if isinstance(ex, MemoryError):
@@ -403,7 +404,7 @@ class OWMDS(OWDataProjectionWidget, ConcurrentWidgetMixin):
         self.run_button.setText("开始")
         self.__invalidate_embedding(init_type)
         self.setup_plot()
-        self.commit()
+        self.commit.deferred()
 
     def __invalidate_embedding(self, initialization=PCA):
         def jitter_coord(part):

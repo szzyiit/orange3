@@ -11,8 +11,6 @@ from Orange.widgets.settings import Setting
 from Orange.widgets.utils.signals import Input, Output
 from Orange.widgets.widget import OWWidget, Msg
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details,\
-    format_multiple_summaries
 
 METRICS = [
     ("Euclidean", distance.Euclidean),
@@ -38,14 +36,14 @@ ZH_METRICS = [
     ("绝对皮尔逊(Absolute Pearson)", distance.PearsonRAbsolute),
 ]
 
+
 class OWNeighbors(OWWidget):
     name = "邻近(Neighbors)"
     description = "根据参考数据计算最近邻。"
     icon = "icons/Neighbors.svg"
-    category = "Data"
-    keywords = ['jinlin', 'linju']
-
+    category = "非监督(Unsupervised)"
     replaces = ["orangecontrib.prototypes.widgets.owneighbours.OWNeighbours"]
+    keywords = ['linjin', 'linju']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -76,7 +74,6 @@ class OWNeighbors(OWWidget):
 
     want_main_area = False
     resizing_enabled = False
-    buttons_area_orientation = Qt.Vertical
 
     def __init__(self):
         super().__init__()
@@ -94,27 +91,10 @@ class OWNeighbors(OWWidget):
             box, self, "n_neighbors", label="限制邻居数为:",
             step=1, spinType=int, minv=0, maxv=100, checked='limit_neighbors',
             # call apply by gui.auto_commit, pylint: disable=unnecessary-lambda
-            checkCallback=lambda: self.apply(),
-            callback=lambda: self.apply())
+            checkCallback=self.commit.deferred,
+            callback=self.commit.deferred)
 
-        self.apply_button = gui.auto_apply(self.controlArea, self, commit=self.apply)
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
-    def _set_input_summary(self):
-        n_data = len(self.data) if self.data else 0
-        n_refs = len(self.reference) if self.reference else 0
-        summary, details, kwargs = self.info.NoInput, "", {}
-
-        if self.data or self.reference:
-            summary = f"{self.info.format_number(n_data)}, " \
-                      f"{self.info.format_number(n_refs)}"
-            details = format_multiple_summaries([
-                ("Data", self.data),
-                ("Reference", self.reference)
-            ])
-            kwargs = {"format": Qt.RichText}
-        self.info.set_input_summary(summary, details, **kwargs)
+        self.apply_button = gui.auto_apply(self.buttonsArea, self)
 
     @Inputs.data
     def set_data(self, data):
@@ -127,12 +107,11 @@ class OWNeighbors(OWWidget):
 
     def handleNewSignals(self):
         self.compute_distances()
-        self._set_input_summary()
-        self.unconditional_apply()
+        self.commit.now()
 
     def recompute(self):
         self.compute_distances()
-        self.apply()
+        self.commit.deferred()
 
     def compute_distances(self):
         self.Error.diff_domains.clear()
@@ -158,16 +137,14 @@ class OWNeighbors(OWWidget):
         pp_reference, pp_data = pp_all_data[:n_ref], pp_all_data[n_ref:]
         self.distances = metric(pp_data, pp_reference).min(axis=1)
 
-    def apply(self):
+    @gui.deferred
+    def commit(self):
         indices = self._compute_indices()
 
         if indices is None:
             neighbors = None
-            self.info.set_output_summary(self.info.NoOutput)
         else:
             neighbors = self._data_with_similarity(indices)
-            summary, details = len(neighbors), format_summary_details(neighbors)
-            self.info.set_output_summary(summary, details)
         self.Outputs.data.send(neighbors)
 
     def _compute_indices(self):

@@ -26,7 +26,7 @@ class OWPCA(widget.OWWidget):
     icon = "icons/PCA.svg"
     priority = 3050
     keywords = ["principal component analysis", "linear transformation", 'zhuchengfen']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
@@ -66,21 +66,21 @@ class OWPCA(widget.OWWidget):
         self._init_projector()
 
         # Components Selection
-        box = gui.vBox(self.controlArea, "成分选择")
         form = QFormLayout()
-        box.layout().addLayout(form)
+        box = gui.widgetBox(self.controlArea, "成分选择",
+                            orientation=form)
 
         self.components_spin = gui.spin(
             box, self, "ncomponents", 1, MAX_COMPONENTS,
             callback=self._update_selection_component_spin,
-            keyboardTracking=False
+            keyboardTracking=False, addToLayout=False
         )
         self.components_spin.setSpecialValueText("All")
 
         self.variance_spin = gui.spin(
             box, self, "variance_covered", 1, 100,
             callback=self._update_selection_variance_spin,
-            keyboardTracking=False
+            keyboardTracking=False, addToLayout=False
         )
         self.variance_spin.setSuffix("%")
 
@@ -91,7 +91,8 @@ class OWPCA(widget.OWWidget):
         self.options_box = gui.vBox(self.controlArea, "选项")
         self.normalize_box = gui.checkBox(
             self.options_box, self, "normalize",
-            "归一化数据", callback=self._update_normalize
+            "归一化数据", callback=self._update_normalize,
+            attribute=Qt.WA_LayoutUsesWidgetRect
         )
 
         self.maxp_spin = gui.spin(
@@ -100,9 +101,9 @@ class OWPCA(widget.OWWidget):
             keyboardTracking=False
         )
 
-        self.controlArea.layout().addStretch()
+        gui.rubber(self.controlArea)
 
-        gui.auto_apply(self.controlArea, self, "auto_commit")
+        gui.auto_apply(self.buttonsArea, self, "auto_commit")
 
         self.plot = SliderGraph(
             "主成分", "贡献率(Proportion of variance)",
@@ -170,7 +171,7 @@ class OWPCA(widget.OWWidget):
             else:
                 self.Warning.trivial_components()
 
-            self.unconditional_commit()
+            self.commit.now()
 
     def clear(self):
         self._pca = None
@@ -203,9 +204,7 @@ class OWPCA(widget.OWWidget):
 
     def _on_cut_changed(self, components):
         if components == self.ncomponents \
-                or self.ncomponents == 0 \
-                or self._pca is not None \
-                and components == len(self._variance_ratio):
+                or self.ncomponents == 0:
             return
 
         self.ncomponents = components
@@ -279,7 +278,7 @@ class OWPCA(widget.OWWidget):
         return cut
 
     def _invalidate_selection(self):
-        self.commit()
+        self.commit.deferred()
 
     def _update_axis(self):
         p = min(len(self._variance_ratio), self.maxp)
@@ -287,6 +286,7 @@ class OWPCA(widget.OWWidget):
         d = max((p-1)//(self.axis_labels-1), 1)
         axis.setTicks([[(i, str(i)) for i in range(1, p + 1, d)]])
 
+    @gui.deferred
     def commit(self):
         transformed = data = components = None
         if self._pca is not None:
@@ -295,22 +295,36 @@ class OWPCA(widget.OWWidget):
                 self._transformed = self._pca(self.data)
             transformed = self._transformed
 
+            if self._variance_ratio is not None:
+                for var, explvar in zip(
+                        transformed.domain.attributes,
+                        self._variance_ratio[:self.ncomponents]):
+                    var.attributes["variance"] = round(explvar, 6)
             domain = Domain(
                 transformed.domain.attributes[:self.ncomponents],
                 self.data.domain.class_vars,
                 self.data.domain.metas
             )
             transformed = transformed.from_table(domain, transformed)
+
             # prevent caching new features by defining compute_value
             proposed = [a.name for a in self._pca.orig_domain.attributes]
             meta_name = get_unique_names(proposed, 'components')
-            dom = Domain(
-                [ContinuousVariable(name, compute_value=lambda _: None)
-                 for name in proposed],
-                metas=[StringVariable(name=meta_name)])
+            meta_vars = [StringVariable(name=meta_name)]
             metas = numpy.array([['PC{}'.format(i + 1)
                                   for i in range(self.ncomponents)]],
                                 dtype=object).T
+            if self._variance_ratio is not None:
+                variance_name = get_unique_names(proposed, "variance")
+                meta_vars.append(ContinuousVariable(variance_name))
+                metas = numpy.hstack(
+                    (metas,
+                     self._variance_ratio[:self.ncomponents, None]))
+
+            dom = Domain(
+                [ContinuousVariable(name, compute_value=lambda _: None)
+                 for name in proposed],
+                metas=meta_vars)
             components = Table(dom, self._pca.components_[:self.ncomponents],
                                metas=metas)
             components.name = 'components'

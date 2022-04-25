@@ -13,7 +13,7 @@ class OWSaveModel(OWSaveBase):
     replaces = ["Orange.widgets.classify.owsaveclassifier.OWSaveClassifier"]
     priority = 3000
     keywords = ['moxing', 'baocunmoxing']
-    category = 'model'
+    category = '模型(Model)'
 
     class Inputs:
         model = Input("模型(Model)", Model, replaces=['Model'])

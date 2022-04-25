@@ -1,10 +1,6 @@
 import itertools
-import math
 
-import numpy as np
-
-from AnyQt.QtWidgets import QTableView, QItemDelegate, QHeaderView, QStyle, \
-    QStyleOptionViewItem
+from AnyQt.QtWidgets import QTableView, QHeaderView
 from AnyQt.QtGui import QColor, QPen, QBrush
 from AnyQt.QtCore import Qt, QAbstractTableModel, QSize
 
@@ -13,6 +9,7 @@ from Orange.misc import DistMatrix
 from Orange.widgets import widget, gui
 from Orange.widgets.gui import OrangeUserRole
 from Orange.widgets.settings import Setting, ContextSetting, ContextHandler
+from Orange.widgets.utils.itemdelegates import FixedFormatNumericColumnDelegate
 from Orange.widgets.utils.itemmodels import VariableListModel
 from Orange.widgets.utils.itemselectionmodel import SymmetricSelectionModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
@@ -31,17 +28,16 @@ class DistanceMatrixModel(QAbstractTableModel):
         self.label_colors = None
         self.zero_diag = True
         self.span = None
-        self.ndecimals = 3
 
     def set_data(self, distances):
         self.beginResetModel()
         self.distances = distances
         if distances is None:
             return
-        self.span = span = distances.max()
+        self.span = span = float(distances.max())
 
         self.colors = \
-            (distances * (170 / span if span > 1e-10 else 0)).astype(np.int)
+            (distances * (170 / span if span > 1e-10 else 0)).astype(int)
         self.zero_diag = all(distances.diagonal() < 1e-6)
         self.endResetModel()
 
@@ -51,6 +47,9 @@ class DistanceMatrixModel(QAbstractTableModel):
         self.values = values
         if self.values is not None and not isinstance(self.variable,
                                                       StringVariable):
+            # Meta variables can be of type np.object
+            if values.dtype is not float:
+                values = values.astype(float)
             self.label_colors = variable.palette.values_to_qcolors(values)
         else:
             self.label_colors = None
@@ -70,7 +69,7 @@ class DistanceMatrixModel(QAbstractTableModel):
 
     def color_for_label(self, ind, light=100):
         if self.label_colors is None:
-            return Qt.lightGray
+            return None
         return QBrush(self.label_colors[ind].lighter(light))
 
     def color_for_cell(self, row, col):
@@ -81,34 +80,42 @@ class DistanceMatrixModel(QAbstractTableModel):
             return Qt.AlignRight | Qt.AlignVCenter
         row, col = index.row(), index.column()
         if self.distances is None:
-            return
+            return None
         if role == TableBorderItem.BorderColorRole:
             return self.color_for_label(col), self.color_for_label(row)
+        if role == FixedFormatNumericColumnDelegate.ColumnDataSpanRole:
+            return 0., self.span
         if row == col and self.zero_diag:
             if role == Qt.BackgroundColorRole and self.variable:
                 return self.color_for_label(row, 200)
             return
         if role == Qt.DisplayRole:
-            return "{:.{}f}".format(self.distances[row, col], self.ndecimals)
+            return float(self.distances[row, col])
         if role == Qt.BackgroundColorRole:
             return self.color_for_cell(row, col)
+        if role == Qt.ForegroundRole:
+            return QColor(Qt.black)  # the background is light-ish
+        return None
 
     def headerData(self, ind, orientation, role):
         if not self.labels:
-            return
+            return None
         if role == Qt.DisplayRole and ind < len(self.labels):
             return self.labels[ind]
         # On some systems, Qt doesn't respect the following role in the header
         if role == Qt.BackgroundRole:
             return self.color_for_label(ind, 150)
+        if role == Qt.ForegroundRole and self.label_colors is not None:
+            return QColor(Qt.black)
+        return None
 
 
-class TableBorderItem(QItemDelegate):
+class TableBorderItem(FixedFormatNumericColumnDelegate):
     BorderColorRole = next(OrangeUserRole)
 
     def paint(self, painter, option, index):
         super().paint(painter, option, index)
-        colors = index.data(self.BorderColorRole)
+        colors = self.cachedData(index, self.BorderColorRole)
         vcolor, hcolor = colors or (None, None)
         if vcolor is not None or hcolor is not None:
             painter.save()
@@ -125,26 +132,7 @@ class TableBorderItem(QItemDelegate):
 
 
 class TableView(gui.HScrollStepMixin, QTableView):
-    def sizeHintForColumn(self, column: int) -> int:
-        model = self.model()
-        if model is None:  # pragma: no cover
-            return -1
-        assert isinstance(model, DistanceMatrixModel)
-        template = "XX.XXX"
-        if model.span is not None:
-            # number of digits (integer part)
-            ndigits = int(math.ceil(math.log10(model.span + 1)))
-            ndecimal = model.ndecimals
-            template = "X" * ndigits + "." + "X" * ndecimal
-
-        opt = self.viewOptions()
-        opt.text = template
-        opt.features |= QStyleOptionViewItem.HasDisplay
-        style = self.style()
-        sh = style.sizeFromContents(
-            QStyle.CT_ItemViewItem, opt, QSize(), self)
-        hint = sh.width()
-        return hint + 1 if self.showGrid() else hint
+    pass
 
 
 class DistanceMatrixContextHandler(ContextHandler):
@@ -186,7 +174,7 @@ class OWDistanceMatrix(widget.OWWidget):
     icon = "icons/DistanceMatrix.svg"
     priority = 200
     keywords = ['juzhen', 'julijuzhen']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     class Inputs:
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
@@ -200,7 +188,8 @@ class OWDistanceMatrix(widget.OWWidget):
     annotation_idx = ContextSetting(1)
     selection = ContextSetting([])
 
-    want_control_area = False
+    want_control_area = True
+    want_main_area = False
 
     def __init__(self):
         super().__init__()
@@ -212,7 +201,9 @@ class OWDistanceMatrix(widget.OWWidget):
         view.setWordWrap(False)
         view.setTextElideMode(Qt.ElideNone)
         view.setEditTriggers(QTableView.NoEditTriggers)
-        view.setItemDelegate(TableBorderItem())
+        view.setItemDelegate(
+            TableBorderItem(
+                roles=(Qt.DisplayRole, Qt.BackgroundRole, Qt.ForegroundRole)))
         view.setModel(self.tablemodel)
         view.setShowGrid(False)
         for header in (view.horizontalHeader(), view.verticalHeader()):
@@ -223,23 +214,20 @@ class OWDistanceMatrix(widget.OWWidget):
         view.verticalHeader().setDefaultAlignment(
             Qt.AlignRight | Qt.AlignVCenter)
         selmodel = SymmetricSelectionModel(view.model(), view)
+        selmodel.selectionChanged.connect(self.commit.deferred)
         view.setSelectionModel(selmodel)
         view.setSelectionBehavior(QTableView.SelectItems)
-        self.mainArea.layout().addWidget(view)
-
-        settings_box = gui.hBox(self.mainArea)
+        self.controlArea.layout().addWidget(view)
 
         self.annot_combo = gui.comboBox(
-            settings_box, self, "annotation_idx", label="标签: ",
+            self.buttonsArea, self, "annotation_idx", label="标签: ",
             orientation=Qt.Horizontal,
             callback=self._invalidate_annotations, contentsLength=12)
         self.annot_combo.setModel(VariableListModel())
         self.annot_combo.model()[:] = ["无", "枚举"]
-        gui.rubber(settings_box)
-        acb = gui.auto_send(settings_box, self, "auto_commit", box=None)
+        gui.rubber(self.buttonsArea)
+        acb = gui.auto_send(self.buttonsArea, self, "auto_commit", box=False)
         acb.setFixedWidth(200)
-        # Signal must be connected after self.commit is redirected
-        selmodel.selectionChanged.connect(self.commit)
 
     def sizeHint(self):
         return QSize(800, 500)
@@ -274,7 +262,7 @@ class OWDistanceMatrix(widget.OWWidget):
             self.openContext(distances, annotations)
             self._update_labels()
             self.tableview.resizeColumnsToContents()
-        self.unconditional_commit()
+        self.commit.now()
 
     def _invalidate_annotations(self):
         if self.distances is not None:
@@ -305,6 +293,7 @@ class OWDistanceMatrix(widget.OWWidget):
         self.tablemodel.set_labels(labels, var, column)
         self.tableview.resizeColumnsToContents()
 
+    @gui.deferred
     def commit(self):
         sub_table = sub_distances = None
         if self.distances is not None:
@@ -365,5 +354,5 @@ class OWDistanceMatrix(widget.OWWidget):
 if __name__ == "__main__":  # pragma: no cover
     import Orange.distance
     data = Orange.data.Table("iris")
-    dist = Orange.distance.Euclidean(data[::5])
+    dist = Orange.distance.Euclidean(data)
     WidgetPreview(OWDistanceMatrix).run(dist)

@@ -1,14 +1,10 @@
 import numpy as np
 
-from AnyQt.QtCore import Qt
-
 from Orange.data import Table
 from Orange.widgets import widget, gui
 from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
 from Orange.widgets.widget import Input, Output
 from Orange.widgets.utils.annotated_data import (create_annotated_table)
 
@@ -16,27 +12,31 @@ from Orange.widgets.utils.annotated_data import (create_annotated_table)
 class OWSelectByDataIndex(widget.OWWidget):
     name = "按数据索引选择(Select by Data Index)"
     description = "根据数据子集的索引匹配实例。"
+    category = "变换(Transform)"
     icon = "icons/SelectByDataIndex.svg"
     priority = 1112
-    category = "Data"
-    keywords = ['suoyin', 'xuanze']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
-        data_subset = Input("数据子集(Data Subset)", Table, replaces=['Data Subset'])
+        data_subset = Input("数据子集(Data Subset)", Table,
+                            replaces=['Data Subset'])
 
     class Outputs:
-        matching_data = Output("匹配数据(Matching Data)", Table, replaces=["Data", 'Matching Data'], default=True)
-        non_matching_data = Output("不匹配的数据(Unmatched Data)", Table, replaces=['Unmatched Data'])
+        matching_data = Output("匹配数据(Matching Data)", Table, replaces=[
+                               "Data", 'Matching Data'], default=True)
+        non_matching_data = Output(
+            "不匹配的数据(Unmatched Data)", Table, replaces=['Unmatched Data'])
         # avoiding the default annotated output name (Data), as it was used
         # for Matching Data previously
-        annotated_data = Output("带批注的数据(Annotated Data)", Table, replaces=['Annotated Data'])
+        annotated_data = Output("Annotated Data", Table)
 
     want_main_area = False
+    buttons_area_orientation = None
     resizing_enabled = False
 
     class Warning(widget.OWWidget.Warning):
-        instances_not_matching = widget.Msg("输入表没有共同的实例Input tables do not share any instances.")
+        instances_not_matching = widget.Msg(
+            "输入表没有共同的实例.")
 
     def __init__(self):
         super().__init__()
@@ -53,10 +53,7 @@ class OWSelectByDataIndex(widget.OWWidget):
         self.infoBoxData = gui.label(
             box, self, self.data_info_text(None), box="数据(Data)")
         self.infoBoxExtraData = gui.label(
-            box, self, self.data_info_text(None), box="数据子集(Data Subset)")
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+            box, self, self.data_info_text(None), box="数据子集")
 
     @Inputs.data
     @check_sql_input
@@ -71,19 +68,6 @@ class OWSelectByDataIndex(widget.OWWidget):
         self.infoBoxExtraData.setText(self.data_info_text(data))
 
     def handleNewSignals(self):
-        summary, details, kwargs = self.info.NoInput, "", {}
-        if self.data or self.data_subset:
-            n_data = len(self.data) if self.data else 0
-            n_data_subset = len(self.data_subset) if self.data_subset else 0
-            summary = f"{self.info.format_number(n_data)}, " \
-                      f"{self.info.format_number(n_data_subset)}"
-            kwargs = {"format": Qt.RichText}
-            details = format_multiple_summaries([
-                ("Data", self.data),
-                ("Data subset", self.data_subset)
-            ])
-        self.info.set_input_summary(summary, details, **kwargs)
-
         self._invalidate()
 
     @staticmethod
@@ -112,9 +96,6 @@ class OWSelectByDataIndex(widget.OWWidget):
             non_matching_output = self.data[~row_sel]
             annotated_output = create_annotated_table(self.data, row_sel)
 
-        summary = self.info.NoOutput if matching_output is None else len(matching_output)
-        details = "" if matching_output is None else format_summary_details(matching_output)
-        self.info.set_output_summary(summary, details)
         self.Outputs.matching_data.send(matching_output)
         self.Outputs.non_matching_data.send(non_matching_output)
         self.Outputs.annotated_data.send(annotated_output)

@@ -19,6 +19,7 @@ class CustomRuleClassifier(_RuleClassifier):
     Custom rule induction classifier. Instances are classifier following
     either an unordered set of rules or a decision list.
     """
+
     def __init__(self, domain, rule_list, params):
         super().__init__(domain, rule_list)
         assert params is not None
@@ -216,7 +217,7 @@ class OWRuleLearner(OWBaseLearner):
     ]
     priority = 19
     keywords = ['guizeguina']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = CustomRuleLearner
     supports_sparse = False
@@ -245,7 +246,7 @@ class OWRuleLearner(OWBaseLearner):
 
     def add_main_layout(self):
         # top-level control procedure
-        top_box = gui.hBox(widget=self.controlArea, box=None, addSpace=2)
+        top_box = gui.hBox(widget=self.controlArea, box=None)
 
         rule_ordering_box = gui.hBox(widget=top_box, box="规则排序")
         rule_ordering_rbs = gui.radioButtons(
@@ -302,14 +303,14 @@ class OWRuleLearner(OWBaseLearner):
 
         gui.doubleSpin(
             widget=bottom_box, master=self, value="default_alpha", minv=0.0,
-            maxv=1.0, step=0.01, label="统计显著性\n(默认 α):",
+            maxv=1.0, step=0.01, label="统计显著性(默认 α):",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80,
             checked="checked_default_alpha")
 
         gui.doubleSpin(
             widget=bottom_box, master=self, value="parent_alpha", minv=0.0,
-            maxv=1.0, step=0.01, label="相对显著性\n(父 α):",
+            maxv=1.0, step=0.01, label="相对显著性(父 α):",
             orientation=Qt.Horizontal, callback=self.settings_changed,
             alignment=Qt.AlignRight, controlWidth=80,
             checked="checked_parent_alpha")
@@ -349,9 +350,11 @@ class OWRuleLearner(OWBaseLearner):
     def get_learner_parameters(self):
         return OrderedDict([
             ("Rule ordering", self.storage_orders[self.rule_ordering]),
-            ("Covering algorithm", self.storage_covers[self.covering_algorithm]),
+            ("Covering algorithm",
+             self.storage_covers[self.covering_algorithm]),
             ("Gamma", self.gamma),
-            ("Evaluation measure", self.storage_measures[self.evaluation_measure]),
+            ("Evaluation measure",
+             self.storage_measures[self.evaluation_measure]),
             ("Beam width", self.beam_width),
             ("Minimum rule coverage", self.min_covered_examples),
             ("Maximum rule length", self.max_rule_length),

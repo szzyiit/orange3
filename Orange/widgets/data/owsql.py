@@ -42,13 +42,17 @@ class OWSql(OWBaseSql):
     description = "从SQL加载数据集。"
     icon = "icons/SQLTable.svg"
     priority = 30
-    category = "Data"
-    keywords = ["load", 'shujuku']
+    category = "数据(Data)"
+    keywords = ["load"]
 
     class Outputs:
-        data = Output("数据(Data)", Table, doc="Attribute-valued dataset read from the input file.", replaces=['Data'])
+        data = Output(
+            "数据(Data)", Table, doc="Attribute-valued dataset read from the input file.", replaces=['Data'])
+
 
     settings_version = 2
+
+    buttons_area_orientation = None
 
     selected_backend = Setting(None)
     table = Setting(None)
@@ -104,13 +108,13 @@ class OWSql(OWBaseSql):
         self.selected_backend = backend.display_name if backend else None
 
     def _add_tables_controls(self):
-        vbox = gui.vBox(self.controlArea, "数据表", addSpace=True)
+        vbox = gui.vBox(self.controlArea, "Tables")
         box = gui.vBox(vbox)
         self.tables = TableModel()
 
         self.tablecombo = QComboBox(
             minimumContentsLength=35,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
         )
         self.tablecombo.setModel(self.tables)
         self.tablecombo.setToolTip('table')
@@ -134,11 +138,11 @@ class OWSql(OWBaseSql):
         box.layout().addWidget(self.custom_sql)
 
         gui.checkBox(box, self, "guess_values",
-                     "自动发现分类变量",
+                     "Auto-discover categorical variables",
                      callback=self.open_table)
 
         self.downloadcb = gui.checkBox(box, self, "download",
-                                       "将数据下载到本地内存",
+                                       "Download data to local memory",
                                        callback=self.open_table)
 
     def highlight_error(self, text=""):

@@ -5,12 +5,12 @@ from unittest.mock import patch
 
 import numpy as np
 
-from Orange.data import Table, StringVariable, DiscreteVariable
+from Orange.data import Table, StringVariable, DiscreteVariable, Domain
 from Orange.widgets.data.owcreateclass import (
     OWCreateClass,
-    map_by_substring, ValueFromStringSubstring, ValueFromDiscreteSubstring)
+    map_by_substring, ValueFromStringSubstring, ValueFromDiscreteSubstring,
+    unique_in_order_mapping)
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestHelpers(unittest.TestCase):
@@ -46,17 +46,71 @@ class TestHelpers(unittest.TestCase):
         self.assertTrue(np.all(np.isnan(
             map_by_substring(self.arr, [], False, False))))
 
+    def test_map_by_substring_with_map_values(self):
+        np.testing.assert_equal(
+            map_by_substring(self.arr,
+                             ["abc", "a", "bc", ""],
+                             case_sensitive=True, match_beginning=False,
+                             map_values=None),
+            [0, 1, 2, 0, 3])
+        np.testing.assert_equal(
+            map_by_substring(self.arr,
+                             ["abc", "a", "bc", ""],
+                             case_sensitive=True, match_beginning=False,
+                             map_values=[0, 1, 2, 3]),
+            [0, 1, 2, 0, 3])
+        np.testing.assert_equal(
+            map_by_substring(self.arr,
+                             ["abc", "a", "bc", ""],
+                             case_sensitive=True, match_beginning=False,
+                             map_values=[1, 0, 3, 2]),
+            [1, 0, 3, 1, 2])
+        np.testing.assert_equal(
+            map_by_substring(self.arr,
+                             ["abc", "a", "bc", ""],
+                             case_sensitive=True, match_beginning=False,
+                             map_values=[1, 1, 0, 0]),
+            [1, 1, 0, 1, 0])
+
+    @staticmethod
+    def test_unique_in_order_mapping():
+        u, m = unique_in_order_mapping([])
+        np.testing.assert_equal(u, [])
+        np.testing.assert_equal(m, [])
+        u, m = unique_in_order_mapping([42])
+        np.testing.assert_equal(u, [42])
+        np.testing.assert_equal(m, [0])
+        u, m = unique_in_order_mapping([42, 42])
+        np.testing.assert_equal(u, [42])
+        np.testing.assert_equal(m, [0, 0])
+        u, m = unique_in_order_mapping([2, 1, 0, 3])
+        np.testing.assert_equal(u, [2, 1, 0, 3])
+        np.testing.assert_equal(m, [0, 1, 2, 3])
+        u, m = unique_in_order_mapping([2, 1, 2, 3])
+        np.testing.assert_equal(u, [2, 1, 3])
+        np.testing.assert_equal(m, [0, 1, 0, 2])
+        u, m = unique_in_order_mapping([2, 3, 1])
+        np.testing.assert_equal(u, [2, 3, 1])
+        np.testing.assert_equal(m, [0, 1, 2])
+        u, m = unique_in_order_mapping([2, 3, 1, 1])
+        np.testing.assert_equal(u, [2, 3, 1])
+        np.testing.assert_equal(m, [0, 1, 2, 2])
+        u, m = unique_in_order_mapping([2, 3, 1, 2])
+        np.testing.assert_equal(u, [2, 3, 1])
+        np.testing.assert_equal(m, [0, 1, 2, 0])
+
     def test_value_from_string_substring(self):
         trans = ValueFromStringSubstring(StringVariable("x"), self.patterns)
         arr2 = np.hstack((self.arr.astype(object), [None]))
 
         with patch('Orange.widgets.data.owcreateclass.map_by_substring') as mbs:
             trans.transform(self.arr)
-            a, patterns, case_sensitive, match_beginning = mbs.call_args[0]
+            a, patterns, case_sensitive, match_beginning, map_values = mbs.call_args[0]
             np.testing.assert_equal(a, self.arr)
             self.assertEqual(patterns, self.patterns)
             self.assertFalse(case_sensitive)
             self.assertFalse(match_beginning)
+            self.assertIsNone(map_values)
 
             trans.transform(arr2)
             a, patterns, *_ = mbs.call_args[0]
@@ -71,14 +125,14 @@ class TestHelpers(unittest.TestCase):
         with patch('Orange.widgets.data.owcreateclass.map_by_substring') as mbs:
             trans.case_sensitive = True
             trans.transform(self.arr)
-            case_sensitive, match_beginning = mbs.call_args[0][-2:]
+            case_sensitive, match_beginning = mbs.call_args[0][-3:-1]
             self.assertTrue(case_sensitive)
             self.assertFalse(match_beginning)
 
             trans.case_sensitive = False
             trans.match_beginning = True
             trans.transform(self.arr)
-            case_sensitive, match_beginning = mbs.call_args[0][-2:]
+            case_sensitive, match_beginning = mbs.call_args[0][-3:-1]
             self.assertFalse(case_sensitive)
             self.assertTrue(match_beginning)
 
@@ -92,35 +146,39 @@ class TestHelpers(unittest.TestCase):
             DiscreteVariable("x", values=self.arr), self.patterns)
         with patch('Orange.widgets.data.owcreateclass.map_by_substring') as mbs:
             trans.case_sensitive = True
-            a, patterns, case_sensitive, match_beginning = mbs.call_args[0]
+            a, patterns, case_sensitive, match_beginning, map_values = mbs.call_args[0]
             np.testing.assert_equal(a, self.arr)
             self.assertEqual(patterns, self.patterns)
             self.assertTrue(case_sensitive)
             self.assertFalse(match_beginning)
+            self.assertIsNone(map_values)
 
             trans.case_sensitive = False
             trans.match_beginning = True
-            a, patterns, case_sensitive, match_beginning = mbs.call_args[0]
+            a, patterns, case_sensitive, match_beginning, map_values = mbs.call_args[0]
             np.testing.assert_equal(a, self.arr)
             self.assertEqual(patterns, self.patterns)
             self.assertFalse(case_sensitive)
             self.assertTrue(match_beginning)
+            self.assertIsNone(map_values)
 
             arr2 = self.arr[::-1]
             trans.variable = DiscreteVariable("x", values=arr2)
-            a, patterns, case_sensitive, match_beginning = mbs.call_args[0]
+            a, patterns, case_sensitive, match_beginning, map_values = mbs.call_args[0]
             np.testing.assert_equal(a, arr2)
             self.assertEqual(patterns, self.patterns)
             self.assertFalse(case_sensitive)
             self.assertTrue(match_beginning)
+            self.assertIsNone(map_values)
 
             patt2 = self.patterns[::-1]
             trans.patterns = patt2
-            a, patterns, case_sensitive, match_beginning = mbs.call_args[0]
+            a, patterns, case_sensitive, match_beginning, map_values = mbs.call_args[0]
             np.testing.assert_equal(a, arr2)
             self.assertEqual(patterns, patt2)
             self.assertFalse(case_sensitive)
             self.assertTrue(match_beginning)
+            self.assertIsNone(map_values)
 
     def test_valuefromstringsubstring_equality(self):
         str1 = StringVariable("d1")
@@ -231,6 +289,12 @@ class TestOWCreateClass(WidgetTest):
         self.send_signal(self.widget.Inputs.data, self.heart)
         self.assertFalse(widget.Warning.no_nonnumeric_vars.is_shown())
 
+        self.send_signal(self.widget.Inputs.data, self.heart[:0])
+        self.assertFalse(widget.Warning.no_nonnumeric_vars.is_shown())
+
+        self.send_signal(self.widget.Inputs.data, self.no_attributes[:0])
+        self.assertTrue(widget.Warning.no_nonnumeric_vars.is_shown())
+
     def test_string_data(self):
         widget = self.widget
         self.send_signal(self.widget.Inputs.data, self.zoo)
@@ -246,6 +310,58 @@ class TestOWCreateClass(WidgetTest):
         has_a = np.char.find(attr, "a") != -1
         np.testing.assert_equal(classes[has_a], 0)
         np.testing.assert_equal(classes[~has_a], 1)
+
+    def _set_repeated(self):
+        widget = self.widget
+        widget.line_edits[0][0].setText("repeated")
+        widget.line_edits[0][1].setText("a")
+        widget.line_edits[1][0].setText("not repeated")
+        widget.line_edits[1][1].setText("b")
+        widget.add_row()
+        widget.line_edits[2][0].setText("repeated")
+        widget.line_edits[2][1].setText("c")
+
+    def _check_repeated(self, source, source_var, output_var):
+        self.assertEqual(output_var.values,
+                         ("repeated", "not repeated"))
+
+        def vals(var):
+            return [var.str_val(v) for v in
+                    source.transform(Domain([], metas=[var])).metas.flatten()]
+
+        def new_class(v):
+            if "a" in v:
+                return "repeated"
+            elif "b" in v:
+                return "not repeated"
+            elif "c" in v:
+                return "repeated"
+            else:
+                return "?"
+
+        source_vals = vals(source_var)
+        out_vals = vals(output_var)
+        self.assertEqual([new_class(v) for v in source_vals], out_vals)
+
+    def test_repeated_class_values_string(self):
+        widget = self.widget
+        self.send_signal(self.widget.Inputs.data, self.zoo)
+        self._set_attr(self.zoo.domain.metas[0])
+        self._set_repeated()
+        widget.apply()
+        outdata = self.get_output(self.widget.Outputs.data)
+        self._check_repeated(self.zoo, self.zoo.domain.metas[0],
+                             outdata.domain.class_var)
+
+    def test_repeated_class_values_discrete(self):
+        widget = self.widget
+        self.send_signal(self.widget.Inputs.data, self.zoo)
+        self._set_attr(self.zoo.domain.class_var)
+        self._set_repeated()
+        widget.apply()
+        outdata = self.get_output(self.widget.Outputs.data)
+        self._check_repeated(self.zoo, self.zoo.domain.class_var,
+                             outdata.domain.class_var)
 
     def _set_thal(self):
         widget = self.widget
@@ -459,36 +575,6 @@ class TestOWCreateClass(WidgetTest):
             self.get_output(widget2.Outputs.data, widget=widget2).domain.class_var
         )
 
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data = self.zoo
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, data)
-        self.widget.class_name = ""
-        self.widget.apply()
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-        self.widget.class_name = "type"
-        self.widget.apply()
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
 if __name__ == "__main__":
     unittest.main()

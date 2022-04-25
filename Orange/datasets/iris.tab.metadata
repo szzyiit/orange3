@@ -1,5 +1,5 @@
-Name: 鸢尾花数据集
-Description: 有150个山鸢尾花，维吉尼卡鸢尾花和杂色鸢尾花数据的经典数据集。
+Name: Iris flower dataset
+Description: Classical dataset with 150 instances of Iris setosa, Iris virginica and Iris versicolor.
 Author: Edgar Anderson, Ronald Fisher
 Year: 1936
 Reference: R. A. Fisher (1936). "The use of multiple measurements in taxonomic problems". Annals of Eugenics. 7 (2): 179–188. doi:10.1111/j.1469-1809.1936.tb02137.x

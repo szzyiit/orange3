@@ -16,33 +16,33 @@ from Orange.widgets.utils.itemmodels import DomainModel
 
 
 class OWAggregateColumns(widget.OWWidget):
-    name = "Aggregate Columns"
-    description = "Compute a sum, max, min ... of selected columns."
-    category = "Transform"
+    name = "聚合列(Aggregate Columns)"
+    description = "计算选定列的和，最大值，最小值等."
+    category = "变换(Transform)"
     icon = "icons/AggregateColumns.svg"
     priority = 100
-    keywords = ["aggregate", "sum", "product", "max", "min", "mean",
+    keywords = ['juhe', "aggregate", "sum", "product", "max", "min", "mean",
                 "median", "variance"]
 
     class Inputs:
-        data = Input("Data", Table, default=True)
+        data = Input("数据(Data)", Table, default=True, replaces=['Data'])
 
     class Outputs:
-        data = Output("Data", Table)
+        data = Output("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
 
     settingsHandler = DomainContextHandler()
     variables: List[Variable] = ContextSetting([])
-    operation = Setting("Sum")
+    operation = Setting("和")
     var_name = Setting("agg")
     auto_apply = Setting(True)
 
-    Operations = {"Sum": np.nansum, "Product": np.nanprod,
-                  "Min": np.nanmin, "Max": np.nanmax,
-                  "Mean": np.nanmean, "Variance": np.nanvar,
-                  "Median": np.nanmedian}
-    TimePreserving = ("Min", "Max", "Mean", "Median")
+    Operations = {"和": np.nansum, "积": np.nanprod,
+                  "最小": np.nanmin, "最大": np.nanmax,
+                  "平均": np.nanmean, "方差": np.nanvar,
+                  "中位数": np.nanmedian}
+    TimePreserving = ("最小", "最大", "平均", "中位数")
 
     def __init__(self):
         super().__init__()
@@ -60,7 +60,7 @@ class OWAggregateColumns(widget.OWWidget):
 
         combo = gui.comboBox(
             box, self, "operation",
-            label="Operator: ", orientation=Qt.Horizontal,
+            label="操作: ", orientation=Qt.Horizontal,
             items=list(self.Operations), sendSelectedValue=True,
             callback=self.commit.deferred
         )
@@ -68,7 +68,7 @@ class OWAggregateColumns(widget.OWWidget):
 
         gui.lineEdit(
             box, self, "var_name",
-            label="Variable name: ", orientation=Qt.Horizontal,
+            label="变量名: ", orientation=Qt.Horizontal,
             callback=self.commit.deferred
         )
 
@@ -129,7 +129,7 @@ class OWAggregateColumns(widget.OWWidget):
         self.report_items((
             ("Output:",
              f"'{self._new_var_name()}' as {self.operation.lower()} of {var_list}"
-            ),
+             ),
         ))
 
 

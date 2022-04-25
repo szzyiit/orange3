@@ -19,8 +19,8 @@ class OWAdaBoost(OWBaseLearner):
         "Orange.widgets.regression.owadaboostregression.OWAdaBoostRegression",
     ]
     priority = 80
-    keywords = ["boost", 'tisheng', 'zishiying']
-    category = 'model'
+    keywords = ["boost", 'tisheng']
+    category = '模型(Model)'
 
     LEARNER = SklAdaBoostLearner
 
@@ -69,11 +69,11 @@ class OWAdaBoost(OWBaseLearner):
         # Algorithms
         box = gui.widgetBox(self.controlArea, "提升方法(Boosting method)")
         self.cls_algorithm_combo = gui.comboBox(
-            box, self, "algorithm_index", label="分类算法(Classification algorithm):",
+            box, self, "algorithm_index", label="分类算法:",
             items=self.algorithms,
             orientation=Qt.Horizontal, callback=self.settings_changed)
         self.reg_algorithm_combo = gui.comboBox(
-            box, self, "loss_index", label="回归损失函数(Regression loss function):",
+            box, self, "loss_index", label="回归损失函数:",
             items=self.Chinese_losses,
             orientation=Qt.Horizontal, callback=self.settings_changed)
 
@@ -103,8 +103,7 @@ class OWAdaBoost(OWBaseLearner):
             self.base_estimator = learner or self.DEFAULT_BASE_ESTIMATOR
             self.base_label.setText(
                 "Base estimator: %s" % self.base_estimator.name.title())
-        if self.auto_apply:
-            self.apply()
+        self.learner = self.model = None
 
     def get_learner_parameters(self):
         return (("Base estimator", self.base_estimator),

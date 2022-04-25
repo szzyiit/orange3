@@ -7,7 +7,7 @@ import numpy as np
 from AnyQt.QtWidgets import (
     QWidget, QTableWidget, QHeaderView, QComboBox, QLineEdit, QToolButton,
     QMessageBox, QMenu, QListView, QGridLayout, QPushButton, QSizePolicy,
-    QLabel, QHBoxLayout, QDateTimeEdit)
+    QLabel, QDateTimeEdit)
 from AnyQt.QtGui import (QDoubleValidator, QStandardItemModel, QStandardItem,
                          QFontMetrics, QPalette)
 from AnyQt.QtCore import Qt, QPoint, QPersistentModelIndex, QLocale, \
@@ -29,9 +29,7 @@ from Orange.widgets.utils import vartype
 from Orange.widgets import report
 from Orange.widgets.widget import Msg
 from Orange.widgets.utils.annotated_data import (create_annotated_table,
-                                                 ANNOTATED_DATA_SIGNAL_NAME,
-                                                 ANNOTATED_DATA_SIGNAL_Chinese_NAME)
-from Orange.widgets.utils.state_summary import format_summary_details
+                                                 ANNOTATED_DATA_SIGNAL_NAME)
 
 
 class SelectRowsContextHandler(DomainContextHandler):
@@ -76,31 +74,20 @@ class SelectRowsContextHandler(DomainContextHandler):
         value = super().decode_setting(setting, value, domain)
         if setting.name == 'conditions':
             CONTINUOUS = vartype(ContinuousVariable("x"))
-            # Use this after 2022/2/2:
-            # for i, (attr, tpe, op, values) in enumerate(value):
-            #     if tpe is not None:
-            for i, (attr, *tpe, op, values) in enumerate(value):
-                if tpe != [None] \
-                        or not tpe and attr not in OWSelectRows.AllTypes:
+            for i, (attr, tpe, op, values) in enumerate(value):
+                if tpe is not None:
                     attr = domain[attr]
                 # check for exact match, pylint: disable=unidiomatic-typecheck
                 if type(attr) is ContinuousVariable \
                         or OWSelectRows.AllTypes.get(attr) == CONTINUOUS:
-                    values = [QLocale().toString(float(i), 'f') for i in values]
+                    values = [QLocale().toString(float(i), 'f')
+                              for i in values]
                 elif isinstance(attr, DiscreteVariable):
-                    # After 2022/2/2, use just the expression in else clause
-                    if values and isinstance(values[0], int):
-                        # Backwards compatibility. Reset setting if we detect
-                        # that the number of values decreased. Still broken if
-                        # they're reordered or we don't detect the decrease.
-                        #
-                        # indices start with 1, thus >, not >=
-                        if max(values) > len(attr.values):
-                            values = (0, )
-                    else:
-                        values = tuple(attr.to_val(val) + 1 if val else 0
-                                       for val in values if val in attr.values) \
-                                 or (0, )
+                    values = tuple(
+                        attr.to_val(val) + 1 if val else 0
+                        for val in values
+                        if val in attr.values
+                    ) or (0,)
                 value[i] = (attr, op, values)
         return value
 
@@ -111,10 +98,10 @@ class SelectRowsContextHandler(DomainContextHandler):
         conditions = context.values["conditions"]
         all_vars = attrs.copy()
         all_vars.update(metas)
-        matched = [all_vars.get(name) == tpe  # also matches "all (...)" strings
-                   # After 2022/2/2 remove this line:
-                   if len(rest) == 2 else name in all_vars
-                   for name, tpe, *rest in conditions]
+        matched = [
+            all_vars.get(name) == tpe  # also matches "all (...)" strings
+            for name, tpe, *rest in conditions
+        ]
         if any(matched):
             return 0.5 * sum(matched) / len(matched)
         return self.NO_MATCH
@@ -127,15 +114,11 @@ class SelectRowsContextHandler(DomainContextHandler):
         all_vars = attrs.copy()
         all_vars.update(metas)
         conditions = data["conditions"]
-        # Use this after 2022/2/2: if any(all_vars.get(name) == tpe:
-        # conditions[:] = [(name, tpe, *rest) for name, tpe, *rest in conditions
-        #                  if all_vars.get(name) == tpe]
         conditions[:] = [
-            (name, tpe, *rest) for name, tpe, *rest in conditions
-            # all_vars.get(name) == tpe also matches "all (...)" which are
-            # encoded with type `None`
-            if (all_vars.get(name) == tpe if len(rest) == 2
-                else name in all_vars)]
+            (name, tpe, *rest)
+            for name, tpe, *rest in conditions
+            if all_vars.get(name) == tpe
+        ]
 
 
 class FilterDiscreteType(enum.Enum):
@@ -155,20 +138,21 @@ def _plural(s):
 
 class OWSelectRows(widget.OWWidget):
     name = "选择行(Select Rows)"
-    id = "Orange.widgets.data.file"
     description = "根据变量值从数据中选择行。"
     icon = "icons/SelectRows.svg"
     priority = 100
-    category = "Data"
-    keywords = ["filter", 'xuanze', 'hang', 'xuanzehang']
+    category = "变换(Transform)"
+    keywords = ["filter", 'xuanzehang']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        matching_data = Output("匹配的数据(Matching Data)", Table, default=True, replaces=['Matching Data'])
-        unmatched_data = Output("不匹配的数据(Unmatched Data)", Table, replaces=['Unmatched Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
+        matching_data = Output("匹配的数据(Matching Data)",
+                               Table, default=True, replaces=['Matching Data'])
+        unmatched_data = Output("不匹配的数据(Unmatched Data)",
+                                Table, replaces=['Unmatched Data'])
+        annotated_data = Output("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
 
@@ -183,35 +167,35 @@ class OWSelectRows(widget.OWWidget):
 
     Operators = {
         ContinuousVariable: [
-            (FilterContinuous.Equal, "等于(equals)"),
-            (FilterContinuous.NotEqual, "不是(is not)"),
-            (FilterContinuous.Less, "低于(is below)"),
-            (FilterContinuous.LessEqual, "最多(is at most)"),
-            (FilterContinuous.Greater, "大于(is greater than)"),
-            (FilterContinuous.GreaterEqual, "至少(is at least)"),
-            (FilterContinuous.Between, "介于(is between)"),
-            (FilterContinuous.Outside, "超出(is outside)"),
-            (FilterContinuous.IsDefined, "is defined"),
+            (FilterContinuous.Equal, "等于"),
+            (FilterContinuous.NotEqual, "不是"),
+            (FilterContinuous.Less, "低于"),
+            (FilterContinuous.LessEqual, "最多"),
+            (FilterContinuous.Greater, "大于"),
+            (FilterContinuous.GreaterEqual, "至少"),
+            (FilterContinuous.Between, "介于"),
+            (FilterContinuous.Outside, "超出"),
+            (FilterContinuous.IsDefined, "非缺失"),
         ],
         DiscreteVariable: [
-            (FilterDiscreteType.Equal, "是(is)"),
-            (FilterDiscreteType.NotEqual, "不是(is not)"),
-            (FilterDiscreteType.In, "是...中的一个(is one of)"),
-            (FilterDiscreteType.IsDefined, "is defined")
+            (FilterDiscreteType.Equal, "是"),
+            (FilterDiscreteType.NotEqual, "不是"),
+            (FilterDiscreteType.In, "其中之一"),
+            (FilterDiscreteType.IsDefined, "非缺失")
         ],
         StringVariable: [
-            (FilterString.Equal, "等于(equals)"),
-            (FilterString.NotEqual, "不是(is not)"),
-            (FilterString.Less, "在...之前(is before)"),
-            (FilterString.LessEqual, "等于或早于(is equal or before)"),
-            (FilterString.Greater, "在之后(is after)"),
-            (FilterString.GreaterEqual, "等于或大于(is equal or after)"),
-            (FilterString.Between, "介于(is between)"),
-            (FilterString.Outside, "超出(is outside)"),
-            (FilterString.Contains, "包含(contains)"),
-            (FilterString.StartsWith, "以...开始(begins with)"),
-            (FilterString.EndsWith, "以...结尾(ends with)"),
-            (FilterString.IsDefined, "is defined"),
+            (FilterString.Equal, "等于"),
+            (FilterString.NotEqual, "不是"),
+            (FilterString.Less, "在之前"),
+            (FilterString.LessEqual, "等于或先于"),
+            (FilterString.Greater, "在之后"),
+            (FilterString.GreaterEqual, "等于或大于"),
+            (FilterString.Between, "介于"),
+            (FilterString.Outside, "超出"),
+            (FilterString.Contains, "包含"),
+            (FilterString.StartsWith, "以之开始"),
+            (FilterString.EndsWith, "以之结尾"),
+            (FilterString.IsDefined, "非缺失"),
         ]
     }
 
@@ -220,7 +204,7 @@ class OWSelectRows(widget.OWWidget):
     AllTypes = {}
     for _all_name, _all_type, _all_ops in (
             ("所有变量", 0,
-             [(None, "are defined")]),
+             [(None, "已定义")]),
             ("所有数值变量", 2,
              [(v, _plural(t)) for v, t in Operators[ContinuousVariable]]),
             ("所有字符串变量", 3,
@@ -270,29 +254,18 @@ class OWSelectRows(widget.OWWidget):
             box2, self, "删除全部", callback=self.remove_all)
         gui.rubber(box2)
 
-        boxes = gui.widgetBox(self.controlArea, orientation=QHBoxLayout())
-        layout = boxes.layout()
-
-        box_setting = gui.vBox(boxes, addToLayout=False, box=True)
+        box_setting = gui.vBox(self.buttonsArea)
         self.cb_pa = gui.checkBox(
             box_setting, self, "purge_attributes", "删除未使用的特征",
             callback=self.conditions_changed)
-        gui.separator(box_setting, height=1)
         self.cb_pc = gui.checkBox(
             box_setting, self, "purge_classes", "删除未使用的分类",
             callback=self.conditions_changed)
-        layout.addWidget(box_setting, 1)
 
         self.report_button.setFixedWidth(120)
         gui.rubber(self.buttonsArea.layout())
-        layout.addWidget(self.buttonsArea)
 
-        acbox = gui.auto_send(None, self, "auto_commit")
-        layout.addWidget(acbox, 1)
-        layout.setAlignment(acbox, Qt.AlignBottom)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        gui.auto_send(self.buttonsArea, self, "auto_commit")
 
         self.set_data(None)
         self.resize(600, 400)
@@ -313,8 +286,8 @@ class OWSelectRows(widget.OWWidget):
 
         index = QPersistentModelIndex(model.index(row, 3))
         temp_button = QPushButton('×', self, flat=True,
-                                  styleSheet='* {font-size: 16pt; color: silver}'
-                                             '*:hover {color: black}')
+                                  styleSheet='* {font-size: 16pt; color: palette(button-text) }'
+                                             '*:hover {color: palette(bright-text)}')
         temp_button.clicked.connect(lambda: self.remove_one(index.row()))
         self.cond_list.setCellWidget(row, 3, temp_button)
 
@@ -506,12 +479,12 @@ class OWSelectRows(widget.OWWidget):
             if vtype == 2:  # continuous:
                 box.controls = [add_numeric(lc[0])]
                 if oper > 5:
-                    gui.widgetLabel(box, " and ")
+                    gui.widgetLabel(box, " 和 ")
                     box.controls.append(add_numeric(lc[1]))
             elif vtype == 3:  # string:
                 box.controls = [add_textual(lc[0])]
                 if oper in [6, 7]:
-                    gui.widgetLabel(box, " and ")
+                    gui.widgetLabel(box, " 和 ")
                     box.controls.append(add_textual(lc[1]))
             elif vtype == 4:  # time:
                 def invalidate_datetime():
@@ -536,7 +509,7 @@ class OWSelectRows(widget.OWWidget):
                 box.layout().addWidget(w)
                 w.dateTimeChanged.connect(datetime_changed)
                 if oper > 5:
-                    gui.widgetLabel(box, " and ")
+                    gui.widgetLabel(box, " 和 ")
                     w_ = DateTimeWidget(self, column, datetime_format)
                     w_.set_datetime(lc[1])
                     box.layout().addWidget(w_)
@@ -562,10 +535,9 @@ class OWSelectRows(widget.OWWidget):
             data is None or
             len(data.domain.variables) + len(data.domain.metas) > 100)
         if not data:
-            self.info.set_input_summary(self.info.NoInput)
             self.data_desc = None
             self.variable_model.set_domain(None)
-            self.commit()
+            self.commit.deferred()
             return
         self.data_desc = report.describe_data_brief(data)
         self.variable_model.set_domain(data.domain)
@@ -578,9 +550,7 @@ class OWSelectRows(widget.OWWidget):
         if not self.cond_list.model().rowCount():
             self.add_row()
 
-        self.info.set_input_summary(data.approx_len(),
-                                    format_summary_details(data))
-        self.unconditional_commit()
+        self.commit.now()
 
     def conditions_changed(self):
         try:
@@ -596,7 +566,7 @@ class OWSelectRows(widget.OWWidget):
             if self.update_on_change and (
                     self.last_output_conditions is None or
                     self.last_output_conditions != self.conditions):
-                self.commit()
+                self.commit.deferred()
         except AttributeError:
             # Attribute error appears if the signal is triggered when the
             # controls are being constructed
@@ -610,7 +580,7 @@ class OWSelectRows(widget.OWWidget):
             return None
         if isinstance(attr, TimeVariable):
             values = (value.toString(format=Qt.ISODate) for value in values)
-            parse = lambda x: (attr.parse(x), True)
+            def parse(x): return (attr.parse(x), True)
         else:
             parse = QLocale().toDouble
 
@@ -624,6 +594,7 @@ class OWSelectRows(widget.OWWidget):
         assert all(isinstance(v, float) for v in floats)
         return floats
 
+    @gui.deferred
     def commit(self):
         matching_output = self.data
         non_matching_output = None
@@ -720,11 +691,6 @@ class OWSelectRows(widget.OWWidget):
         self.match_desc = report.describe_data_brief(matching_output)
         self.nonmatch_desc = report.describe_data_brief(non_matching_output)
 
-        summary = matching_output.approx_len() if matching_output else \
-            self.info.NoOutput
-        details = format_summary_details(matching_output) if matching_output else ""
-        self.info.set_output_summary(summary, details)
-
     def send_report(self):
         if not self.data:
             self.report_paragraph("No data.")
@@ -771,7 +737,8 @@ class OWSelectRows(widget.OWWidget):
                 conditions.append(
                     f"{attr} {name} {' and '.join(map(repr, values))}")
             elif var_type == 4:  # time
-                values = (value.toString(format=Qt.ISODate) for value in values)
+                values = (value.toString(format=Qt.ISODate)
+                          for value in values)
                 conditions.append(f"{attr} {name} {' and '.join(values)}")
             elif all(x for x in values):  # numeric variable
                 conditions.append(f"{attr} {name} {' and '.join(values)}")
@@ -799,13 +766,11 @@ class OWSelectRows(widget.OWWidget):
                  ("Non-matching data",
                   nonmatch_inst > 0 and "{} instances".format(nonmatch_inst))))
 
-    # Uncomment this on 2022/2/2
-    #
-    # @classmethod
-    # def migrate_context(cls, context, version):
-    #     if not version or version < 2:
-    #         # Just remove; can't migrate because variables types are unknown
-    #         context.values["conditions"] = []
+    @classmethod
+    def migrate_context(cls, context, version):
+        if not version or version < 2:
+            # Just remove; can't migrate because variables types are unknown
+            context.values["conditions"] = []
 
 
 class CheckBoxPopup(QWidget):
@@ -848,7 +813,7 @@ class DropDownToolButton(QToolButton):
         QToolButton.__init__(self, parent)
         self.desc_text = ''
         self.popup = CheckBoxPopup(var, lc, parent, self)
-        self.setMenu(QMenu()) # to show arrow
+        self.setMenu(QMenu())  # to show arrow
         self.clicked.connect(self.open_popup)
 
     def open_popup(self):
@@ -925,7 +890,7 @@ class DateTimeWidget(QDateTimeEdit):
             if timestamp >= 0:
                 return datetime.fromtimestamp(timestamp, tz=timezone.utc)
             return datetime(1970, 1, 1, tzinfo=timezone.utc) + \
-                       timedelta(seconds=int(timestamp))
+                timedelta(seconds=int(timestamp))
 
         min_datetime = convert_timestamp(
             np.nanmin(column)).strftime(convert_format)

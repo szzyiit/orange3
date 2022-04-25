@@ -18,7 +18,7 @@ class OWRandomForest(OWBaseLearner):
     ]
     priority = 40
     keywords = ['suijisenlin', 'senlin']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = RandomForestLearner
 
@@ -37,7 +37,8 @@ class OWRandomForest(OWBaseLearner):
         not_enough_features = Msg("Insufficient number of attributes ({})")
 
     class Warning(OWBaseLearner.Warning):
-        class_weights_used = Msg("Weighting by class may decrease performance.")
+        class_weights_used = Msg(
+            "Weighting by class may decrease performance.")
 
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
@@ -53,12 +54,14 @@ class OWRandomForest(OWBaseLearner):
             checkCallback=self.settings_changed, alignment=Qt.AlignRight,)
         self.random_state = gui.checkBox(
             box, self, "use_random_state", label="可重复的训练",
-            callback=self.settings_changed)
+            callback=self.settings_changed,
+            attribute=Qt.WA_LayoutUsesWidgetRect)
         self.weights = gui.checkBox(
             box, self,
             "class_weight", label="平衡类别分布",
             callback=self.settings_changed,
-            tooltip="将类别权重设置为出现频率的反比"
+            tooltip="将类别权重设置为出现频率的反比.",
+            attribute=Qt.WA_LayoutUsesWidgetRect
         )
 
         box = gui.vBox(self.controlArea, "生长控制")

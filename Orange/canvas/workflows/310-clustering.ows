@@ -1,29 +1,30 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="此工作流通过首先估计数据实例之间的距离来聚类 Iris 数据集中的数据项。 距离矩阵被传递到层次聚类，呈现树形图。 选择树形图的不同部分以进一步分析相应的数据。&#10;&#10;注意，层次聚类只能处理小数据集，即只包含少量数据实例的数据集。 对于较大的数据集，距离矩阵可能变得太大并且可能导致内存不足。 这种数据集可以考虑使用 k 均值聚类。" title="层次聚类" version="2.0">
+<scheme description="The workflow clusters the data items in Iris dataset by first estimating the distances between data instances. Distance matrix is passed to hierarchical clustering, which renders the dendrogram. Select different parts of the dendrogram to further analyze the corresponding data.&#10;&#10;Notice that hierarchical clustering can only handle small datasets, that is, those that contain only a small number of data instances. For larger datasets the distance matrix may get too big and may not fit in the memory. An alternative method that can consider such datasets is k-means clustering." title="Hierarchical Clustering" version="2.0">
 	<nodes>
-		<node id="0" name="文件(File)" position="(135.0, 135.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
-		<node id="1" name="距离(Distances)" position="(242.0, 203.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owdistances.OWDistances" title="距离" version="" />
-		<node id="2" name="数据表(Data Table)" position="(268.0, 90.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
-		<node id="3" name="距离图(Distance Map)" position="(412.0, 184.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owdistancemap.OWDistanceMap" title="距离图" version="" />
-		<node id="4" name="层次聚类(Hierarchical Clustering)" position="(418.0, 307.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owhierarchicalclustering.OWHierarchicalClustering" title="层次聚类" version="" />
-		<node id="5" name="数据表(Data Table)" position="(583.0, 262.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表 (1)" version="" />
-		<node id="6" name="箱线图(Box Plot)" position="(526.0, 390.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owboxplot.OWBoxPlot" title="箱线图" version="" />
+		<node id="0" name="File" position="(135.0, 135.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
+		<node id="1" name="Distances" position="(242.0, 203.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owdistances.OWDistances" title="Distances" version="" />
+		<node id="2" name="Data Table" position="(268.0, 90.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table" version="" />
+		<node id="3" name="Distance Map" position="(412.0, 184.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owdistancemap.OWDistanceMap" title="Distance Map" version="" />
+		<node id="4" name="Hierarchical Clustering" position="(418.0, 307.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owhierarchicalclustering.OWHierarchicalClustering" title="Hierarchical Clustering" version="" />
+		<node id="5" name="Data Table" position="(583.0, 262.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table (1)" version="" />
+		<node id="6" name="Box Plot" position="(526.0, 390.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owboxplot.OWBoxPlot" title="Box Plot" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Data" sink_node_id="2" source_channel="Data" source_node_id="0" />
 		<link enabled="true" id="2" sink_channel="Distances" sink_node_id="3" source_channel="Distances" source_node_id="1" />
 		<link enabled="true" id="3" sink_channel="Distances" sink_node_id="4" source_channel="Distances" source_node_id="1" />
-		<link enabled="true" id="4" sink_channel="Data" sink_node_id="6" source_channel="Selected Data" source_node_id="4" />
-		<link enabled="true" id="5" sink_channel="Data" sink_node_id="5" source_channel="Selected Data" source_node_id="4" />
+		<link enabled="true" id="4" sink_channel="Data" sink_node_id="5" source_channel="Selected Data" source_node_id="4" />
+		<link enabled="true" id="5" sink_channel="Data" sink_node_id="6" source_channel="Selected Data" source_node_id="4" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="14" id="0" rect="(18.0, 15.0, 150.0, 82.0)" type="text/plain">阅读数据。 尝试使用“brown-selected”数据（来自 Orange 附带的数据集）。</text>
-		<text font-family="Helvetica" font-size="14" id="1" rect="(402.0, 63.0, 150.0, 54.0)" type="text/plain">可视化热图中的数据距离。</text>
-		<text font-family="Helvetica" font-size="14" id="2" rect="(597.0, 56.0, 214.0, 153.0)" type="text/plain">在“分层聚类”中选择聚类树形图的任何部分。 然后，观察数据表或任何其他分析小部件中的选定数据。 打开两个分层聚类和数据表（1）小部件组成交互式数据分析架构。</text>
-		<text font-family="Helvetica" font-size="14" id="3" rect="(601.0, 330.0, 150.0, 96.0)" type="text/plain">在分层聚类中选择任何更改都将传播到数据表和箱线图部件。</text>
-		<text font-family="Helvetica" font-size="14" id="4" rect="(253.0, 384.0, 150.0, 40.0)" type="text/plain">Hierarchically cluster the data.</text>
-		<text font-family="Helvetica" font-size="14" id="5" rect="(81.0, 263.0, 150.0, 54.0)" type="text/plain">计算数据样本之间的距离。</text>
+		<text font-family="Helvetica" font-size="14" id="0" rect="(18.0, 15.0, 150.0, 82.0)">Read the data. Try this schema with the "brown-selected" data (from datasets that come with Orange).</text>
+		<text font-family="Helvetica" font-size="14" id="1" rect="(402.0, 63.0, 150.0, 54.0)">Visualize the data distances in a heat map.</text>
+		<text font-family="Helvetica" font-size="14" id="2" rect="(597.0, 56.0, 214.0, 153.0)">Choose any part of the clustering dendrogram in Hierarchical Clustering. Then, observe the selected data in a data table, or in any other analysis widget. Open both Hierarchical Clustering and Data Table (1) widget to turn this schema into interactive data analysis.
+</text>
+		<text font-family="Helvetica" font-size="14" id="3" rect="(601.0, 330.0, 150.0, 96.0)">Any change in selection in hierarchical clustering will propagate to the Data Table and Box Plot widgets.</text>
+		<text font-family="Helvetica" font-size="14" id="4" rect="(253.0, 384.0, 150.0, 40.0)">Hierarchically cluster the data.</text>
+		<text font-family="Helvetica" font-size="14" id="5" rect="(81.0, 263.0, 150.0, 54.0)">Compute the distances between the data samples.</text>
 		<arrow end="(104.00000000000003, 133.0)" fill="#C1272D" id="6" start="(52.00000000000002, 100.0)" />
 		<arrow end="(421.0, 154.00000000000003)" fill="#C1272D" id="7" start="(454.0, 102.00000000000003)" />
 		<arrow end="(206.00000000000003, 226.0)" fill="#C1272D" id="8" start="(176.00000000000003, 274.0)" />

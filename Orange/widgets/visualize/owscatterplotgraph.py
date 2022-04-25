@@ -4,13 +4,12 @@ import warnings
 from xml.sax.saxutils import escape
 from math import log10, floor, ceil
 from datetime import datetime, timezone
-from time import gmtime
 
 import numpy as np
 from AnyQt.QtCore import Qt, QRectF, QSize, QTimer, pyqtSignal as Signal, \
-    QObject
+    QObject, QEvent
 from AnyQt.QtGui import QColor, QPen, QBrush, QPainterPath, QTransform, \
-    QPainter
+    QPainter, QPalette
 from AnyQt.QtWidgets import QApplication, QToolTip, QGraphicsTextItem, \
     QGraphicsRectItem, QGraphicsItemGroup
 
@@ -20,25 +19,16 @@ from pyqtgraph.graphicsItems.LegendItem import LegendItem as PgLegendItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
 from Orange.preprocess.discretize import _time_binnings
-from Orange.widgets.utils import colorpalettes
-from Orange.util import OrangeDeprecationWarning
+from Orange.util import utc_from_timestamp
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from Orange.widgets.utils import classdensity
-from Orange.widgets.utils.plot import OWPalette
+from Orange.widgets.utils import classdensity, colorpalettes
 from Orange.widgets.visualize.utils.customizableplot import Updater, \
     CommonParameterSetter
 from Orange.widgets.visualize.utils.plotutils import (
     HelpEventDelegate as EventDelegate, InteractiveViewBox as ViewBox,
-    PaletteItemSample, SymbolItemSample, AxisItem
+    PaletteItemSample, SymbolItemSample, AxisItem, PlotWidget
 )
-
-with warnings.catch_warnings():
-    # This just loads an obsolete module; proper warning is issued below
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from Orange.widgets.visualize.owscatterplotgraph_obsolete import (
-        OWScatterPlotGraph as OWScatterPlotGraphObs
-    )
 
 SELECTION_WIDTH = 5
 MAX_N_VALID_SIZE_ANIMATE = 1000
@@ -48,20 +38,19 @@ MAX_COLORS = 11
 
 
 class LegendItem(PgLegendItem):
-    def __init__(self, size=None, offset=None, pen=None, brush=None):
+    def __init__(
+            self, size=None, offset=None, pen=None, brush=None,
+    ):
         super().__init__(size, offset)
 
         self.layout.setContentsMargins(5, 5, 5, 5)
         self.layout.setHorizontalSpacing(15)
         self.layout.setColumnAlignment(1, Qt.AlignLeft | Qt.AlignVCenter)
-
-        if pen is None:
-            pen = QPen(QColor(196, 197, 193, 200), 1)
-            pen.setCosmetic(True)
+        if pen is not None:
+            pen = QPen(pen)
+        if brush is not None:
+            brush = QBrush(brush)
         self.__pen = pen
-
-        if brush is None:
-            brush = QBrush(QColor(232, 232, 232, 100))
         self.__brush = brush
 
     def restoreAnchor(self, anchors):
@@ -75,16 +64,17 @@ class LegendItem(PgLegendItem):
 
     # pylint: disable=arguments-differ
     def paint(self, painter, _option, _widget=None):
-        painter.setPen(self.__pen)
-        painter.setBrush(self.__brush)
+        painter.setPen(self.pen())
+        painter.setBrush(self.brush())
         rect = self.contentsRect()
         painter.drawRoundedRect(rect, 2, 2)
 
     def addItem(self, item, name):
         super().addItem(item, name)
-        # Fix-up the label alignment
+        # Fix-up the label alignment, and color
+        color = self.palette().color(QPalette.Text)
         _, label = self.items[-1]
-        label.setText(name, justify="left")
+        label.setText(name, justify="left", color=color)
 
     def clear(self):
         """
@@ -99,6 +89,31 @@ class LegendItem(PgLegendItem):
             label.hide()
 
         self.updateSize()
+
+    def pen(self):
+        if self.__pen is not None:
+            return QPen(self.__pen)
+        else:
+            color = self.palette().color(QPalette.Disabled, QPalette.Text)
+            color.setAlpha(100)
+            pen = QPen(color, 1)
+            pen.setCosmetic(True)
+            return pen
+
+    def brush(self):
+        if self.__brush is not None:
+            return QBrush(self.__brush)
+        else:
+            color = self.palette().color(QPalette.Window)
+            color.setAlpha(150)
+            return QBrush(color)
+
+    def changeEvent(self, event: QEvent):
+        if event.type() == QEvent.PaletteChange:
+            color = self.palette().color(QPalette.Text)
+            for _, label in self.items:
+                label.setText(label.text, color=color)
+        super().changeEvent(event)
 
 
 def bound_anchor_pos(corner, parentpos):
@@ -171,22 +186,6 @@ class DiscretizedScale:
 
     def get_bins(self):
         return self.offset + self.width * np.arange(self.bins + 1)
-
-
-class InteractiveViewBox(ViewBox):
-    def __init__(self, graph, enable_menu=False):
-        super().__init__(graph, enable_menu)
-        warnings.warn("InteractiveViewBox class has been deprecated since "
-                      "3.17. Use Orange.widgets.visualize.utils.plotutils."
-                      "InteractiveViewBox instead.", OrangeDeprecationWarning)
-
-
-class OWScatterPlotGraph(OWScatterPlotGraphObs):
-    def __init__(self, scatter_widget, parent=None, _="None", view_box=InteractiveViewBox):
-        super().__init__(scatter_widget, parent=parent, _=_, view_box=view_box)
-        warnings.warn("OWScatterPlotGraph class has been deprecated since "
-                      "3.17. Use OWScatterPlotBase instead.",
-                      OrangeDeprecationWarning)
 
 
 class ScatterPlotItem(pg.ScatterPlotItem):
@@ -336,8 +335,8 @@ class AxisItem(AxisItem):
                      datetime.min.replace(tzinfo=timezone.utc).timestamp() + 1)
         maxVal = min(maxVal,
                      datetime.max.replace(tzinfo=timezone.utc).timestamp() - 1)
-        mn, mx = gmtime(minVal), gmtime(maxVal)
-
+        mn = utc_from_timestamp(minVal).timetuple()
+        mx = utc_from_timestamp(maxVal).timetuple()
         try:
             bins = _time_binnings(mn, mx, 6, 30)[-1]
         except (IndexError, ValueError):
@@ -367,7 +366,16 @@ class AxisItem(AxisItem):
         elif spacing >= 3600 * 24:
             fmt = "%Y %b %d"
         elif spacing >= 3600:
-            fmt = "%d %Hh"
+            min_day = max_day = 1
+            if len(values) > 0:
+                min_day = datetime.fromtimestamp(
+                    min(values), tz=timezone.utc).day
+                max_day = datetime.fromtimestamp(
+                    max(values), tz=timezone.utc).day
+            if min_day == max_day:
+                fmt = "%Hh"
+            else:
+                fmt = "%d %Hh"
         elif spacing >= 60:
             fmt = "%H:%M"
         elif spacing >= 1:
@@ -375,10 +383,7 @@ class AxisItem(AxisItem):
         else:
             fmt = '%S.%f'
 
-        # if timezone is not set, then local timezone is used
-        # which cause exceptions for edge cases
-        return [datetime.fromtimestamp(x, tz=timezone.utc).strftime(fmt)
-                for x in values]
+        return [utc_from_timestamp(x).strftime(fmt) for x in values]
 
 
 class ScatterBaseParameterSetter(CommonParameterSetter):
@@ -553,9 +558,7 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
     DarkerValue = 120
     UnknownColor = (168, 50, 168)
 
-    COLOR_NOT_SUBSET = (128, 128, 128, 0)
-    COLOR_SUBSET = (128, 128, 128, 255)
-    COLOR_DEFAULT = (128, 128, 128, 255)
+    COLOR_DEFAULT = (128, 128, 128)
 
     MAX_VISIBLE_LABELS = 500
 
@@ -568,8 +571,10 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
 
         self.view_box = view_box(self)
         _axis = {"left": AxisItem("left"), "bottom": AxisItem("bottom")}
-        self.plot_widget = pg.PlotWidget(viewBox=self.view_box, parent=parent,
-                                         background="w", axisItems=_axis)
+        self.plot_widget = PlotWidget(
+            viewBox=self.view_box, parent=parent, background=None,
+            axisItems=_axis
+        )
         self.plot_widget.hideAxis("left")
         self.plot_widget.hideAxis("bottom")
         self.plot_widget.getPlotItem().buttonsHidden = True
@@ -625,19 +630,19 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
     def _create_drag_tooltip(self):
         tip_parts = [
             (Qt.ControlModifier,
-             "{}: 添加到组".
+             "{}: Append to group".
              format("Cmd" if sys.platform == "darwin" else "Ctrl")),
-            (Qt.ShiftModifier, "Shift: 添加组"),
-            (Qt.AltModifier, "Alt: 删除")
+            (Qt.ShiftModifier, "Shift: Add group"),
+            (Qt.AltModifier, "Alt: Remove")
         ]
         all_parts = "<center>" + \
                     ", ".join(part for _, part in tip_parts) + \
                     "</center>"
         self.tiptexts = {
-            int(modifier): all_parts.replace(part, "<b>{}</b>".format(part))
+            modifier: all_parts.replace(part, "<b>{}</b>".format(part))
             for modifier, part in tip_parts
         }
-        self.tiptexts[0] = all_parts
+        self.tiptexts[Qt.NoModifier] = all_parts
 
         self.tip_textitem = text = QGraphicsTextItem()
         # Set to the longest text
@@ -646,7 +651,9 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         r = text.boundingRect()
         text.setTextWidth(r.width())
         rect = QGraphicsRectItem(0, 0, r.width() + 8, r.height() + 4)
-        rect.setBrush(QColor(224, 224, 224, 212))
+        color = self.plot_widget.palette().color(QPalette.Disabled, QPalette.Window)
+        color.setAlpha(212)
+        rect.setBrush(color)
         rect.setPen(QPen(Qt.NoPen))
         self.update_tooltip()
 
@@ -656,12 +663,12 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         return tooltip_group
 
     def update_tooltip(self, modifiers=Qt.NoModifier):
-        text = self.tiptexts[0]
+        text = self.tiptexts[Qt.NoModifier]
         for mod in [Qt.ControlModifier,
                     Qt.ShiftModifier,
                     Qt.AltModifier]:
             if modifiers & mod:
-                text = self.tiptexts.get(int(mod))
+                text = self.tiptexts.get(mod)
                 break
         self.tip_textitem.setHtml(text)
 
@@ -952,8 +959,9 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
             widget = self
 
             class Timeout:
-                # 0.5 - np.cos(np.arange(0.17, 1, 0.17) * np.pi) / 2
-                factors = [0.07, 0.26, 0.52, 0.77, 0.95, 1]
+                # 0.5 - np.cos(np.arange(0.17, 1, 0.09) * np.pi) / 2
+                factors = [0.07, 0.16, 0.27, 0.41, 0.55,
+                           0.68, 0.81, 0.9, 0.97, 1]
 
                 def __init__(self):
                     self._counter = 0
@@ -978,7 +986,8 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
                 # If encountered any strange behaviour when updating sizes,
                 # implement it with threads
                 self.begin_resizing.emit()
-                self.timer = QTimer(self.scatterplot_item, interval=50)
+                interval = int(500 / len(Timeout.factors))
+                self.timer = QTimer(self.scatterplot_item, interval=interval)
                 self.timer.timeout.connect(Timeout())
                 self.timer.start()
             else:
@@ -1042,7 +1051,7 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         else:
             return self._get_discrete_colors(c_data, subset)
 
-    def _get_same_colors(self, subset):
+    def _get_same_colors(self, subset, color=COLOR_DEFAULT):
         """
         Return the same pen for all points while the brush color depends
         upon whether the point is in the subset or not
@@ -1055,21 +1064,17 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         Returns:
             (tuple): a list of pens and list of brushes
         """
-        color = self.plot_widget.palette().color(OWPalette.Data)
-        pen = [_make_pen(color, 1.5)] * self.n_shown  # use a single QPen instance
-
-        # Prepare all brushes; we use the first two or the last
-        brushes = []
-        for c in (self.COLOR_SUBSET, self.COLOR_NOT_SUBSET, self.COLOR_DEFAULT):
-            color = QColor(*c)
-            if color.alpha():
-                color.setAlpha(self.alpha_value)
-            brushes.append(QBrush(color))
 
         if subset is not None:
-            brush = np.where(subset, *brushes[:2])
+            colors = [QColor(*color, alpha)
+                      for alpha in self._alpha_for_subsets()]
+            brushes = [QBrush(color) for color in colors]
+            brush = np.where(subset, *brushes)
         else:
-            brush = brushes[-1:] * self.n_shown  # use a single QBrush instance
+            qcolor = QColor(*color, self.alpha_value)
+            brush = np.full(self.n_shown, QBrush(qcolor))
+        qcolor = QColor(*color, self.alpha_value)
+        pen = [_make_pen(qcolor, 1.5)] * self.n_shown
         return pen, brush
 
     def _get_continuous_colors(self, c_data, subset):
@@ -1083,18 +1088,18 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
 
         if np.isnan(c_data).all():
             self.palette = palette
-            return self._get_continuous_nan_colors(len(c_data))
+            return self._get_same_colors(subset, self.palette.nan_color)
 
         self.scale = DiscretizedScale(np.nanmin(c_data), np.nanmax(c_data))
         bins = self.scale.get_bins()
         self.palette = \
             colorpalettes.BinnedContinuousPalette.from_palette(palette, bins)
         colors = self.palette.values_to_colors(c_data)
-        brush = np.hstack(
-            (colors,
-             np.full((len(c_data), 1), self.alpha_value, dtype=np.ubyte)))
-        pen = (colors.astype(dtype=float) * 100 / self.DarkerValue
-               ).astype(np.ubyte)
+        alphas = np.full((len(c_data), 1), self.alpha_value, dtype=np.ubyte)
+        brush = np.hstack((colors, alphas))
+        pen = np.hstack(
+            ((colors.astype(dtype=float) * 100 / self.DarkerValue).astype(np.ubyte),
+             alphas))
 
         # Reuse pens and brushes with the same colors because PyQtGraph then
         # builds smaller pixmap atlas, which makes the drawing faster
@@ -1110,25 +1115,19 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         def create_brush(col):
             return QBrush(QColor(*col))
 
+        if subset is not None:
+            alpha_subset, alpha_unset = self._alpha_for_subsets()
+            brush[:, 3] = 0
+            brush[subset, 3] = alpha_subset
+            pen[:, 3] = alpha_unset
+            brush[subset, 3] = alpha_subset
+
         cached_pens = {}
         pen = [reuse(cached_pens, create_pen, *col) for col in pen.tolist()]
-
-        if subset is not None:
-            brush[:, 3] = 0
-            brush[subset, 3] = self.alpha_value
-
         cached_brushes = {}
         brush = np.array([reuse(cached_brushes, create_brush, *col)
                           for col in brush.tolist()])
 
-        return pen, brush
-
-    def _get_continuous_nan_colors(self, n):
-        nan_color = QColor(*self.palette.nan_color)
-        nan_pen = _make_pen(nan_color.darker(1.2), 1.5)
-        pen = np.full(n, nan_pen)
-        nan_brush = QBrush(nan_color)
-        brush = np.full(n, nan_brush)
         return pen, brush
 
     def _get_discrete_colors(self, c_data, subset):
@@ -1143,19 +1142,43 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         c_data[np.isnan(c_data)] = len(self.palette)
         c_data = c_data.astype(int)
         colors = self.palette.qcolors_w_nan
-        pens = np.array(
-            [_make_pen(col.darker(self.DarkerValue), 1.5) for col in colors])
-        pen = pens[c_data]
-        if self.alpha_value < 255:
+        if subset is None:
             for col in colors:
                 col.setAlpha(self.alpha_value)
-        brushes = np.array([QBrush(col) for col in colors])
-        brush = brushes[c_data]
+            pens = np.array(
+                [_make_pen(col.darker(self.DarkerValue), 1.5)
+                 for col in colors])
+            pen = pens[c_data]
+            brushes = np.array([QBrush(col) for col in colors])
+            brush = brushes[c_data]
+        else:
+            subset_colors = [QColor(col) for col in colors]
+            alpha_subset, alpha_unset = self._alpha_for_subsets()
+            for col in subset_colors:
+                col.setAlpha(alpha_subset)
+            for col in colors:
+                col.setAlpha(alpha_unset)
 
-        if subset is not None:
+            pens, subset_pens = (
+                np.array(
+                    [_make_pen(col.darker(self.DarkerValue), 1.5)
+                     for col in cols])
+                for cols in (colors, subset_colors))
+            pen = np.where(subset, subset_pens[c_data], pens[c_data])
+
+            brushes = np.array([QBrush(col) for col in subset_colors])
+            brush = brushes[c_data]
             black = np.full(len(brush), QBrush(QColor(0, 0, 0, 0)))
             brush = np.where(subset, brush, black)
         return pen, brush
+
+    def _alpha_for_subsets(self):
+        a, b, c = 1.2, -3.2, 3
+        x = self.alpha_value / 255
+        alpha_subset = 31 + int(224 * (a * x ** 3 + b * x ** 2 + c * x))
+        x = 1 - x
+        alpha_unset = int(255 - 224 * (a * x ** 3 + b * x ** 2 + c * x))
+        return alpha_subset, alpha_unset
 
     def update_colors(self):
         """
@@ -1193,8 +1216,9 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
             if c_data is None:
                 return
             visible_c_data = self._filter_visible(c_data)
-            mask = np.bitwise_and(np.isfinite(visible_c_data),
-                                  visible_c_data < MAX_COLORS - 1)
+            mask = np.isfinite(visible_c_data)
+            if not self.master.is_continuous_color():
+                mask = np.bitwise_and(mask, visible_c_data < MAX_COLORS - 1)
             pens = self.scatterplot_item.data['pen']
             rgb_data = [
                 pen.color().getRgb()[:3] if pen is not None else (255, 255, 255)
@@ -1295,12 +1319,12 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
         if self._too_many_labels or mask is None or not np.any(mask):
             return
 
-        black = pg.mkColor(0, 0, 0)
+        foreground = self.plot_widget.palette().color(QPalette.Text)
         labels = labels[mask]
         x = x[mask]
         y = y[mask]
         for label, xp, yp in zip(labels, x, y):
-            ti = TextItem(label, black)
+            ti = TextItem(label, foreground)
             ti.setPos(xp, yp)
             self.plot_widget.addItem(ti)
             self.labels.append(ti)
@@ -1635,11 +1659,3 @@ class OWScatterPlotBase(gui.OWComponent, QObject):
             return True
         else:
             return False
-
-
-class HelpEventDelegate(EventDelegate):
-    def __init__(self, delegate, parent=None):
-        super().__init__(delegate, parent)
-        warnings.warn("HelpEventDelegate class has been deprecated since 3.17."
-                      " Use Orange.widgets.visualize.utils.plotutils."
-                      "HelpEventDelegate instead.", OrangeDeprecationWarning)

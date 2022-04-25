@@ -16,6 +16,28 @@ class Transformation(Reprable):
         :type variable: int or str or :obj:`~Orange.data.Variable`
         """
         self.variable = variable
+        self._create_cached_target_domain()
+
+    def _create_cached_target_domain(self):
+        """ If the same domain is used everytime this allows better caching of
+        domain transformations in from_table"""
+        if self.variable is not None:
+            if self.variable.is_primitive():
+                self._target_domain = Domain([self.variable])
+            else:
+                self._target_domain = Domain([], metas=[self.variable])
+
+    def __getstate__(self):
+        # Do not pickle the cached domain; rather recreate it after unpickling
+        state = self.__dict__.copy()
+        state.pop("_target_domain")
+        return state
+
+    def __setstate__(self, state):
+        # Ensure that cached target domain is created after unpickling.
+        # This solves the problem of unpickling old pickled models.
+        self.__dict__.update(state)
+        self._create_cached_target_domain()
 
     def __call__(self, data):
         """
@@ -25,15 +47,12 @@ class Transformation(Reprable):
         inst = isinstance(data, Instance)
         if inst:
             data = Table.from_list(data.domain, [data])
+        data = data.transform(self._target_domain)
         if self.variable.is_primitive():
-            domain = Domain([self.variable])
-            data = Table.from_table(domain, data)
             col = data.X
         else:
-            domain = Domain([], metas=[self.variable])
-            data = Table.from_table(domain, data)
             col = data.metas
-        if not sp.issparse(col):
+        if not sp.issparse(col) and col.ndim > 1:
             col = col.squeeze(axis=1)
         transformed = self.transform(col)
         if inst:

@@ -28,7 +28,6 @@ from Orange.misc.environ import data_dir
 from Orange.widgets import settings, gui
 from Orange.widgets.utils.signals import Output
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import OWWidget, Msg
 
 
@@ -62,6 +61,7 @@ class UniformHeightDelegate(QStyledItemDelegate):
     """
     Item delegate that always includes the icon size in the size hint.
     """
+
     def sizeHint(self, option, index):
         # type: (QStyleOptionViewItem, QModelIndex) -> QSize
         opt = QStyleOptionViewItem(option)
@@ -144,8 +144,8 @@ class OWDataSets(OWWidget):
     icon = "icons/DataSets.svg"
     priority = 20
     replaces = ["orangecontrib.prototypes.widgets.owdatasets.OWDataSets"]
-    keywords = ["online", "data sets", 'shujuji', 'zaixian']
-    category = "Data"
+    keywords = ["online", "data sets", 'shujuji']
+    category = "数据(Data)"
 
     want_control_area = False
 
@@ -207,7 +207,7 @@ class OWDataSets(OWWidget):
         self.__awaiting_state = None  # type: Optional[_FetchState]
 
         self.filterLineEdit = QLineEdit(
-            textChanged=self.filter, placeholderText="Search for data set ..."
+            textChanged=self.filter, placeholderText=" 寻找数据集..."
         )
         self.mainArea.layout().addWidget(self.filterLineEdit)
 
@@ -243,8 +243,6 @@ class OWDataSets(OWWidget):
         self.splitter.addWidget(self.view)
         self.splitter.addWidget(box)
 
-        self.info.set_output_summary(self.info.NoOutput)
-
         self.splitter.setSizes([300, 200])
         self.splitter.splitterMoved.connect(
             lambda:
@@ -254,7 +252,7 @@ class OWDataSets(OWWidget):
 
         proxy = QSortFilterProxyModel()
         proxy.setFilterKeyColumn(-1)
-        proxy.setFilterCaseSensitivity(False)
+        proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.view.setModel(proxy)
 
         if self.splitter_state:
@@ -278,7 +276,8 @@ class OWDataSets(OWWidget):
         self.view.setItemDelegate(UniformHeightDelegate(self))
         self.view.setItemDelegateForColumn(
             self.Header.islocal,
-            UniformHeightIndicatorDelegate(self, role=Qt.DisplayRole, indicatorSize=4)
+            UniformHeightIndicatorDelegate(
+                self, role=Qt.DisplayRole, indicatorSize=4)
         )
         self.view.setItemDelegateForColumn(
             self.Header.size,
@@ -378,10 +377,13 @@ class OWDataSets(OWWidget):
             self.__on_selection
         )
 
+        scw = self.view.setColumnWidth
+        width = self.view.fontMetrics().width
         self.view.resizeColumnToContents(0)
-        self.view.setColumnWidth(
-            1, min(self.view.sizeHintForColumn(1),
-                   self.view.fontMetrics().width("X" * 37)))
+        scw(self.Header.title, width("X" * 37))
+        scw(self.Header.size, 20 + max(width("888 bytes "), width("9999.9 MB ")))
+        scw(self.Header.instances, 20 + width("100000000"))
+        scw(self.Header.variables, 20 + width("1000000"))
 
         header = self.view.header()
         header.restoreState(self.header_state)
@@ -475,8 +477,9 @@ class OWDataSets(OWWidget):
 
             if not di.islocal:
                 pr = progress()
-                callback = lambda pr=pr: pr.advance.emit()
-                pr.advance.connect(self.__progress_advance, Qt.QueuedConnection)
+                def callback(pr=pr): return pr.advance.emit()
+                pr.advance.connect(self.__progress_advance,
+                                   Qt.QueuedConnection)
 
                 self.progressBarInit()
                 self.setStatusMessage("Fetching...")
@@ -532,8 +535,10 @@ class OWDataSets(OWWidget):
     def onDeleteWidget(self):
         super().onDeleteWidget()
         if self.__awaiting_state is not None:
-            self.__awaiting_state.watcher.done.disconnect(self.__commit_complete)
-            self.__awaiting_state.pb.advance.disconnect(self.__progress_advance)
+            self.__awaiting_state.watcher.done.disconnect(
+                self.__commit_complete)
+            self.__awaiting_state.pb.advance.disconnect(
+                self.__progress_advance)
             self.__awaiting_state = None
 
     @staticmethod
@@ -548,12 +553,9 @@ class OWDataSets(OWWidget):
     def load_and_output(self, path):
         if path is None:
             self.Outputs.data.send(None)
-            self.info.set_output_summary(self.info.NoOutput)
         else:
             data = self.load_data(path)
             self.Outputs.data.send(data)
-            self.info.set_output_summary(len(data),
-                                         format_summary_details(data))
 
         self.current_output = path
         self.__update_cached_state()

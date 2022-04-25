@@ -5,11 +5,10 @@ Concatenate
 Concatenate (append) two or more datasets.
 
 """
-
 from collections import OrderedDict, namedtuple, defaultdict
 from functools import reduce
 from itertools import chain, count
-from typing import List
+from typing import List, Optional, Sequence
 
 import numpy as np
 from AnyQt.QtWidgets import QFormLayout
@@ -21,38 +20,35 @@ from Orange.util import flatten
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.annotated_data import add_columns
-from Orange.widgets.utils.sql import check_sql_input
+from Orange.widgets.utils.sql import check_sql_input, check_sql_input_sequence
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details, \
-    format_multiple_summaries
-from Orange.widgets.widget import Input, Output, Msg
+from Orange.widgets.widget import Input, MultiInput, Output, Msg
 
 
 class OWConcatenate(widget.OWWidget):
     name = "连接(Concatenate)"
     description = "连接（附加）两个或多个数据集。"
+    category = "变换(Transform)"
     priority = 1111
     icon = "icons/Concatenate.svg"
-    keywords = ["join", 'lianjie']
-    category = 'Data'
+    keywords = ["lianjie", "append", "join", "extend"]
 
     class Inputs:
-        primary_data = Input("主要数据(Primary Data)", Orange.data.Table, replaces=['Primary Data'])
-        additional_data = Input("附加数据(Additional Data)",
-                                Orange.data.Table,
-                                multiple=True,
-                                default=True,
-                                replaces=['Additional Data'])
+        primary_data = Input("主要数据(Primary Data)",
+                             Orange.data.Table, replaces=['Primary Data'])
+        additional_data = MultiInput(
+            "附加数据(Additional Data)", Orange.data.Table, default=True, replaces=['Additional Data']
+        )
 
     class Outputs:
         data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     class Error(widget.OWWidget.Error):
-        bow_concatenation = Msg("Inputs must be of the same type.")
+        bow_concatenation = Msg("输入必须是相通类型.")
 
     class Warning(widget.OWWidget.Warning):
         renamed_variables = Msg(
-            "Variables with duplicated names have been renamed.")
+            "重复名称的变量已重命名.")
 
     merge_type: int
     append_source_column: bool
@@ -82,7 +78,8 @@ class OWConcatenate(widget.OWWidget):
     domain_opts = ("所有表中出现变量的并集",
                    "所有表中变量的交集")
 
-    id_roles = ("类别属性(Class attribute)", "属性(Attribute)", "元属性(Meta attribute)")
+    id_roles = ("类别属性(Class attribute)",
+                "属性(Attribute)", "元属性(Meta attribute)")
 
     auto_commit = Setting(True)
 
@@ -90,7 +87,7 @@ class OWConcatenate(widget.OWWidget):
         super().__init__()
 
         self.primary_data = None
-        self.more_data = OrderedDict()
+        self._more_data_input: List[Optional[Orange.data.Table]] = []
 
         self.mergebox = gui.vBox(self.controlArea, "变量合并")
         box = gui.radioButtons(
@@ -108,7 +105,7 @@ class OWConcatenate(widget.OWWidget):
 
         label = gui.widgetLabel(
             box,
-            self.tr("只有在输入类别(class)之间没有冲突时，结果表才会有一个类别(class)。" 
+            self.tr("只有在输入类别(class)之间没有冲突时，结果表才会有一个类别(class)。"
                     ))
         label.setWordWrap(True)
 
@@ -116,15 +113,15 @@ class OWConcatenate(widget.OWWidget):
         gui.checkBox(
             box, self, "ignore_compute_value",
             "将相同名称的变量看做同一个变量",
-            callback=self.apply, stateWhenDisabled=False)
+            callback=self.commit.deferred, stateWhenDisabled=False)
         ###
         box = gui.vBox(
             self.controlArea, self.tr("数据源标识"),
-            addSpace=False)
+        )
 
         cb = gui.checkBox(
             box, self, "append_source_column",
-            self.tr("附加数据源ID"),
+            self.tr("附加数据源IDs"),
             callback=self._source_changed)
 
         ibox = gui.indentedBox(box, sep=gui.checkButtonOffsetHint(cb))
@@ -146,9 +143,6 @@ class OWConcatenate(widget.OWWidget):
             gui.comboBox(ibox, self, "source_column_role", items=self.id_roles,
                          callback=self._source_changed))
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
         ibox.layout().addLayout(form)
         mleft, mtop, mright, _ = ibox.layout().getContentsMargins()
         ibox.layout().setContentsMargins(mleft, mtop, mright, 4)
@@ -156,9 +150,7 @@ class OWConcatenate(widget.OWWidget):
         cb.disables.append(ibox)
         cb.makeConsistent()
 
-        box = gui.auto_apply(self.controlArea, self, "auto_commit", commit=self.apply)
-        box.button.setFixedWidth(180)
-        box.layout().insertStretch(0)
+        gui.auto_apply(self.buttonsArea, self, "auto_commit")
 
     @Inputs.primary_data
     @check_sql_input
@@ -166,60 +158,54 @@ class OWConcatenate(widget.OWWidget):
         self.primary_data = data
 
     @Inputs.additional_data
-    @check_sql_input
-    def set_more_data(self, data=None, sig_id=None):
-        if data is not None:
-            self.more_data[sig_id] = data
-        elif sig_id in self.more_data:
-            del self.more_data[sig_id]
+    @check_sql_input_sequence
+    def set_more_data(self, index, data):
+        self._more_data_input[index] = data
 
-    def _set_input_summary(self):
-        more_data = list(self.more_data.values()) if self.more_data else [None]
-        n_primary = len(self.primary_data) if self.primary_data else 0
-        n_more_data = [len(data) if data else 0 for data in more_data]
+    @Inputs.additional_data.insert
+    @check_sql_input_sequence
+    def insert_more_data(self, index, data):
+        self._more_data_input.insert(index, data)
 
-        summary, details, kwargs = self.info.NoInput, "", {}
-        if self.primary_data or self.more_data:
-            summary = f"{self.info.format_number(n_primary)}, " \
-                    + ", ".join(self.info.format_number(i) for i in n_more_data)
-            details = format_multiple_summaries(
-                [("Primary data", self.primary_data)]
-                + [("", data) for data in more_data]
-            )
-            kwargs = {"format": Qt.RichText}
-        self.info.set_input_summary(summary, details, **kwargs)
+    @Inputs.additional_data.remove
+    def remove_more_data(self, index):
+        self._more_data_input.pop(index)
+
+    @property
+    def more_data(self) -> Sequence[Orange.data.Table]:
+        return [t for t in self._more_data_input if t is not None]
 
     def handleNewSignals(self):
         self.mergebox.setDisabled(self.primary_data is not None)
-        self._set_input_summary()
         if self.incompatible_types():
             self.Error.bow_concatenation()
         else:
             self.Error.bow_concatenation.clear()
-            self.unconditional_apply()
+            self.commit.now()
 
     def incompatible_types(self):
         types_ = set()
         if self.primary_data is not None:
             types_.add(type(self.primary_data))
-        for key in self.more_data:
-            types_.add(type(self.more_data[key]))
+        for table in self.more_data:
+            types_.add(type(table))
         if len(types_) > 1:
             return True
 
         return False
 
-    def apply(self):
+    @gui.deferred
+    def commit(self):
         self.Warning.renamed_variables.clear()
         tables, domain, source_var = [], None, None
         if self.primary_data is not None:
-            tables = [self.primary_data] + list(self.more_data.values())
+            tables = [self.primary_data] + list(self.more_data)
             domain = self.primary_data.domain
         elif self.more_data:
             if self.ignore_compute_value:
                 tables = self._dumb_tables()
             else:
-                tables = self.more_data.values()
+                tables = self.more_data
             domains = [table.domain for table in tables]
             domain = self.merge_domains(domains)
 
@@ -244,11 +230,11 @@ class OWConcatenate(widget.OWWidget):
             if source_var:
                 source_ids = np.array(list(flatten(
                     [i] * len(table) for i, table in enumerate(tables)))).reshape((-1, 1))
-                data[:, source_var] = source_ids
-            self.info.set_output_summary(len(data), format_summary_details(data))
+                parts = [data.Y, data.X, data.metas]
+                with data.unlocked(parts[self.source_column_role]):
+                    data[:, source_var] = source_ids
         else:
             data = None
-            self.info.set_output_summary(self.info.NoOutput)
 
         self.Outputs.data.send(data)
 
@@ -257,7 +243,7 @@ class OWConcatenate(widget.OWWidget):
             return enumerate((domain.attributes, domain.class_vars, domain.metas))
 
         compute_value_groups = defaultdict(set)
-        for table in self.more_data.values():
+        for table in self.more_data:
             for part, part_vars in enumerated_parts(table.domain):
                 for var in part_vars:
                     desc = (var.name, type(var), part)
@@ -267,7 +253,7 @@ class OWConcatenate(widget.OWWidget):
                       if len(compute_values) > 1}
 
         dumb_tables = []
-        for table in self.more_data.values():
+        for table in self.more_data:
             dumb_domain = Orange.data.Domain(
                 *[[var.copy(compute_value=None)
                    if (var.name, type(var), part) in to_dumbify
@@ -287,17 +273,18 @@ class OWConcatenate(widget.OWWidget):
         else:
             self.Error.bow_concatenation.clear()
             if self.primary_data is None and self.more_data:
-                self.apply()
+                self.commit.deferred()
 
     def _source_changed(self):
-        self.apply()
+        self.commit.deferred()
 
     def send_report(self):
         items = OrderedDict()
         if self.primary_data is not None:
             items["Domain"] = "from primary data"
         else:
-            items["Domain"] = self.tr(self.domain_opts[self.merge_type]).lower()
+            items["Domain"] = self.tr(
+                self.domain_opts[self.merge_type]).lower()
         if self.append_source_column:
             items["Source data ID"] = "{} (as {})".format(
                 self.source_attr_name,
@@ -372,12 +359,13 @@ class OWConcatenate(widget.OWWidget):
                     new_attr.add_value(val)
             else:
                 assert desc.template.is_continuous
-                new_attr = attr.copy(number_of_decimals=desc.number_of_decimals)
+                new_attr = attr.copy(
+                    number_of_decimals=desc.number_of_decimals)
             new_attrs.append(new_attr)
         return new_attrs
 
 
 if __name__ == "__main__":  # pragma: no cover
     WidgetPreview(OWConcatenate).run(
-        set_more_data=[(Orange.data.Table("iris"), 0),
-                       (Orange.data.Table("zoo"), 1)])
+        insert_more_data=[(0, Orange.data.Table("iris")),
+                          (1, Orange.data.Table("zoo"))])

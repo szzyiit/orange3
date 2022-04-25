@@ -6,27 +6,38 @@ import numpy as np
 from scipy.stats import norm, rayleigh, beta, gamma, pareto, expon
 
 from AnyQt.QtWidgets import QGraphicsRectItem
-from AnyQt.QtGui import QColor, QPen, QBrush, QPainter, QPalette, QPolygonF
+from AnyQt.QtGui import (
+    QColor,
+    QPen,
+    QBrush,
+    QPainter,
+    QPalette,
+    QPolygonF,
+    QFontMetrics,
+)
 from AnyQt.QtCore import Qt, QRectF, QPointF, pyqtSignal as Signal
 from orangewidget.utils.listview import ListViewSearch
 import pyqtgraph as pg
 
 from Orange.data import Table, DiscreteVariable, ContinuousVariable, Domain
-from Orange.preprocess.discretize import decimal_binnings, time_binnings, \
-    short_time_units
+from Orange.preprocess.discretize import (
+    decimal_binnings,
+    time_binnings,
+    short_time_units,
+)
 from Orange.statistics import distribution, contingency
 from Orange.widgets import gui, settings
-from Orange.widgets.utils.annotated_data import \
-    create_groups_table, create_annotated_table, ANNOTATED_DATA_SIGNAL_NAME, \
-    ANNOTATED_DATA_SIGNAL_Chinese_NAME
+from Orange.widgets.utils.annotated_data import (
+    create_groups_table,
+    create_annotated_table,
+    ANNOTATED_DATA_SIGNAL_NAME,
+)
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
-from Orange.widgets.visualize.utils.plotutils import ElidedLabelsAxis
+from Orange.widgets.visualize.utils.plotutils import ElidedLabelsAxis, PlotWidget
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
 
-from Orange.widgets.visualize.owscatterplotgraph import \
-    LegendItem as SPGLegendItem
+from Orange.widgets.visualize.owscatterplotgraph import LegendItem as SPGLegendItem
 
 
 class ScatterPlotItem(pg.ScatterPlotItem):
@@ -53,8 +64,7 @@ class LegendItem(SPGLegendItem):
         if event.buttons() & Qt.LeftButton:
             event.accept()
             if self.parentItem() is not None:
-                self.autoAnchor(
-                    self.pos() + (event.pos() - event.lastPos()) / 2)
+                self.autoAnchor(self.pos() + (event.pos() - event.lastPos()) / 2)
         else:
             event.ignore()
 
@@ -67,8 +77,9 @@ class LegendItem(SPGLegendItem):
 
 
 class DistributionBarItem(pg.GraphicsObject):
-    def __init__(self, x, width, padding, freqs, colors, stacked, expanded,
-                 tooltip, desc, hidden):
+    def __init__(
+        self, x, width, padding, freqs, colors, stacked, expanded, tooltip, desc, hidden
+    ):
         super().__init__()
         self.x = x
         self.width = width
@@ -137,10 +148,8 @@ class DistributionBarItem(pg.GraphicsObject):
             for i, freq, color in zip(count(), freqs, self.colors):
                 painter.setBrush(QBrush(color))
                 x = sx + wsingle * i
-                painter.drawRect(
-                    QRectF(x, 0, wsingle, freq))
-                polypoints += [QPointF(x, freq),
-                               QPointF(x + wsingle, freq)]
+                painter.drawRect(QRectF(x, 0, wsingle, freq))
+                polypoints += [QPointF(x, freq), QPointF(x + wsingle, freq)]
             polypoints += [QPointF(polypoints[-1].x(), 0), QPointF(sx, 0)]
             self.polygon = QPolygonF(polypoints)
 
@@ -169,7 +178,7 @@ class DistributionBarItem(pg.GraphicsObject):
         return QRectF(self.x, 0, self.width, height)
 
 
-class DistributionWidget(pg.PlotWidget):
+class DistributionWidget(PlotWidget):
     item_clicked = Signal(DistributionBarItem, Qt.KeyboardModifiers, bool)
     blank_clicked = Signal()
     mouse_released = Signal()
@@ -215,25 +224,38 @@ class DistributionWidget(pg.PlotWidget):
 class AshCurve:
     @staticmethod
     def fit(a):
-        return (a, )
+        return (a,)
 
     @staticmethod
     def pdf(x, a, sigma=1, weights=None):
         hist, _ = np.histogram(a, x, weights=weights)
         kernel_x = np.arange(len(x)) - len(hist) / 2
-        kernel = 1 / (np.sqrt(2 * np.pi)) * np.exp(-(kernel_x * sigma) ** 2 / 2)
+        kernel = 1 / (np.sqrt(2 * np.pi)) * np.exp(-((kernel_x * sigma) ** 2) / 2)
         ash = np.convolve(hist, kernel, mode="same")
         ash /= ash.sum()
         return ash
 
 
 class ElidedAxisNoUnits(ElidedLabelsAxis):
-    def __init__(self, orientation, pen=None, linkView=None, parent=None,
-                 maxTickLength=-5, showValues=True):
+    def __init__(
+        self,
+        orientation,
+        pen=None,
+        linkView=None,
+        parent=None,
+        maxTickLength=-5,
+        showValues=True,
+    ):
         self.show_unit = False
         self.tick_dict = {}
-        super().__init__(orientation, pen=pen, linkView=linkView, parent=parent,
-                         maxTickLength=maxTickLength, showValues=showValues)
+        super().__init__(
+            orientation,
+            pen=pen,
+            linkView=linkView,
+            parent=parent,
+            maxTickLength=maxTickLength,
+            showValues=showValues,
+        )
 
     def setShowUnit(self, show_unit):
         self.show_unit = show_unit
@@ -242,7 +264,7 @@ class ElidedAxisNoUnits(ElidedLabelsAxis):
         if self.show_unit:
             return super().labelString()
 
-        style = ';'.join(f"{k}: {v}" for k, v in self.labelStyle.items())
+        style = ";".join(f"{k}: {v}" for k, v in self.labelStyle.items())
         return f"<span style='{style}'>{self.labelText}</span>"
 
 
@@ -251,22 +273,24 @@ class OWDistributions(OWWidget):
     description = "在图形中显示数据特征的值分布。"
     icon = "icons/Distribution.svg"
     priority = 120
-    keywords = ["histogram", 'fenbu', 'zhifangtu']
-    category = 'visualize'
+    keywords = ["histogram", "fenbu", "zhifangtu"]
+    category = "可视化(Visualize)"
 
     class Inputs:
-        data = Input("数据(Data)", Table, doc="Set the input dataset", replaces=['Data'])
+        data = Input("数据(Data)", Table, doc="Set the input dataset", replaces=["Data"])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output(ANNOTATED_DATA_SIGNAL_Chinese_NAME, Table, replaces=['Data'])
-        histogram_data = Output("直方图数据(Histogram Data)", Table, replaces=['Histogram Data'])
+        selected_data = Output(
+            "选定的数据(Selected Data)", Table, default=True, replaces=["Selected Data"]
+        )
+        annotated_data = Output("数据(Data)", Table, replaces=["Data"])
+        histogram_data = Output(
+            "直方图数据(Histogram Data)", Table, replaces=["Histogram Data"]
+        )
 
     class Error(OWWidget.Error):
-        no_defined_values_var = \
-            Msg("Variable '{}' does not have any defined values")
-        no_defined_values_pair = \
-            Msg("No data instances with '{}' and '{}' defined")
+        no_defined_values_var = Msg("Variable '{}' does not have any defined values")
+        no_defined_values_pair = Msg("No data instances with '{}' and '{}' defined")
 
     class Warning(OWWidget.Warning):
         ignored_nans = Msg("Data instances with missing values are ignored")
@@ -293,13 +317,12 @@ class OWDistributions(OWWidget):
     Fitters = (
         ("None", None, (), ()),
         ("正态分布", norm, ("loc", "scale"), ("μ", "σ")),
-        ("Beta", beta, ("a", "b", "loc", "scale"),
-         ("α", "β", "-loc", "-scale")),
+        ("Beta", beta, ("a", "b", "loc", "scale"), ("α", "β", "-loc", "-scale")),
         ("Gamma", gamma, ("a", "loc", "scale"), ("α", "β", "-loc", "-scale")),
         ("Rayleigh", rayleigh, ("loc", "scale"), ("-loc", "σ")),
         ("Pareto", pareto, ("b", "loc", "scale"), ("α", "-loc", "-scale")),
         ("指数分布(Exponential)", expon, ("loc", "scale"), ("-loc", "λ")),
-        ("核密度(Kernel density)", AshCurve, ("a",), ("",))
+        ("核密度(Kernel density)", AshCurve, ("a",), ("",)),
     )
 
     DragNone, DragAdd, DragRemove = range(3)
@@ -319,61 +342,101 @@ class OWDistributions(OWWidget):
         self._user_var_bins = {}
 
         varview = gui.listView(
-            self.controlArea, self, "var", box="变量",
-            model=DomainModel(valid_types=DomainModel.PRIMITIVE,
-                              separators=False),
+            self.controlArea,
+            self,
+            "var",
+            box="变量",
+            model=DomainModel(valid_types=DomainModel.PRIMITIVE, separators=False),
             callback=self._on_var_changed,
-            viewType=ListViewSearch
+            viewType=ListViewSearch,
         )
         gui.checkBox(
-            varview.box, self, "sort_by_freq", "按频率对类别进行排序",
-            callback=self._on_sort_by_freq, stateWhenDisabled=False)
+            varview.box,
+            self,
+            "sort_by_freq",
+            "按频率对类别进行排序",
+            callback=self._on_sort_by_freq,
+            stateWhenDisabled=False,
+        )
 
         box = self.continuous_box = gui.vBox(self.controlArea, "分布")
+        gui.comboBox(
+            box,
+            self,
+            "fitted_distribution",
+            label="拟合分布",
+            orientation=Qt.Horizontal,
+            items=(name[0] for name in self.Fitters),
+            callback=self._on_fitted_dist_changed,
+        )
         slider = gui.hSlider(
-            box, self, "number_of_bins",
-            label="Bin 宽度", orientation=Qt.Horizontal,
-            minValue=0, maxValue=max(1, len(self.binnings) - 1),
-            createLabel=False, callback=self._on_bins_changed)
+            box,
+            self,
+            "number_of_bins",
+            label="Bin 宽度",
+            orientation=Qt.Horizontal,
+            minValue=0,
+            maxValue=max(1, len(self.binnings) - 1),
+            createLabel=False,
+            callback=self._on_bins_changed,
+        )
         self.bin_width_label = gui.widgetLabel(slider.box)
         self.bin_width_label.setFixedWidth(35)
         self.bin_width_label.setAlignment(Qt.AlignRight)
         slider.sliderReleased.connect(self._on_bin_slider_released)
-        gui.comboBox(
-            box, self, "fitted_distribution", label="拟合分布",
-            orientation=Qt.Horizontal, items=(name[0] for name in self.Fitters),
-            callback=self._on_fitted_dist_changed)
-        self.smoothing_box = gui.indentedBox(box, 40)
-        gui.hSlider(
-            self.smoothing_box, self, "kde_smoothing",
-            label="平滑化", orientation=Qt.Horizontal,
-            minValue=2, maxValue=20, callback=self.replot)
+        self.smoothing_box = gui.hSlider(
+            box,
+            self,
+            "kde_smoothing",
+            label="平滑化",
+            orientation=Qt.Horizontal,
+            minValue=2,
+            maxValue=20,
+            callback=self.replot,
+            disabled=True,
+        )
         gui.checkBox(
-            box, self, "hide_bars", "隐藏柱子", stateWhenDisabled=False,
+            box,
+            self,
+            "hide_bars",
+            "隐藏柱子",
+            stateWhenDisabled=False,
             callback=self._on_hide_bars_changed,
-            disabled=not self.fitted_distribution)
+            disabled=not self.fitted_distribution,
+        )
 
         box = gui.vBox(self.controlArea, "列")
         gui.comboBox(
-            box, self, "cvar", label="由...分割", orientation=Qt.Horizontal,
+            box,
+            self,
+            "cvar",
+            label="由...分割",
+            orientation=Qt.Horizontal,
             searchable=True,
-            model=DomainModel(placeholder="(None)",
-                              valid_types=(DiscreteVariable), ),
-            callback=self._on_cvar_changed, contentsLength=18)
+            model=DomainModel(
+                placeholder="(无)",
+                valid_types=(DiscreteVariable),
+            ),
+            callback=self._on_cvar_changed,
+            contentsLength=18,
+        )
+        gui.checkBox(box, self, "stacked_columns", "堆叠列", callback=self.replot)
         gui.checkBox(
-            box, self, "stacked_columns", "堆叠列",
-            callback=self.replot)
+            box,
+            self,
+            "show_probs",
+            "显示概率",
+            callback=self._on_show_probabilities_changed,
+        )
         gui.checkBox(
-            box, self, "show_probs", "显示概率",
-            callback=self._on_show_probabilities_changed)
-        gui.checkBox(
-            box, self, "cumulative_distr", "Show cumulative distribution",
-            callback=self._on_show_cumulative)
+            box,
+            self,
+            "cumulative_distr",
+            "显示累积分布",
+            callback=self._on_show_cumulative,
+        )
 
-        gui.auto_apply(self.controlArea, self, commit=self.apply)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        gui.auto_apply(self.buttonsArea, self, commit=self.apply)
 
         self._set_smoothing_visibility()
         self._setup_plots()
@@ -393,10 +456,13 @@ class OWDistributions(OWWidget):
         self.plotview.blank_clicked.connect(self._on_blank_clicked)
         self.plotview.mouse_released.connect(self._on_end_selecting)
         self.plotview.setRenderHint(QPainter.Antialiasing)
-        self.mainArea.layout().addWidget(self.plotview)
+        box = gui.vBox(self.mainArea, box=True, margin=0)
+        box.layout().addWidget(self.plotview)
         self.ploti = pg.PlotItem(
-            enableMenu=False, enableMouse=False,
-            axisItems={"bottom": ElidedAxisNoUnits("bottom")})
+            enableMenu=False,
+            enableMouse=False,
+            axisItems={"bottom": ElidedAxisNoUnits("bottom")},
+        )
         self.plot = self.ploti.vb
         self.plot.setMouseEnabled(False, False)
         self.ploti.hideButtons()
@@ -439,9 +505,6 @@ class OWDistributions(OWWidget):
         self.closeContext()
         self.var = self.cvar = None
         self.data = data
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
         domain = self.data.domain if self.data else None
         varmodel = self.controls.var.model()
         cvarmodel = self.controls.cvar.model()
@@ -457,27 +520,27 @@ class OWDistributions(OWWidget):
         self.set_valid_data()
         self.recompute_binnings()
         self.replot()
-        self.apply()
+        self.apply.now()
 
     def _on_var_changed(self):
         self.reset_select()
         self.set_valid_data()
         self.recompute_binnings()
         self.replot()
-        self.apply()
+        self.apply.deferred()
 
     def _on_cvar_changed(self):
         self.set_valid_data()
         self.replot()
-        self.apply()
+        self.apply.deferred()
 
     def _on_show_cumulative(self):
         self.replot()
-        self.apply()
+        self.apply.deferred()
 
     def _on_sort_by_freq(self):
         self.replot()
-        self.apply()
+        self.apply.deferred()
 
     def _on_bins_changed(self):
         self.reset_select()
@@ -488,7 +551,7 @@ class OWDistributions(OWWidget):
 
     def _on_bin_slider_released(self):
         self._user_var_bins[self.var] = self.number_of_bins
-        self.apply()
+        self.apply.deferred()
 
     def _on_fitted_dist_changed(self):
         self.controls.hide_bars.setDisabled(not self.fitted_distribution)
@@ -502,27 +565,30 @@ class OWDistributions(OWWidget):
         self.plot.update()
 
     def _set_smoothing_visibility(self):
-        self.smoothing_box.setVisible(
-            self.Fitters[self.fitted_distribution][1] is AshCurve)
+        self.smoothing_box.setDisabled(
+            self.Fitters[self.fitted_distribution][1] is not AshCurve
+        )
 
     def _set_bin_width_slider_label(self):
         if self.number_of_bins < len(self.binnings):
-            text = reduce(
-                lambda s, rep: s.replace(*rep),
-                short_time_units.items(),
-                self.binnings[self.number_of_bins].width_label)
+            text = self._short_text(self.binnings[self.number_of_bins].width_label)
         else:
             text = ""
         self.bin_width_label.setText(text)
 
+    @staticmethod
+    def _short_text(label):
+        return reduce(lambda s, rep: s.replace(*rep), short_time_units.items(), label)
+
     def _on_show_probabilities_changed(self):
         label = self.controls.fitted_distribution.label
         if self.show_probs:
-            label.setText("拟合概率")
+            label.setText("Fitted probability")
             label.setToolTip(
-                "Chosen distribution is used to compute Bayesian probabilities")
+                "Chosen distribution is used to compute Bayesian probabilities"
+            )
         else:
-            label.setText("拟合分布")
+            label.setText("Fitted distribution")
             label.setToolTip("")
         self.replot()
 
@@ -587,7 +653,8 @@ class OWDistributions(OWWidget):
         leftaxis = self.ploti.getAxis("left")
         if self.show_probs and self.cvar:
             leftaxis.setLabel(
-                f"Probability of '{self.cvar.name}' at given '{self.var.name}'")
+                f"Probability of '{self.cvar.name}' at given '{self.var.name}'"
+            )
         else:
             leftaxis.setLabel("Frequency")
         leftaxis.resizeEvent()
@@ -614,11 +681,22 @@ class OWDistributions(OWWidget):
                 self._cont_plot()
         self.plot.autoRange()
 
-    def _add_bar(self, x, width, padding, freqs, colors, stacked, expanded,
-                 tooltip, desc, hidden=False):
+    def _add_bar(
+        self,
+        x,
+        width,
+        padding,
+        freqs,
+        colors,
+        stacked,
+        expanded,
+        tooltip,
+        desc,
+        hidden=False,
+    ):
         item = DistributionBarItem(
-            x, width, padding, freqs, colors, stacked, expanded, tooltip,
-            desc, hidden)
+            x, width, padding, freqs, colors, stacked, expanded, tooltip, desc, hidden
+        )
         self.plot.addItem(item)
         self.bar_items.append(item)
 
@@ -636,13 +714,22 @@ class OWDistributions(OWWidget):
 
         colors = [QColor(0, 128, 255)]
         for i, freq, desc in zip(count(), dist[order], ordered_values):
-            tooltip = \
-                "<p style='white-space:pre;'>" \
-                f"<b>{escape(desc)}</b>: {int(freq)} " \
+            tooltip = (
+                "<p style='white-space:pre;'>"
+                f"<b>{escape(desc)}</b>: {int(freq)} "
                 f"({100 * freq / len(self.valid_data):.2f} %) "
+            )
             self._add_bar(
-                i - 0.5, 1, 0.1, [freq], colors,
-                stacked=False, expanded=False, tooltip=tooltip, desc=desc)
+                i - 0.5,
+                1,
+                0.1,
+                [freq],
+                colors,
+                stacked=False,
+                expanded=False,
+                tooltip=tooltip,
+                desc=desc,
+            )
 
     def _disc_split_plot(self):
         var = self.var
@@ -661,11 +748,16 @@ class OWDistributions(OWWidget):
         total = len(self.data)
         for i, freqs, desc in zip(count(), conts[order], ordered_values):
             self._add_bar(
-                i - 0.5, 1, 0.1, freqs, gcolors,
-                stacked=self.stacked_columns, expanded=self.show_probs,
-                tooltip=self._split_tooltip(
-                    desc, np.sum(freqs), total, gvalues, freqs),
-                desc=desc)
+                i - 0.5,
+                1,
+                0.1,
+                freqs,
+                gcolors,
+                stacked=self.stacked_columns,
+                expanded=self.show_probs,
+                tooltip=self._split_tooltip(desc, np.sum(freqs), total, gvalues, freqs),
+                desc=desc,
+            )
 
     def _cont_plot(self):
         self._set_cont_ticks()
@@ -685,21 +777,29 @@ class OWDistributions(OWWidget):
         for i, (x0, x1), freq in zip(count(), zip(x, x[1:]), y):
             tot_freq += freq
             desc = self.str_int(x0, x1, not i, i == lasti, unique)
-            tooltip = \
-                "<p style='white-space:pre;'>" \
-                f"<b>{escape(desc)}</b>: " \
+            tooltip = (
+                "<p style='white-space:pre;'>"
+                f"<b>{escape(desc)}</b>: "
                 f"{freq} ({100 * freq / total:.2f} %)</p>"
+            )
             bar_width = width if unique else x1 - x0
             self._add_bar(
-                x0 + xoff, bar_width, 0,
+                x0 + xoff,
+                bar_width,
+                0,
                 [tot_freq if self.cumulative_distr else freq],
-                colors, stacked=False, expanded=False, tooltip=tooltip,
-                desc=desc, hidden=self.hide_bars)
+                colors,
+                stacked=False,
+                expanded=False,
+                tooltip=tooltip,
+                desc=desc,
+                hidden=self.hide_bars,
+            )
 
         if self.fitted_distribution:
             self._plot_approximations(
-                x[0], x[-1], [self._fit_approximation(data)],
-                [QColor(0, 0, 0)], (1,))
+                x[0], x[-1], [self._fit_approximation(data)], [QColor(0, 0, 0)], (1,)
+            )
 
     def _cont_split_plot(self):
         self._set_cont_ticks()
@@ -736,17 +836,24 @@ class OWDistributions(OWWidget):
             desc = self.str_int(x0, x1, not i, i == lasti, unique)
             bar_width = width if unique else x1 - x0
             self._add_bar(
-                x0 + xoff, bar_width, 0 if self.stacked_columns else 0.1,
+                x0 + xoff,
+                bar_width,
+                0 if self.stacked_columns else 0.1,
                 plotfreqs,
-                gcolors, stacked=self.stacked_columns, expanded=self.show_probs,
+                gcolors,
+                stacked=self.stacked_columns,
+                expanded=self.show_probs,
                 hidden=self.hide_bars,
                 tooltip=self._split_tooltip(
-                    desc, np.sum(plotfreqs), total, gvalues, plotfreqs),
-                desc=desc)
+                    desc, np.sum(plotfreqs), total, gvalues, plotfreqs
+                ),
+                desc=desc,
+            )
 
         if fitters:
-            self._plot_approximations(bins[0], bins[-1], fitters, varcolors,
-                                      prior_sizes / len(data))
+            self._plot_approximations(
+                bins[0], bins[-1], fitters, varcolors, prior_sizes / len(data)
+            )
 
     def _set_cont_ticks(self):
         axis = self.ploti.getAxis("bottom")
@@ -757,8 +864,10 @@ class OWDistributions(OWWidget):
             lengths = np.array([len(lab) for lab in labels])
             slengths = set(lengths)
             if len(slengths) == 1:
-                ticks = [list(zip(thresholds[::2], labels[::2])),
-                         list(zip(thresholds[1::2], labels[1::2]))]
+                ticks = [
+                    list(zip(thresholds[::2], labels[::2])),
+                    list(zip(thresholds[1::2], labels[1::2])),
+                ]
             else:
                 ticks = []
                 for length in sorted(slengths, reverse=True):
@@ -775,11 +884,15 @@ class OWDistributions(OWWidget):
 
         def str_params():
             s = join_pars(
-                (sname, val) for sname, val in zip(str_names, fitted)
-                if sname and sname[0] != "-")
+                (sname, val)
+                for sname, val in zip(str_names, fitted)
+                if sname and sname[0] != "-"
+            )
             par = join_pars(
-                (sname[1:], val) for sname, val in zip(str_names, fitted)
-                if sname and sname[0] == "-")
+                (sname[1:], val)
+                for sname, val in zip(str_names, fitted)
+                if sname and sname[0] == "-"
+            )
             if par:
                 s += f" ({par})"
             return s
@@ -814,13 +927,16 @@ class OWDistributions(OWWidget):
                 continue
             if show_probs:
                 y_p = y * prior_prob
-                tot = (y_p + (tots - y) * (1 - prior_prob))
+                tot = y_p + (tots - y) * (1 - prior_prob)
                 tot[tot == 0] = 1
                 y = y_p / tot
             curve = pg.PlotCurveItem(
-                x=x, y=y, fillLevel=0,
+                x=x,
+                y=y,
+                fillLevel=0,
                 pen=pg.mkPen(width=5, color=color),
-                shadowPen=pg.mkPen(width=8, color=color.darker(120)))
+                shadowPen=pg.mkPen(width=8, color=color.darker(120)),
+            )
             plot.addItem(curve)
             self.curve_items.append(curve)
         if not show_probs:
@@ -830,7 +946,7 @@ class OWDistributions(OWWidget):
     def _set_curve_brushes(self):
         for curve in self.curve_items:
             if self.hide_bars:
-                color = curve.opts['pen'].color().lighter(160)
+                color = curve.opts["pen"].color().lighter(160)
                 color.setAlpha(128)
                 curve.setBrush(pg.mkBrush(color))
             else:
@@ -842,22 +958,25 @@ class OWDistributions(OWWidget):
         cs = "white-space:pre; text-align: right;"
         s = f"style='{cs} padding-left: 1em'"
         snp = f"style='{cs}'"
-        return f"<table style='border-collapse: collapse'>" \
-               f"<tr><th {s}>{escape(valname)}:</th>" \
-               f"<td {snp}><b>{int(tot_group)}</b></td>" \
-               "<td/>" \
-               f"<td {s}><b>{100 * tot_group / total:.2f} %</b></td></tr>" + \
-               f"<tr><td/><td/><td {s}>(in group)</td><td {s}>(overall)</td>" \
-               "</tr>" + \
-               "".join(
-                   "<tr>"
-                   f"<th {s}>{value}:</th>"
-                   f"<td {snp}><b>{int(freq)}</b></td>"
-                   f"<td {s}>{100 * freq / div_group:.2f} %</td>"
-                   f"<td {s}>{100 * freq / total:.2f} %</td>"
-                   "</tr>"
-                   for value, freq in zip(gvalues, freqs)) + \
-               "</table>"
+        return (
+            f"<table style='border-collapse: collapse'>"
+            f"<tr><th {s}>{escape(valname)}:</th>"
+            f"<td {snp}><b>{int(tot_group)}</b></td>"
+            "<td/>"
+            f"<td {s}><b>{100 * tot_group / total:.2f} %</b></td></tr>"
+            + f"<tr><td/><td/><td {s}>(in group)</td><td {s}>(overall)</td>"
+            "</tr>"
+            + "".join(
+                "<tr>"
+                f"<th {s}>{value}:</th>"
+                f"<td {snp}><b>{int(freq)}</b></td>"
+                f"<td {s}>{100 * freq / div_group:.2f} %</td>"
+                f"<td {s}>{100 * freq / total:.2f} %</td>"
+                "</tr>"
+                for value, freq in zip(gvalues, freqs)
+            )
+            + "</table>"
+        )
 
     def _display_legend(self):
         assert self.is_valid  # called only from replot, so assumes data is OK
@@ -867,7 +986,8 @@ class OWDistributions(OWWidget):
                 return
             self._legend.addItem(
                 pg.PlotCurveItem(pen=pg.mkPen(width=5, color=0.0)),
-                self.curve_descriptions[0])
+                self.curve_descriptions[0],
+            )
         else:
             cvar_values = self.cvar.values
             colors = [QColor(*col) for col in self.cvar.colors]
@@ -875,7 +995,8 @@ class OWDistributions(OWWidget):
             for color, name, desc in zip(colors, cvar_values, descriptions):
                 self._legend.addItem(
                     ScatterPlotItem(pen=color, brush=color, size=10, shape="s"),
-                    escape(name + (f" ({desc})" if desc else "")))
+                    escape(name + (f" ({desc})" if desc else "")),
+                )
         self._legend.show()
 
     # -----------------------------
@@ -888,12 +1009,21 @@ class OWDistributions(OWWidget):
             if np.any(np.isfinite(column)):
                 if self.var.is_time:
                     self.binnings = time_binnings(column, min_unique=5)
-                    self.bin_width_label.setFixedWidth(45)
                 else:
                     self.binnings = decimal_binnings(
-                        column, min_width=self.min_var_resolution(self.var),
-                        add_unique=10, min_unique=5)
-                    self.bin_width_label.setFixedWidth(35)
+                        column,
+                        min_width=self.min_var_resolution(self.var),
+                        add_unique=10,
+                        min_unique=5,
+                    )
+                fm = QFontMetrics(self.font())
+                width = max(
+                    fm.size(
+                        Qt.TextSingleLine, self._short_text(binning.width_label)
+                    ).width()
+                    for binning in self.binnings
+                )
+                self.bin_width_label.setFixedWidth(width)
                 max_bins = len(self.binnings) - 1
         else:
             self.binnings = []
@@ -901,7 +1031,8 @@ class OWDistributions(OWWidget):
 
         self.controls.number_of_bins.setMaximum(max_bins)
         self.number_of_bins = min(
-            max_bins, self._user_var_bins.get(self.var, self.number_of_bins))
+            max_bins, self._user_var_bins.get(self.var, self.number_of_bins)
+        )
         self._set_bin_width_slider_label()
 
     @staticmethod
@@ -909,7 +1040,7 @@ class OWDistributions(OWWidget):
         # pylint: disable=unidiomatic-typecheck
         if type(var) is not ContinuousVariable:
             return 0
-        return 10 ** -var.number_of_decimals
+        return 10**-var.number_of_decimals
 
     def str_int(self, x0, x1, first, last, unique=False):
         var = self.var
@@ -992,7 +1123,7 @@ class OWDistributions(OWWidget):
         self.show_selection()
 
     def _on_end_selecting(self):
-        self.apply()
+        self.apply.deferred()
 
     def show_selection(self):
         self.plot_mark.clear()
@@ -1015,13 +1146,15 @@ class OWDistributions(OWWidget):
             item.setBrush(brush)
             if self.var.is_continuous:
                 valname = self.str_int(
-                    x0, x1, not left_idx, right_idx == len(self.bar_items) - 1)
+                    x0, x1, not left_idx, right_idx == len(self.bar_items) - 1
+                )
                 inside = sum(np.sum(self.bar_items[i].freqs) for i in group)
                 total = len(self.valid_data)
                 item.setToolTip(
                     "<p style='white-space:pre;'>"
                     f"<b>{escape(valname)}</b>: "
-                    f"{inside} ({100 * inside / total:.2f} %)")
+                    f"{inside} ({100 * inside / total:.2f} %)"
+                )
             self.plot_mark.addItem(item)
 
     def _determine_padding(self, left_idx, right_idx):
@@ -1031,7 +1164,7 @@ class OWDistributions(OWWidget):
         if len(self.bar_items) == 1:
             return 6, 6
         if left_idx == 0 and right_idx == len(self.bar_items) - 1:
-            return (_padding(0), ) * 2
+            return (_padding(0),) * 2
 
         if left_idx > 0:
             left_pad = _padding(left_idx - 1)
@@ -1044,9 +1177,12 @@ class OWDistributions(OWWidget):
         return left_pad, right_pad
 
     def grouped_selection(self):
-        return [[g[1] for g in group]
-                for _, group in groupby(enumerate(sorted(self.selection)),
-                                        key=lambda x: x[1] - x[0])]
+        return [
+            [g[1] for g in group]
+            for _, group in groupby(
+                enumerate(sorted(self.selection)), key=lambda x: x[1] - x[0]
+            )
+        ]
 
     def keyPressEvent(self, e):
         def on_nothing_selected():
@@ -1084,8 +1220,11 @@ class OWDistributions(OWWidget):
                 self.last_click_idx = min(last + 1, len(self.bar_items) - 1)
                 self.selection.add(self.last_click_idx)
 
-        if not self.is_valid or not self.bar_items \
-                or e.key() not in (Qt.Key_Left, Qt.Key_Right):
+        if (
+            not self.is_valid
+            or not self.bar_items
+            or e.key() not in (Qt.Key_Left, Qt.Key_Right)
+        ):
             super().keyPressEvent(e)
             return
 
@@ -1102,17 +1241,17 @@ class OWDistributions(OWWidget):
         if self.selection != prev_selection:
             self.drag_operation = self.DragAdd
             self.show_selection()
-            self.apply()
+            self.apply.deferred()
 
     def keyReleaseEvent(self, ev):
         if ev.key() == Qt.Key_Shift:
             self.key_operation = None
         super().keyReleaseEvent(ev)
 
-
     # -----------------------------
     # Output
 
+    @gui.deferred
     def apply(self):
         data = self.data
         selected_data = annotated_data = histogram_data = None
@@ -1124,18 +1263,15 @@ class OWDistributions(OWWidget):
             selected = np.nonzero(group_indices)[0]
             if selected.size:
                 selected_data = create_groups_table(
-                    data, group_indices,
-                    include_unselected=False, values=values)
+                    data, group_indices, include_unselected=False, values=values
+                )
             annotated_data = create_annotated_table(data, selected)
             if self.var.is_continuous:  # annotate with bins
                 hist_indices, hist_values = self._get_histogram_indices()
                 annotated_data = create_groups_table(
-                    annotated_data, hist_indices, var_name="Bin", values=hist_values)
+                    annotated_data, hist_indices, var_name="Bin", values=hist_values
+                )
             histogram_data = self._get_histogram_table()
-
-        summary = len(selected_data) if selected_data else self.info.NoOutput
-        details = format_summary_details(selected_data) if selected_data else ""
-        self.info.set_output_summary(summary, details)
 
         self.Outputs.selected_data.send(selected_data)
         self.Outputs.annotated_data.send(annotated_data)
@@ -1162,8 +1298,7 @@ class OWDistributions(OWWidget):
                 x1 = maxx
                 group_indices[mask] = group_idx
             # pylint: disable=undefined-loop-variable
-            values.append(
-                self.str_int(x0, x1, not bar_idx, self._is_last_bar(bar_idx)))
+            values.append(self.str_int(x0, x1, not bar_idx, self._is_last_bar(bar_idx)))
         return group_indices, values
 
     def _get_histogram_table(self):
@@ -1188,8 +1323,7 @@ class OWDistributions(OWWidget):
         for bar_idx in range(len(self.bar_items)):
             x0, x1, mask = self._get_cont_baritem_indices(col, bar_idx)
             group_indices[mask] = bar_idx + 1
-            values.append(
-                self.str_int(x0, x1, not bar_idx, self._is_last_bar(bar_idx)))
+            values.append(self.str_int(x0, x1, not bar_idx, self._is_last_bar(bar_idx)))
         return group_indices, values
 
     def _get_cont_baritem_indices(self, col, bar_idx):

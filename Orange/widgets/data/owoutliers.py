@@ -18,7 +18,6 @@ from Orange.widgets.settings import Setting
 from Orange.widgets.utils.concurrent import TaskState, ConcurrentWidgetMixin
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg, Input, Output, OWWidget
 
 
@@ -112,7 +111,7 @@ class CovarianceEditor(ParametersEditor):
 
         ebox = gui.hBox(self.param_box)
         gui.checkBox(ebox, self, "empirical_covariance",
-                     "支持比例(Support fraction:", callback=self.parameter_changed)
+                     "支持比例(Support fraction):", callback=self.parameter_changed)
         gui.doubleSpin(ebox, self, "support_fraction", step=1e-1,
                        minv=0.1, maxv=10, callback=self.parameter_changed)
 
@@ -124,7 +123,7 @@ class CovarianceEditor(ParametersEditor):
 
 class LocalOutlierFactorEditor(ParametersEditor):
     METRICS = ("euclidean", "manhattan", "cosine", "jaccard",
-               "hamming", "minkowski", 'mahalanobis')
+               "hamming", "minkowski")
 
     n_neighbors = Setting(20)
     cont = Setting(10)
@@ -175,7 +174,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
     description = "检测异常值。"
     icon = "icons/Outliers.svg"
     priority = 3000
-    category = "Data"
+    category = "非监督(Unsupervised)"
     keywords = ["inlier", 'yichang']
 
     class Inputs:
@@ -229,10 +228,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
 
         self._init_editors()
 
-        gui.auto_apply(self.controlArea, self, "auto_commit")
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        gui.auto_apply(self.buttonsArea, self, "auto_commit")
 
     def _init_editors(self):
         self.svm_editor = SVMEditor(self)
@@ -244,7 +240,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
         self.editors = (self.svm_editor, self.cov_editor,
                         self.lof_editor, self.isf_editor)
         for editor in self.editors:
-            editor.param_changed.connect(lambda: self.commit())
+            editor.param_changed.connect(self.commit.deferred)
             box.layout().addWidget(editor)
             editor.hide()
 
@@ -252,7 +248,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
 
     def __method_changed(self):
         self.set_current_editor()
-        self.commit()
+        self.commit.deferred()
 
     def set_current_editor(self):
         if self.current_editor:
@@ -266,11 +262,8 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
         self.cancel()
         self.clear_messages()
         self.data = data
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
         self.enable_controls()
-        self.unconditional_commit()
+        self.commit.now()
 
     def enable_controls(self):
         self.method_combo.model().item(self.Covariance).setEnabled(True)
@@ -280,6 +273,7 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
             self.method_combo.model().item(self.Covariance).setEnabled(False)
             self.Warning.disabled_cov()
 
+    @gui.deferred
     def commit(self):
         self.Error.singular_cov.clear()
         self.Error.memory_error.clear()
@@ -296,9 +290,6 @@ class OWOutliers(OWWidget, ConcurrentWidgetMixin):
 
     def on_done(self, result: Results):
         inliers, outliers = result.inliers, result.outliers
-        summary = len(inliers) if inliers else self.info.NoOutput
-        details = format_summary_details(inliers) if inliers else ""
-        self.info.set_output_summary(summary, details)
         self.n_inliers = len(inliers) if inliers else None
         self.n_outliers = len(outliers) if outliers else None
 

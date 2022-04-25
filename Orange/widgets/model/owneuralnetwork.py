@@ -14,6 +14,7 @@ from AnyQt.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 from Orange.data import Table
 from Orange.modelling import NNLearner
 from Orange.widgets import gui
+from Orange.widgets.widget import Msg
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 
@@ -67,7 +68,7 @@ class OWNNLearner(OWBaseLearner):
     icon = "icons/NN.svg"
     priority = 90
     keywords = ["mlp", 'shenjingwangluo']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = NNLearner
 
@@ -82,11 +83,11 @@ class OWNNLearner(OWBaseLearner):
     activation_index = Setting(3)
     solver_index = Setting(2)
     max_iterations = Setting(200)
-    alpha_index = Setting(0)
+    alpha_index = Setting(1)
     replicable = Setting(True)
-    settings_version = 1
+    settings_version = 2
 
-    alphas = list(chain([x / 10000 for x in range(1, 10)],
+    alphas = list(chain([0], [x / 10000 for x in range(1, 10)],
                         [x / 1000 for x in range(1, 10)],
                         [x / 100 for x in range(1, 10)],
                         [x / 10 for x in range(1, 10)],
@@ -95,11 +96,15 @@ class OWNNLearner(OWBaseLearner):
                         range(100, 200, 10),
                         range(100, 1001, 50)))
 
+    class Warning(OWBaseLearner.Warning):
+        no_layers = Msg("ANN without hidden layers is equivalent to logistic "
+                        "regression with worse fitting.\nWe recommend using "
+                        "logistic regression.")
+
     def add_main_layout(self):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         form = QFormLayout()
         form.setFieldGrowthPolicy(form.AllNonFixedFieldsGrow)
-        form.setVerticalSpacing(25)
         form.setLabelAlignment(Qt.AlignLeft)
         gui.widgetBox(self.controlArea, True, orientation=form)
         form.addRow(
@@ -116,7 +121,6 @@ class OWNNLearner(OWBaseLearner):
                 label="Activation:", items=[i for i in self.chinese_act_lbl],
                 callback=self.settings_changed))
 
-        form.addRow(" ", gui.separator(None, 16))
         form.addRow(
             "求解器(Solver):",
             gui.comboBox(
@@ -139,11 +143,10 @@ class OWNNLearner(OWBaseLearner):
                 label="Max iterations:", orientation=Qt.Horizontal,
                 alignment=Qt.AlignRight, callback=self.settings_changed))
 
-        form.addRow(gui.separator(None))
         form.addRow(
             gui.checkBox(
-                None, self, "replicable", label="可重复的训练",
-                callback=self.settings_changed),
+                None, self, "replicable", label="可重复训练",
+                callback=self.settings_changed, attribute=Qt.WA_LayoutUsesWidgetRect)
         )
 
     def set_alpha(self):
@@ -163,7 +166,10 @@ class OWNNLearner(OWBaseLearner):
         self._executor = ThreadExecutor()
 
         # just a test cancel button
-        gui.button(self.apply_button, self, "取消", callback=self.cancel)
+        b = gui.button(self.apply_button, self, "取消",
+                       callback=self.cancel, addToLayout=False)
+        self.apply_button.layout().insertStretch(0, 100)
+        self.apply_button.layout().insertWidget(0, b)
 
     def create_learner(self):
         return self.LEARNER(
@@ -184,10 +190,10 @@ class OWNNLearner(OWBaseLearner):
                 ("Replicable training", self.replicable))
 
     def get_hidden_layers(self):
+        self.Warning.no_layers.clear()
         layers = tuple(map(int, re.findall(r'\d+', self.hidden_layers_input)))
         if not layers:
-            layers = (10,)
-            self.hidden_layers_input = "10,"
+            self.Warning.no_layers()
         return layers
 
     def update_model(self):
@@ -306,6 +312,8 @@ class OWNNLearner(OWBaseLearner):
             if alpha is not None:
                 settings["alpha_index"] = \
                     np.argmin(np.abs(np.array(cls.alphas) - alpha))
+        elif version < 2:
+            settings["alpha_index"] = settings.get("alpha_index", 0) + 1
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -15,7 +15,7 @@ class OWCalibratedLearner(OWBaseLearner):
     icon = "icons/CalibratedLearner.svg"
     priority = 20
     keywords = ["calibration", "threshold", 'jiaozhunqi', 'jiaodui']
-    category = 'model'
+    category = '模型(Model)'
 
     LEARNER = CalibratedLearner
 
@@ -42,7 +42,8 @@ class OWCalibratedLearner(OWBaseLearner):
     threshold = Setting(OptimizeCA)
 
     class Inputs(OWBaseLearner.Inputs):
-        base_learner = Input("基学习器(Base Learner)", Learner, replaces=['Base Learner'])
+        base_learner = Input("基学习器(Base Learner)", Learner,
+                             replaces=['Base Learner'])
 
     def __init__(self):
         super().__init__()
@@ -62,17 +63,18 @@ class OWCalibratedLearner(OWBaseLearner):
     def set_learner(self, learner):
         self.base_learner = learner
         self._set_default_name()
-        self.unconditional_apply()
+        self.learner = self.model = None
 
     def _set_default_name(self):
+
         if self.base_learner is None:
-            self.name = "Calibrated learner"
+            self.set_default_learner_name("")
         else:
-            self.name = " + ".join(part for part in (
+            name = " + ".join(part for part in (
                 self.base_learner.name.title(),
                 self.CalibrationShort[self.calibration],
                 self.ThresholdShort[self.threshold]) if part)
-        self.controls.learner_name.setPlaceholderText(self.name)
+            self.set_default_learner_name(name)
 
     def calibration_options_changed(self):
         self._set_default_name()

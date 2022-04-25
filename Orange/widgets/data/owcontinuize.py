@@ -1,7 +1,6 @@
 from functools import reduce
 from types import SimpleNamespace
 
-from AnyQt.QtCore import Qt
 from AnyQt.QtWidgets import QGridLayout
 
 import Orange.data
@@ -14,15 +13,14 @@ from Orange.widgets import gui, widget
 from Orange.widgets.settings import Setting
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Input, Output
 
 
 class OWContinuize(widget.OWWidget):
     name = "连续化(Continuize)"
-    description = ("将分类属性转换为数值属性，还可以归一化这些值" )
+    description = ("将分类属性转换为数值属性，还可以归一化这些值")
     icon = "icons/Continuize.svg"
-    category = 'Data'
+    category = '数据(Data)'
     keywords = ['lianxu', 'shuzhi']
 
     class Inputs:
@@ -32,7 +30,6 @@ class OWContinuize(widget.OWWidget):
         data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
 
     want_main_area = False
-    buttons_area_orientation = Qt.Vertical
     resizing_enabled = False
 
     Normalize = SimpleNamespace(Leave=0, Standardize=1, Center=2, Scale=3,
@@ -78,33 +75,27 @@ class OWContinuize(widget.OWWidget):
         box = gui.radioButtonsInBox(
             None, self, "multinomial_treatment", box="分类特征",
             btnLabels=[x[0] for x in self.multinomial_treats],
-            callback=self.settings_changed)
+            callback=self.commit.deferred)
         gui.rubber(box)
         layout.addWidget(box, 0, 0, 2, 1)
 
         box = gui.radioButtonsInBox(
-            None, self, "continuous_treatment", box = "数值特征",
+            None, self, "continuous_treatment", box="数值特征",
             btnLabels=[x[0] for x in self.continuous_treats],
-            callback=self.settings_changed)
-        box.layout().addStretch(10)
+            callback=self.commit.deferred)
+        gui.rubber(box)
         layout.addWidget(box, 0, 1, 2, 1)
 
         box = gui.radioButtonsInBox(
             None, self, "class_treatment", box="分类结果",
             btnLabels=[t[0] for t in self.class_treats],
-            callback=self.settings_changed)
-        box.layout().addStretch(10)
-        layout.addWidget(box, 0, 2)
+            callback=self.commit.deferred)
+        gui.rubber(box)
+        layout.addWidget(box, 0, 2, 2, 1)
 
-        ac = gui.auto_apply(None, self, "autosend", box=False)
-        layout.addWidget(ac, 1, 2)
+        gui.auto_apply(self.buttonsArea, self, "autosend")
 
         self.data = None
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
-
-    def settings_changed(self):
-        self.commit()
 
     @Inputs.data
     @check_sql_input
@@ -112,13 +103,9 @@ class OWContinuize(widget.OWWidget):
         self.data = data
         self.enable_normalization()
         if data is None:
-            self.info.set_input_summary(self.info.NoInput)
-            self.info.set_output_summary(self.info.NoOutput)
             self.Outputs.data.send(None)
         else:
-            self.info.set_input_summary(len(data),
-                                        format_summary_details(data))
-            self.unconditional_commit()
+            self.commit.now()
 
     def enable_normalization(self):
         buttons = self.controls.continuous_treatment.buttons
@@ -142,14 +129,13 @@ class OWContinuize(widget.OWWidget):
         )
         return conzer
 
+    @gui.deferred
     def commit(self):
         continuizer = self.constructContinuizer()
         if self.data:
             domain = continuizer(self.data)
             data = self.data.transform(domain)
             self.Outputs.data.send(data)
-            self.info.set_output_summary(len(data),
-                                         format_summary_details(data))
         else:
             self.Outputs.data.send(self.data)  # None or empty data
 
@@ -222,6 +208,7 @@ def continuize_domain(data,
                       continuous_treatment=OWContinuize.Normalize.Leave,
                       class_treatment=Continuize.Leave):
     domain = data.domain
+
     def needs_dist(var, mtreat, ctreat):
         "Does the `var` need a distribution given specified flags"
         if var.is_discrete:
@@ -268,7 +255,8 @@ def continuize_var(var,
                    multinomial_treatment=Continuize.Indicators,
                    continuous_treatment=OWContinuize.Normalize.Leave):
     def continuize_continuous():
-        dist = _ensure_dist(var, data_or_dist) if continuous_treatment != OWContinuize.Normalize.Leave else None
+        dist = _ensure_dist(
+            var, data_or_dist) if continuous_treatment != OWContinuize.Normalize.Leave else None
         treatments = [lambda var, _: var,
                       normalize_by_sd, center_to_mean, divide_by_sd,
                       normalize_to_11, normalize_to_01]

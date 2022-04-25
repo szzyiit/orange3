@@ -34,7 +34,10 @@ def make_variable(cls, compute_value, *args):
     if compute_value is not None:
         return cls(*args, compute_value=compute_value)
     else:
-        # For compatibility with old pickles
+        # For compatibility with old pickles: remove the second arg if it's
+        # bool `compute_value` (args[3]) can't be bool, so this should be safe
+        if len(args) > 2 and isinstance(args[2], bool):
+            args = args[:2] + args[3:]
         return cls(*args)
 
 
@@ -53,7 +56,8 @@ def is_discrete_values(values):
     # the type is numeric
     try:
         isinstance(next(iter(values)), Number) or \
-        [float(v) for _, v in zip(range(min(3, len(values))), values)]
+        [v not in MISSING_VALUES and float(v)
+         for _, v in zip(range(min(3, len(values))), values)]
     except ValueError:
         is_numeric = False
         max_values = int(round(len(values)**.7))
@@ -625,8 +629,7 @@ class DiscreteVariable(Variable):
     presorted_values = []
 
     def __init__(
-            self, name="", values=(), ordered=None, compute_value=None,
-            *, sparse=False
+            self, name="", values=(), compute_value=None, *, sparse=False
     ):
         """ Construct a discrete variable descriptor with the given values. """
         values = tuple(values)  # some people (including me) pass a generator
@@ -636,23 +639,6 @@ class DiscreteVariable(Variable):
         super().__init__(name, compute_value, sparse=sparse)
         self._values = values
         self._value_index = {value: i for i, value in enumerate(values)}
-
-        if ordered is not None:
-            warnings.warn(
-                "ordered is deprecated and does not have effect. It will be "
-                "removed in future versions.",
-                OrangeDeprecationWarning
-            )
-
-    @property
-    def ordered(self):
-        warnings.warn(
-            "ordered is deprecated. It will be removed in future versions.",
-            # DeprecationWarning warning is used instead of OrangeDeprecation
-            # warning otherwise tests fail (__repr__ still asks for ordered)
-            DeprecationWarning
-        )
-        return None
 
     @property
     def values(self):
@@ -884,7 +870,7 @@ class TimeVariable(ContinuousVariable):
 
     If time is specified without a date, Unix epoch is assumed.
 
-    If time is specified wihout an UTC offset, localtime is assumed.
+    If time is specified without an UTC offset, localtime is assumed.
     """
     _all_vars = {}
     TYPE_HEADERS = ('time', 't')
@@ -937,24 +923,114 @@ class TimeVariable(ContinuousVariable):
              r'\d{1,4}(-?\d{2,3})?'
              r')$')
 
+    ADDITIONAL_FORMATS = {
+        "2021-11-25": (("%Y-%m-%d",), 1, 0),
+        "25.11.2021": (("%d.%m.%Y", "%d. %m. %Y"), 1, 0),
+        "25.11.21": (("%d.%m.%y", "%d. %m. %y"), 1, 0),
+        "11/25/2021": (("%m/%d/%Y",), 1, 0),
+        "11/25/21": (("%m/%d/%y",), 1, 0),
+        "20211125": (("%Y%m%d",), 1, 0),
+        # it would be too many options if we also include all time formats with
+        # with lengths up to minutes, up to seconds and up to milliseconds,
+        # joining all tree options under 00:00:00
+        "2021-11-25 00:00:00": (
+            (
+                "%Y-%m-%d %H:%M",
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M:%S.%f",
+            ),
+            1,
+            1,
+        ),
+        "25.11.2021 00:00:00": (
+            (
+                "%d.%m.%Y %H:%M",
+                "%d. %m. %Y %H:%M",
+                "%d.%m.%Y %H:%M:%S",
+                "%d. %m. %Y %H:%M:%S",
+                "%d.%m.%Y %H:%M:%S.%f",
+                "%d. %m. %Y %H:%M:%S.%f",
+            ),
+            1,
+            1,
+        ),
+        "25.11.21 00:00:00": (
+            (
+                "%d.%m.%y %H:%M",
+                "%d. %m. %y %H:%M",
+                "%d.%m.%y %H:%M:%S",
+                "%d. %m. %y %H:%M:%S",
+                "%d.%m.%y %H:%M:%S.%f",
+                "%d. %m. %y %H:%M:%S.%f",
+            ),
+            1,
+            1,
+        ),
+        "11/25/2021 00:00:00": (
+            (
+                "%m/%d/%Y %H:%M",
+                "%m/%d/%Y %H:%M:%S",
+                "%m/%d/%Y %H:%M:%S.%f",
+            ),
+            1,
+            1,
+        ),
+        "11/25/21 00:00:00": (
+            (
+                "%m/%d/%y %H:%M",
+                "%m/%d/%y %H:%M:%S",
+                "%m/%d/%y %H:%M:%S.%f",
+            ),
+            1,
+            1,
+        ),
+        "20211125000000": (("%Y%m%d%H%M", "%Y%m%d%H%M%S", "%Y%m%d%H%M%S.%f"), 1, 1),
+        "00:00:00": (("%H:%M", "%H:%M:%S", "%H:%M:%S.%f"), 0, 1),
+        "000000": (("%H%M", "%H%M%S", "%H%M%S.%f"), 0, 1),
+        "2021": (("%Y",), 1, 0),
+        "11-25": (("%m-%d",), 1, 0),
+        "25.11.": (("%d.%m.", "%d. %m."), 1, 0),
+        "11/25": (("%m/%d",), 1, 0),
+        "1125": (("%m%d",), 1, 0),
+    }
+
     class InvalidDateTimeFormatError(ValueError):
         def __init__(self, date_string):
             super().__init__(
-                "Invalid datetime format '{}'. "
-                "Only ISO 8601 supported.".format(date_string))
+                f"Invalid datetime format '{date_string}'. Only ISO 8601 supported."
+            )
 
     _matches_iso_format = re.compile(REGEX).match
 
-    # UTC offset and associated timezone. If parsed datetime values provide an
-    # offset, it is used for display. If not all values have the same offset,
-    # +0000 (=UTC) timezone is used and utc_offset is set to False.
-    utc_offset = None
-    timezone = timezone.utc
+    # If parsed datetime values provide an offset or timzone, it is used for display.
+    # If not all values have the same offset, +0000 (=UTC) timezone is used
+    _timezone = None
 
     def __init__(self, *args, have_date=0, have_time=0, **kwargs):
         super().__init__(*args, **kwargs)
         self.have_date = have_date
         self.have_time = have_time
+
+    @property
+    def timezone(self):
+        if self._timezone is None or self._timezone == "different timezones":
+            return timezone.utc
+        else:
+            return self._timezone
+
+    @timezone.setter
+    def timezone(self, tz):
+        """
+        Set timezone value:
+        - if self._timezone is None set it to new timezone
+        - if current timezone is different that new indicate that TimeVariable
+          have two date-times with different timezones
+        - if timezones are same keep it
+        """
+        if self._timezone is None:
+            self._timezone = tz
+        elif tz != self.timezone:
+            self._timezone = "different timezones"
 
     def copy(self, compute_value=Variable._CopyComputeValue, *, name=None, **_):
         return super().copy(compute_value=compute_value, name=name,
@@ -1006,7 +1082,9 @@ class TimeVariable(ContinuousVariable):
         """
         if datestr in MISSING_VALUES:
             return Unknown
+
         datestr = datestr.strip().rstrip('Z')
+        datestr = self._tzre_sub(datestr)
 
         if not self._matches_iso_format(datestr):
             try:
@@ -1041,16 +1119,8 @@ class TimeVariable(ContinuousVariable):
         else:
             raise self.InvalidDateTimeFormatError(datestr)
 
-        # Remember UTC offset. If not all parsed values share the same offset,
-        # remember none of it.
         offset = dt.utcoffset()
-        if self.utc_offset is not False:
-            if offset and self.utc_offset is None:
-                self.utc_offset = offset
-                self.timezone = timezone(offset)
-            elif self.utc_offset != offset:
-                self.utc_offset = False
-                self.timezone = timezone.utc
+        self.timezone = timezone(offset) if offset is not None else None
 
         # Convert time to UTC timezone. In dates without timezone,
         # localtime is assumed. See also:

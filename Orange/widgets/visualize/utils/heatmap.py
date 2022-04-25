@@ -19,8 +19,6 @@ from AnyQt.QtWidgets import (
     QGraphicsLayoutItem
 )
 
-import pyqtgraph as pg
-
 from Orange.clustering import hierarchical
 from Orange.clustering.hierarchical import Tree
 from Orange.widgets.utils import apply_all
@@ -32,6 +30,7 @@ from Orange.widgets.utils.image import qimage_from_array
 
 from Orange.widgets.utils.graphicstextlist import TextListWidget
 from Orange.widgets.utils.dendrogram import DendrogramWidget
+from Orange.widgets.visualize.utils.plotutils import AxisItem
 
 
 def leaf_indices(tree: Tree) -> Sequence[int]:
@@ -405,6 +404,7 @@ class HeatmapGridWidget(QGraphicsWidget):
         for i, rowitem in enumerate(parts.rows):
             if rowitem.title:
                 item = QGraphicsSimpleTextItem(rowitem.title, parent=self)
+                item.setBrush(self.palette().text())
                 item.setTransform(item.transform().rotate(-90))
                 item = SimpleLayoutItem(item, parent=grid, anchor=(0, 1),
                                         anchorItem=(0, 0))
@@ -433,10 +433,10 @@ class HeatmapGridWidget(QGraphicsWidget):
 
         for j, colitem in enumerate(parts.columns):
             if colitem.title:
-                item = SimpleLayoutItem(
-                    QGraphicsSimpleTextItem(colitem.title, parent=self),
-                    parent=grid, anchor=(0.5, 0.5), anchorItem=(0.5, 0.5)
-                )
+                item = QGraphicsSimpleTextItem(colitem.title, parent=self)
+                item.setBrush(self.palette().text())
+                item = SimpleLayoutItem(item, parent=grid, anchor=(0.5, 0.5),
+                                        anchorItem=(0.5, 0.5))
                 item.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
                 grid.addItem(item, self.GroupTitleRow, Col0 + 2 * j + 1)
 
@@ -935,6 +935,11 @@ class HeatmapGridWidget(QGraphicsWidget):
             item.setVisible(visible)
             item.setPreferredWidth(0 if not visible else 10)
 
+    def changeEvent(self, event):
+        if event.type() == QEvent.PaletteChange:
+            self.__update_palette()
+        super().changeEvent(event)
+
     def event(self, event):
         # type: (QEvent) -> bool
         rval = super().event(event)
@@ -990,6 +995,12 @@ class HeatmapGridWidget(QGraphicsWidget):
             self.__selection_manager.selection_add(
                 node.value.first, node.value.last - 1, hm,
                 clear=clear, remove=remove, append=append)
+
+    def __update_palette(self):
+        for item in layout_items_recursive(self.layout()):
+            if isinstance(item, SimpleLayoutItem) \
+                    and isinstance(item.item, QGraphicsSimpleTextItem):
+                item.item.setBrush(self.palette().text())
 
     def heatmapAtPos(self, pos: QPointF) -> Optional['GraphicsHeatmapWidget']:
         for hw in chain.from_iterable(self.heatmap_widget_grid):
@@ -1233,7 +1244,7 @@ def remove_item(item: QGraphicsItem) -> None:
         item.setParentItem(None)
 
 
-class _GradientLegendAxisItem(pg.AxisItem):
+class _GradientLegendAxisItem(AxisItem):
     def boundingRect(self):
         br = super().boundingRect()
         if self.orientation in ["top", "bottom"]:
@@ -1243,7 +1254,7 @@ class _GradientLegendAxisItem(pg.AxisItem):
             if font is None:
                 font = self.font()
             fm = QFontMetrics(font)
-            w = fm.width('0.0000000') / 2  # bad, should use _tickValues
+            w = fm.horizontalAdvance('0.0000000') / 2  # bad, should use _tickValues
             geomw = self.geometry().size().width()
             maxw = max(geomw + 2 * w, br.width())
             if br.width() < maxw:
@@ -1334,12 +1345,6 @@ class GradientLegendWidget(QGraphicsWidget):
 
         self.updateGeometry()
 
-    def changeEvent(self, event: QEvent) -> None:
-        if event.type() == QEvent.PaletteChange:
-            pen = QPen(self.palette().color(QPalette.Text))
-            self.__axis.setPen(pen)
-        super().changeEvent(event)
-
 
 class CategoricalColorLegend(QGraphicsWidget):
     def __init__(
@@ -1397,7 +1402,7 @@ class CategoricalColorLegend(QGraphicsWidget):
         assert flow.count() == 0
         font = self.font()
         fm = QFontMetrics(font)
-        size = fm.width("X")
+        size = fm.horizontalAdvance("X")
         headeritem = None
         if title:
             headeritem = QGraphicsSimpleTextItem(title)
@@ -1430,19 +1435,30 @@ class CategoricalColorLegend(QGraphicsWidget):
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.FontChange:
             self._updateFont(self.font())
+        elif event.type() == QEvent.PaletteChange:
+            self._updatePalette()
         super().changeEvent(event)
 
     def _updateFont(self, font):
-        w = QFontMetrics(font).width("X")
-        for item in filter(
-                lambda item: isinstance(item, SimpleLayoutItem),
-                layout_items_recursive(self.__layout)
-        ):
+        w = QFontMetrics(font).horizontalAdvance("X")
+        for item in self.__layoutItems():
             if isinstance(item.item, QGraphicsSimpleTextItem):
                 item.item.setFont(font)
             elif isinstance(item.item, QGraphicsRectItem):
                 item.item.setRect(QRectF(0, 0, w, w))
             item.updateGeometry()
+
+    def _updatePalette(self):
+        palette = self.palette()
+        for item in self.__layoutItems():
+            if isinstance(item.item, QGraphicsSimpleTextItem):
+                item.item.setBrush(palette.brush(QPalette.Text))
+
+    def __layoutItems(self):
+        return filter(
+            lambda item: isinstance(item, SimpleLayoutItem),
+            layout_items_recursive(self.__layout)
+        )
 
 
 def layout_items(layout: QGraphicsLayout) -> Iterable[QGraphicsLayoutItem]:

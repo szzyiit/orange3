@@ -4,7 +4,6 @@ from Orange.data.util import get_unique_names
 
 ANNOTATED_DATA_SIGNAL_NAME = "Data"
 ANNOTATED_DATA_FEATURE_NAME = "Selected"
-ANNOTATED_DATA_SIGNAL_Chinese_NAME = "数据(Data)"
 
 
 def add_columns(domain, attributes=(), class_vars=(), metas=()):
@@ -36,11 +35,14 @@ def _table_with_annotation_column(data, values, column_data, var_name):
     class_vars, metas = data.domain.class_vars, data.domain.metas
     if not data.domain.class_vars:
         class_vars += (var, )
+        column_data = column_data.reshape((len(data), ))
     else:
         metas += (var, )
+        column_data = column_data.reshape((len(data), 1))
     domain = Domain(data.domain.attributes, class_vars, metas)
     table = data.transform(domain)
-    table[:, var] = column_data.reshape((len(data), 1))
+    with table.unlocked(table.Y if not data.domain.class_vars else table.metas):
+        table[:, var] = column_data
     return table
 
 

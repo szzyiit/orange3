@@ -2,6 +2,7 @@
 Orange Canvas Configuration
 
 """
+import random
 import uuid
 import warnings
 
@@ -15,7 +16,15 @@ from typing import Dict, Any, Optional, Iterable, List
 import pkg_resources
 import requests
 
-from AnyQt.QtGui import QPainter, QFont, QFontMetrics, QColor, QPixmap, QIcon
+from AnyQt.QtGui import (
+    QPainter,
+    QFont,
+    QFontMetrics,
+    QColor,
+    QPixmap,
+    QIcon,
+    QGuiApplication,
+)
 from AnyQt.QtCore import Qt, QPoint, QRect, QSettings
 
 from orangecanvas import config as occonfig
@@ -35,28 +44,25 @@ WIDGETS_ENTRY = "orange.widgets"
 
 spec = [
     ("startup/check-updates", bool, True, "Check for updates"),
-
     ("startup/launch-count", int, 0, ""),
-
     ("reporting/machine-id", str, str(uuid.uuid4()), ""),
-
     ("reporting/send-statistics", bool, False, ""),
-
     ("reporting/permission-requested", bool, False, ""),
-
     ("notifications/check-notifications", bool, True, "Check for notifications"),
-
-    ("notifications/announcements", bool, True,
-     "Show notifications about Biolab announcements"),
-
-    ("notifications/blog", bool, True,
-     "Show notifications about blog posts"),
-
-    ("notifications/new-features", bool, True,
-     "Show notifications about new features"),
-
-    ("notifications/displayed", str, 'set()',
-     "Serialized set of notification IDs which have already been displayed")
+    (
+        "notifications/announcements",
+        bool,
+        True,
+        "Show notifications about Biolab announcements",
+    ),
+    ("notifications/blog", bool, True, "Show notifications about blog posts"),
+    ("notifications/new-features", bool, True, "Show notifications about new features"),
+    (
+        "notifications/displayed",
+        str,
+        "set()",
+        "Serialized set of notification IDs which have already been displayed",
+    ),
 ]
 
 spec = [config_slot(*t) for t in spec]
@@ -66,12 +72,15 @@ class Config(config.Config):
     """
     Orange application configuration
     """
+
     OrganizationDomain = "biolab.si"
     ApplicationName = "Orange"
     ApplicationVersion = Orange.__version__
+    AppUserModelID = "Biolab.Orange"  # AppUserModelID for windows task bar
 
     def init(self):
         super().init()
+        QGuiApplication.setApplicationDisplayName(self.ApplicationName)
         widget_settings_dir_cfg = environ.get_path("widget_settings_dir", "")
         if widget_settings_dir_cfg:
             # widget_settings_dir is configured via config file
@@ -83,8 +92,7 @@ class Config(config.Config):
         if canvas_settings_dir_cfg:
             # canvas_settings_dir is configured via config file
             QSettings.setPath(
-                QSettings.IniFormat, QSettings.UserScope,
-                canvas_settings_dir_cfg
+                QSettings.IniFormat, QSettings.UserScope, canvas_settings_dir_cfg
             )
 
         for t in spec:
@@ -95,15 +103,15 @@ class Config(config.Config):
         """
         Return the main application icon.
         """
-        path = pkg_resources.resource_filename(
-            __name__, "icons/orange-canvas.svg"
-        )
+        path = pkg_resources.resource_filename(__name__, "icons/orange-256.png")
         return QIcon(path)
 
     @staticmethod
     def splash_screen():
+        splash_n = random.randint(1, 3)
         path = pkg_resources.resource_filename(
-            __name__, "icons/orange-splash-screen.png")
+            __name__, f"icons/orange-splash-screen-{splash_n:02}.png"
+        )
         pm = QPixmap(path)
 
         version = Config.ApplicationVersion
@@ -111,24 +119,21 @@ class Config(config.Config):
             version_parsed = LooseVersion(version)
             version_comp = version_parsed.version
             version = ".".join(map(str, version_comp[:2]))
-        size = 21 if len(version) < 5 else 16
+        size = 13
         font = QFont("Helvetica")
         font.setPixelSize(size)
-        font.setBold(True)
-        font.setItalic(True)
-        font.setLetterSpacing(QFont.AbsoluteSpacing, 2)
         metrics = QFontMetrics(font)
-        br = metrics.boundingRect(version).adjusted(-5, 0, 5, 0)
-        br.moveCenter(QPoint(436, 224))
+        br = metrics.boundingRect(version)
+        br.moveTopLeft(QPoint(171, 438))
 
         p = QPainter(pm)
         p.setRenderHint(QPainter.Antialiasing)
         p.setRenderHint(QPainter.TextAntialiasing)
         p.setFont(font)
-        p.setPen(QColor("#231F20"))
-        p.drawText(br, Qt.AlignCenter, version)
+        p.setPen(QColor("#000000"))
+        p.drawText(br, Qt.AlignLeft, version)
         p.end()
-        return pm, QRect(88, 193, 200, 20)
+        return pm, QRect(23, 24, 200, 20)
 
     @staticmethod
     def widgets_entry_points():
@@ -140,8 +145,7 @@ class Config(config.Config):
         # yields them in unspecified order.
         all_eps = sorted(
             pkg_resources.iter_entry_points(WIDGETS_ENTRY),
-            key=lambda ep:
-                0 if ep.dist.project_name.lower() == "orange3" else 1
+            key=lambda ep: 0 if ep.dist.project_name.lower() == "orange3" else 1,
         )
         return iter(all_eps)
 
@@ -178,21 +182,19 @@ class Config(config.Config):
         """
         Return an iterator over the entry points yielding 'Example Workflows'
         """
-        # `iter_entry_points` yields them in unspecified order, so we insert
-        # our first
-        try:
-            default_ep = pkg_resources.EntryPoint(
-                "Orange3", "Orange.canvas.workflows",
-                dist=pkg_resources.get_distribution("Orange3-zh"))
-        except pkg_resources.DistributionNotFound:
-            default_ep = pkg_resources.EntryPoint(
-                "Orange3", "Orange.canvas.workflows",
-                dist=pkg_resources.get_distribution("Orange3"))
-
-        return itertools.chain(
-            (default_ep,),
-            pkg_resources.iter_entry_points("orange.widgets.tutorials")
+        # `iter_entry_points` yields them in unspecified order, so we order
+        # them by name. The default is at the beginning, unless another
+        # entrypoint precedes it alphabetically (e.g. starting with '!').
+        default_ep = pkg_resources.EntryPoint(
+            "000-Orange3",
+            "Orange.canvas.workflows",
+            dist=pkg_resources.get_distribution("Orange3-zh"),
         )
+
+        all_ep = list(pkg_resources.iter_entry_points("orange.widgets.tutorials"))
+        all_ep.append(default_ep)
+        all_ep.sort(key=lambda x: x.name)
+        return iter(all_ep)
 
     APPLICATION_URLS = {
         #: Submit a bug report action in the Help menu
@@ -203,8 +205,7 @@ class Config(config.Config):
         #: but specific for 'Visual Programing' only
         "Documentation": "https://chengxianzn.one/docs/",
         #: YouTube tutorials
-        "Screencasts":
-            "https://space.bilibili.com/13055460/channel/detail?cid=97474",
+        "Screencasts": "https://space.bilibili.com/13055460/channel/detail?cid=97474",
         #: Used for 'Submit Feedback' action in the help menu
         "Feedback": "https://wj.qq.com/s2/5193545/072f/",
         "guanzhu": "https://chengxianzn.one/",
@@ -269,9 +270,11 @@ def widget_settings_dir():
     """
     warnings.warn(
         f"'{__name__}.widget_settings_dir' is deprecated.",
-        DeprecationWarning, stacklevel=2
+        DeprecationWarning,
+        stacklevel=2,
     )
     import orangewidget.settings
+
     return orangewidget.settings.widget_settings_dir()
 
 

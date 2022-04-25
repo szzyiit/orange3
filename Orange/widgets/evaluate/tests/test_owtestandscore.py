@@ -2,7 +2,6 @@
 # pylint: disable=protected-access
 import unittest
 from unittest.mock import Mock, patch
-import warnings
 
 import numpy as np
 from AnyQt.QtCore import Qt
@@ -27,8 +26,6 @@ from Orange.widgets.settings import (
     ClassValuesContextHandler, PerfectDomainContextHandler)
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.tests.utils import simulate, possible_duplicate_table
-from Orange.widgets.utils.state_summary import (format_summary_details,
-                                                format_multiple_summaries)
 from Orange.tests import test_filename
 
 
@@ -74,14 +71,31 @@ class TestOWTestAndScore(WidgetTest):
         self.assertIsNotNone(res.domain)
         self.assertIsNotNone(res.data)
 
-    def test_more_learners(self):
-        data = Table("iris")[::15]
+    def test_multiple_learners(self):
+        def check_evres_names(expeced):
+            res = self.get_output(self.widget.Outputs.evaluations_results)
+            self.assertSequenceEqual(res.learner_names, expeced)
+
+        data = Table("iris")[::15].copy()
+        m1 = MajorityLearner()
+        m1.name = "M1"
+        m2 = MajorityLearner()
+        m2.name = "M2"
         self.send_signal(self.widget.Inputs.train_data, data)
-        self.send_signal(self.widget.Inputs.learner, MajorityLearner(), 0)
-        self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
-        self.send_signal(self.widget.Inputs.learner, MajorityLearner(), 1)
-        res = self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
+        self.send_signal(self.widget.Inputs.learner, m1, 1)
+        self.send_signal(self.widget.Inputs.learner, m2, 2)
+        res = self.get_output(self.widget.Outputs.evaluations_results)
         np.testing.assert_equal(res.probabilities[0], res.probabilities[1])
+        check_evres_names(["M1", "M2"])
+        self.send_signal(self.widget.Inputs.learner, None, 1)
+        check_evres_names(["M2"])
+        self.send_signal(self.widget.Inputs.learner, m1, 1)
+        check_evres_names(["M1", "M2"])
+        self.send_signal(self.widget.Inputs.learner,
+                         self.widget.Inputs.learner.closing_sentinel, 1)
+        check_evres_names(["M2"])
+        self.send_signal(self.widget.Inputs.learner, m1, 1)
+        check_evres_names(["M2", "M1"])
 
     def test_testOnTest(self):
         data = Table("iris")
@@ -98,9 +112,10 @@ class TestOWTestAndScore(WidgetTest):
         self.widget.resampling = OWTestAndScore.TestOnTest
         # test data with the same class (otherwise the widget shows a different error)
         # and a non-nan X
-        iris_test = iris.transform(Domain([ContinuousVariable("x")],
-                                          class_vars=iris.domain.class_vars))
-        iris_test.X[:, 0] = 1
+        iris_test = iris.transform(
+            Domain([ContinuousVariable("x")], class_vars=iris.domain.class_vars)).copy()
+        with iris_test.unlocked():
+            iris_test.X[:, 0] = 1
         self.send_signal(self.widget.Inputs.test_data, iris_test)
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
         self.assertTrue(self.widget.Error.test_data_incompatible.is_shown())
@@ -171,19 +186,20 @@ class TestOWTestAndScore(WidgetTest):
         )
         self.widget.n_folds = 0
         self.assertFalse(self.widget.Error.train_data_error.is_shown())
-        self.send_signal("数据(Data)", table)
-        self.send_signal("学习器(Learner)", MajorityLearner(), 0, wait=1000)
+        self.send_signal("Data", table)
+        self.send_signal("Learner", MajorityLearner(), 0, wait=1000)
         self.assertTrue(self.widget.Error.train_data_error.is_shown())
 
     def test_data_errors(self):
         """ Test all data_errors """
         def assertErrorShown(data, is_shown, message):
-            self.send_signal("数据(Data)", data)
+            self.send_signal("Data", data)
             self.assertEqual(is_shown, self.widget.Error.train_data_error.is_shown())
             self.assertEqual(message, str(self.widget.Error.train_data_error))
 
-        data = Table("iris")[::30]
-        data.Y[:] = np.nan
+        data = Table("iris")[::30].copy()
+        with data.unlocked():
+            data.Y[:] = np.nan
 
         iris_empty_x = Table.from_table(
             Domain([], data.domain.class_var), Table("iris")
@@ -216,7 +232,7 @@ class TestOWTestAndScore(WidgetTest):
                 pass
 
             builtins = BUILTIN_SCORERS_ORDER
-            self.send_signal("数据(Data)", Table("iris"))
+            self.send_signal("Data", Table("iris"))
             scorer_names = [scorer.name for scorer in self.widget.scorers]
             self.assertEqual(
                 tuple(scorer_names[:len(builtins[DiscreteVariable])]),
@@ -225,7 +241,7 @@ class TestOWTestAndScore(WidgetTest):
             self.assertIn("NewClassificationScore", scorer_names)
             self.assertNotIn("NewRegressionScore", scorer_names)
 
-            self.send_signal("数据(Data)", Table("housing"))
+            self.send_signal("Data", Table("housing"))
             scorer_names = [scorer.name for scorer in self.widget.scorers]
             self.assertEqual(
                 tuple(scorer_names[:len(builtins[ContinuousVariable])]),
@@ -234,7 +250,7 @@ class TestOWTestAndScore(WidgetTest):
             self.assertNotIn("NewClassificationScore", scorer_names)
             self.assertIn("NewRegressionScore", scorer_names)
 
-            self.send_signal("数据(Data)", None)
+            self.send_signal("Data", None)
             self.assertEqual(self.widget.scorers, [])
         finally:
             del Score.registry["NewScore"]  # pylint: disable=no-member
@@ -275,13 +291,13 @@ class TestOWTestAndScore(WidgetTest):
         setosa = iris[:51]
         versicolor = iris[49:100]
 
-        class SetosaLearner:
+        class SetosaLearner(Learner):
             def __call__(self, data):
                 model = ConstantModel([1., 0, 0])
                 model.domain = iris.domain
                 return model
 
-        class VersicolorLearner:
+        class VersicolorLearner(Learner):
             def __call__(self, data):
                 model = ConstantModel([0, 1., 0])
                 model.domain = iris.domain
@@ -290,9 +306,8 @@ class TestOWTestAndScore(WidgetTest):
         # this is done manually to avoid multiple computations
         self.widget.resampling = 5
         self.widget.set_train_data(iris)
-        self.widget.set_learner(SetosaLearner(), 1)
-        self.widget.set_learner(VersicolorLearner(), 2)
-
+        self.widget.insert_learner(0, SetosaLearner())
+        self.widget.insert_learner(1, VersicolorLearner())
         self.send_signal(self.widget.Inputs.test_data, setosa, wait=5000)
 
         self.widget.adjustSize()
@@ -308,10 +323,10 @@ class TestOWTestAndScore(WidgetTest):
         # Ensure that the click on header caused an ascending sort
         # Ascending sort means that wrong model should be listed first
         self.assertEqual(header.sortIndicatorOrder(), Qt.AscendingOrder)
-        self.assertEqual(view.model().index(0, 0).data(), "VersicolorLearner")
+        self.assertEqual(view.model().index(0, 0).data(), "versicolor")
 
         self.send_signal(self.widget.Inputs.test_data, versicolor, wait=5000)
-        self.assertEqual(view.model().index(0, 0).data(), "SetosaLearner")
+        self.assertEqual(view.model().index(0, 0).data(), "setosa")
 
     def _retrieve_scores(self):
         w = self.widget
@@ -422,13 +437,51 @@ class TestOWTestAndScore(WidgetTest):
                     OWTestAndScore.KFold, 0),
                 (0.8, 0.5, 0.5, 0.5, 0.5))))
 
-    def test_no_pregressbar_warning(self):
-        data = Table("iris")[::15]
+    def test_no_stratification(self):
+        w = self.widget
+        w.cv_stratified = True
+        self._test_scores(
+            Table("zoo"), None, MajorityLearner(),
+            OWTestAndScore.KFold, 2)
+        self.assertTrue(w.Warning.cant_stratify.is_shown())
 
-        with warnings.catch_warnings(record=True) as w:
-            self.send_signal(self.widget.Inputs.train_data, data)
-            self.send_signal(self.widget.Inputs.learner, MajorityLearner(), 0)
-            assert not w
+        w.controls.cv_stratified.click()
+        self.assertFalse(w.Warning.cant_stratify.is_shown())
+
+        w.controls.cv_stratified.click()
+        self.assertTrue(w.Warning.cant_stratify.is_shown())
+
+        w.controls.n_folds.setCurrentIndex(0)
+        w.controls.n_folds.activated[int].emit(0)
+        self.assertFalse(w.Warning.cant_stratify.is_shown())
+
+        w.controls.n_folds.setCurrentIndex(2)
+        w.controls.n_folds.activated[int].emit(2)
+        self.assertTrue(w.Warning.cant_stratify.is_shown())
+
+        self._test_scores(
+            Table("iris"), None, MajorityLearner(), OWTestAndScore.KFold, 2)
+        self.assertFalse(w.Warning.cant_stratify.is_shown())
+
+        self._test_scores(
+            Table("zoo"), None, MajorityLearner(), OWTestAndScore.KFold, 2)
+        self.assertTrue(w.Warning.cant_stratify.is_shown())
+
+        self._test_scores(
+            Table("housing"), None, MeanLearner(), OWTestAndScore.KFold, 2)
+        self.assertFalse(w.Warning.cant_stratify.is_shown())
+        self.assertTrue(w.Information.cant_stratify_numeric.is_shown())
+
+        w.controls.cv_stratified.click()
+        self.assertFalse(w.Warning.cant_stratify.is_shown())
+
+    def test_too_many_folds(self):
+        w = self.widget
+        w.controls.resampling.buttons[OWTestAndScore.KFold].click()
+        w.n_folds = 3
+        self.send_signal(w.Inputs.train_data, Table("zoo")[:8])
+        self.send_signal(w.Inputs.learner, MajorityLearner(), 0, wait=5000)
+        self.assertTrue(w.Error.too_many_folds.is_shown())
 
     def _set_comparison_score(self, score):
         w = self.widget
@@ -460,24 +513,21 @@ class TestOWTestAndScore(WidgetTest):
         rbs[OWTestAndScore.KFold].click()
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
         self.assertIsNotNone(w.comparison_table.cellWidget(0, 1))
-        self.assertTrue(w.modcompbox.isEnabled())
-        self.assertTrue(w.comparison_table.isEnabled())
+        self.assertTrue(w.compbox.isEnabled())
         baycomp.two_on_single.assert_called()
         baycomp.two_on_single.reset_mock()
 
         rbs[OWTestAndScore.LeaveOneOut].click()
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
         self.assertIsNone(w.comparison_table.cellWidget(0, 1))
-        self.assertFalse(w.modcompbox.isEnabled())
-        self.assertFalse(w.comparison_table.isEnabled())
+        self.assertFalse(w.compbox.isEnabled())
         baycomp.two_on_single.assert_not_called()
         baycomp.two_on_single.reset_mock()
 
         rbs[OWTestAndScore.KFold].click()
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
         self.assertIsNotNone(w.comparison_table.cellWidget(0, 1))
-        self.assertTrue(w.modcompbox.isEnabled())
-        self.assertTrue(w.comparison_table.isEnabled())
+        self.assertTrue(w.compbox.isEnabled())
         baycomp.two_on_single.assert_called()
         baycomp.two_on_single.reset_mock()
 
@@ -527,7 +577,7 @@ class TestOWTestAndScore(WidgetTest):
     def test_comparison_bad_scores(self):
         w = self.widget
         self._set_three_majorities()
-        self._set_comparison_score("分类准确率")
+        self._set_comparison_score("Classification accuracy")
         self.get_output(self.widget.Outputs.evaluations_results, wait=5000)
 
         score_calls = -1
@@ -563,7 +613,7 @@ class TestOWTestAndScore(WidgetTest):
         w = self.widget
         self._set_three_majorities()
         self._set_comparison_score("F1")
-        f1mock = Mock(wraps=scoring.F1)
+        f1mock = Mock(wraps=scoring.F1.compute_score)
 
         iris = Table("iris")
         with patch.object(scoring.F1, "compute_score", f1mock):
@@ -646,46 +696,6 @@ class TestOWTestAndScore(WidgetTest):
                 w._fill_table(slots, scores)
                 label = w.comparison_table.cellWidget(1, 0)
                 self.assertEqual(label.text(), "NA")
-
-    def test_summary(self):
-        """Check if the status bar updates when data is on input"""
-        iris = Table("iris")
-        train, test = iris[:120], iris[120:]
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.train_data, train)
-        self.send_signal(self.widget.Inputs.learner, LogisticRegressionLearner(), 0)
-        summary, details = f"{len(train)}", format_summary_details(train)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.predictions)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.test_data, test)
-        summary = f"{len(train)}, {len(test)}"
-        details = format_multiple_summaries([("Data", train), ("Test data", test)])
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.predictions)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.train_data, None)
-        summary, details = f"{len(test)}", format_summary_details(test)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        self.send_signal(self.widget.Inputs.test_data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_unique_output_domain(self):
         data = possible_duplicate_table('random forest')

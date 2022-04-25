@@ -9,6 +9,8 @@ import torch.nn as nn
 from torchsummary import summary
 
 # https://stackoverflow.com/questions/21341096/redirect-print-to-string-list
+
+
 class ListStream:
     def __init__(self):
         self.data = []
@@ -22,12 +24,13 @@ class Flatten(nn.Module):
         batch_size = x.shape[0]
         return x.view(batch_size, -1)
 
+
 class CNNLearner(OWWidget):
     name = "卷积神经网络学习器(CNN Learner)"
     description = "构建一个训练 MNIST 数据集的简单卷积神经网络"
     icon = "icons/cnn.png"
     keywords = ['juanji', 'shenjingwangluo', 'shenduxuexi']
-    category = 'deeplearning'
+    category = '深度学习(DeepLearning)'
 
     want_main_area = True
     out_channels = [1, 2, 4, 8, 10, 16, 20, 32, 48, 64, 0]
@@ -37,9 +40,9 @@ class CNNLearner(OWWidget):
     out_4 = 5  # 16
     out_5 = 4  # 10
 
-
     class Outputs:
-        model = Output('CNN 模型 (CNN model)', nn.Module, default=True, replaces=['CNN model'])
+        model = Output('CNN 模型 (CNN model)', nn.Module,
+                       default=True, replaces=['CNN model'])
 
     def __init__(self):
         super().__init__()
@@ -47,7 +50,8 @@ class CNNLearner(OWWidget):
         self.model_summary = None
 
         self._setup_control_area()
-        gui.button(self.controlArea, self, "观察并输出模型", callback=self.check_model, autoDefault=True)
+        gui.button(self.controlArea, self, "观察并输出模型",
+                   callback=self.check_model, autoDefault=True)
 
         # self.make_model()
 
@@ -102,10 +106,12 @@ class CNNLearner(OWWidget):
         out_channels = [channel for channel in out_channels if channel > 0]
         in_channels = [1] + out_channels[:-1]
 
-        layers = [self._one_layer(in_channel, out_channel) for in_channel, out_channel in zip(in_channels[:-1], out_channels[:-1])]
+        layers = [self._one_layer(in_channel, out_channel) for in_channel, out_channel in zip(
+            in_channels[:-1], out_channels[:-1])]
 
         self.model = nn.Sequential(*list(layers),
-                                   self.conv(in_channels[-1], out_channels[-1]),  # 1
+                                   self.conv(
+                                       in_channels[-1], out_channels[-1]),  # 1
                                    nn.BatchNorm2d(out_channels[-1]),
 
                                    Flatten()  # remove (1,1) grid
@@ -138,5 +144,3 @@ class CNNLearner(OWWidget):
         self.model_info.setText(s)
 
         self.Outputs.model.send(self.model)
-
-

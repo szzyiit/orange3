@@ -58,17 +58,17 @@ class MeltContextHandler(ContextHandler):
 
 
 class OWMelt(widget.OWWidget):
-    name = "Melt"
-    description = "Convert wide data to narrow data, a list of item-value pairs"
-    category = "Transform"
+    name = "宽转窄(Melt)"
+    description = "将宽数据转换为窄数据，即项目-值对的列表"
+    category = "变换(Transform)"
     icon = "icons/Melt.svg"
-    keywords = ["shopping list", "wide", "narrow"]
+    keywords = ["kuanzhuanzhai", "shopping list", "wide", "narrow"]
 
     class Inputs:
-        data = widget.Input("Data", Table)
+        data = widget.Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = widget.Output("Data", Table)
+        data = widget.Output("数据(Data)", Table, replaces=['Data'])
 
     class Information(widget.OWWidget.Information):
         no_suitable_features = Msg(
@@ -92,33 +92,33 @@ class OWMelt(widget.OWWidget):
         self.data: Optional[Table] = None
         self._output_desc: Optional[Dict[str, str]] = None
 
-        box = gui.widgetBox(self.controlArea, "Unique Row Identifier")
+        box = gui.widgetBox(self.controlArea, "唯一行标识符")
         self.idvar_model = itemmodels.VariableListModel(
-            [None], placeholder="Row number")
+            [None], placeholder="行号")
         self.var_cb = gui.comboBox(
             box, self, "idvar", model=self.idvar_model,
             callback=self._invalidate, minimumContentsLength=16,
-            tooltip="A column with identifier, like customer's id")
+            tooltip="包含标识符（如客户的 ID）的列")
 
-        box = gui.widgetBox(self.controlArea, "Filter")
+        box = gui.widgetBox(self.controlArea, "筛选")
         gui.checkBox(
-            box, self, "only_numeric", "Ignore non-numeric features",
+            box, self, "only_numeric", "忽略非数值特征",
             callback=self._invalidate)
         gui.checkBox(
-            box, self, "exclude_zeros", "Exclude zero values",
+            box, self, "exclude_zeros", "排除0值",
             callback=self._invalidate,
-            tooltip="Besides missing values, also omit items with zero values")
+            tooltip="除了缺失值之外，还要省略值为0的行")
 
         form = QFormLayout()
         gui.widgetBox(
-            self.controlArea, "Names for generated features", orientation=form)
-        form.addRow("Item:",
+            self.controlArea, "生成特征的名称", orientation=form)
+        form.addRow("项目:",
                     gui.lineEdit(
                         None, self, "item_var_name",
                         callback=self._invalidate,
                         placeholderText=DEFAULT_ITEM_NAME,
                         styleSheet="padding-left: 3px"))
-        form.addRow("Value:",
+        form.addRow("值:",
                     gui.lineEdit(
                         None, self, "value_var_name",
                         callback=self._invalidate,
@@ -253,7 +253,8 @@ class OWMelt(widget.OWWidget):
         domain = self.data.domain
 
         if self.exclude_zeros or self.only_numeric:
-            cont_vars = np.array([var.is_continuous for var in domain.attributes])
+            cont_vars = np.array(
+                [var.is_continuous for var in domain.attributes])
         if self.only_numeric:
             useful_vars = cont_vars
         else:

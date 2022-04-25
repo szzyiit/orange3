@@ -120,7 +120,7 @@ class VizRankDialog(QDialog, ProgressBarMixin, WidgetMessagesMixin,
         self.add_to_model = Queue()
 
         self.filter = QLineEdit()
-        self.filter.setPlaceholderText("筛选 ...")
+        self.filter.setPlaceholderText("Filter ...")
         self.filter.textChanged.connect(self.filter_changed)
         self.layout().addWidget(self.filter)
         # Remove focus from line edit
@@ -128,7 +128,8 @@ class VizRankDialog(QDialog, ProgressBarMixin, WidgetMessagesMixin,
 
         self.rank_model = QStandardItemModel(self)
         self.model_proxy = QSortFilterProxyModel(
-            self, filterCaseSensitivity=False)
+            self, filterCaseSensitivity=Qt.CaseInsensitive
+        )
         self.model_proxy.setSourceModel(self.rank_model)
         self.rank_table = view = QTableView(
             selectionBehavior=QTableView.SelectRows,
@@ -147,7 +148,7 @@ class VizRankDialog(QDialog, ProgressBarMixin, WidgetMessagesMixin,
         self.layout().addWidget(view)
 
         self.button = gui.button(
-            self, self, "开始", callback=self.toggle, default=True)
+            self, self, "Start", callback=self.toggle, default=True)
 
     @property
     def _has_bars(self):
@@ -228,7 +229,7 @@ class VizRankDialog(QDialog, ProgressBarMixin, WidgetMessagesMixin,
         self.scores = []
         self._update_model()  # empty queue
         self.rank_model.clear()
-        self.button.setText("开始")
+        self.button.setText("Start")
         self.button.setEnabled(self.check_preconditions())
 
     def filter_changed(self, text):

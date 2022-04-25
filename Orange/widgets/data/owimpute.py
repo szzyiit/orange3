@@ -26,7 +26,6 @@ from Orange.widgets.utils import itemmodels
 from Orange.widgets.utils import concurrent as qconcurrent
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.spinbox import DoubleSpinBox
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 from Orange.classification import SimpleTreeLearner
@@ -137,7 +136,7 @@ class OWImpute(OWWidget):
     icon = "icons/Impute.svg"
     priority = 2130
     keywords = ["missing", 'tianchong', 'queshi']
-    category = 'Data'
+    category = "变换(Transform)"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])
@@ -158,7 +157,8 @@ class OWImpute(OWWidget):
 
     _default_method_index = settings.Setting(int(Method.Leave))  # type: int
     # Per-variable imputation state (synced in storeSpecificSettings)
-    _variable_imputation_state = settings.ContextSetting({})  # type: VariableState
+    _variable_imputation_state = settings.ContextSetting(
+        {})  # type: VariableState
 
     autocommit = settings.Setting(True)
     default_numeric_value = settings.Setting(0.0)
@@ -171,17 +171,15 @@ class OWImpute(OWWidget):
         super().__init__()
         self.data = None  # type: Optional[Orange.data.Table]
         self.learner = None  # type: Optional[Learner]
-        self.default_learner = SimpleTreeLearner(min_instances=10, max_depth=10)
+        self.default_learner = SimpleTreeLearner(
+            min_instances=10, max_depth=10)
         self.modified = False
         self.executor = qconcurrent.ThreadExecutor(self)
         self.__task = None
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        self.controlArea.layout().addLayout(main_layout)
+        main_layout = self.controlArea.layout()
 
-        box = gui.vBox(None, "默认方法")
-        main_layout.addWidget(box)
+        box = gui.vBox(self.controlArea, "默认方法")
 
         box_layout = QGridLayout()
         box_layout.setSpacing(8)
@@ -228,7 +226,8 @@ class OWImpute(OWWidget):
         hlayout.addWidget(QLabel(", 时间:"))
 
         self.time_widget = gui.DateTimeEditWCalendarTime(self)
-        self.time_widget.setEnabled(self.default_method_index == Method.Default)
+        self.time_widget.setEnabled(
+            self.default_method_index == Method.Default)
         self.time_widget.setKeyboardTracking(False)
         self.time_widget.setContentsMargins(0, 0, 0, 0)
         self.time_widget.set_datetime(
@@ -245,12 +244,8 @@ class OWImpute(OWWidget):
 
         self.default_button_group = button_group
 
-        box = QGroupBox(title=self.tr("设置单个属性"),
-                        flat=False)
-        main_layout.addWidget(box)
-
-        horizontal_layout = QHBoxLayout(box)
-        main_layout.addWidget(box)
+        box = gui.hBox(self.controlArea, self.tr("设置单个属性"),
+                       flat=False)
 
         self.varview = ListViewSearch(
             selectionMode=QListView.ExtendedSelection,
@@ -264,7 +259,7 @@ class OWImpute(OWWidget):
         )
         self.selection = self.varview.selectionModel()
 
-        horizontal_layout.addWidget(self.varview)
+        box.layout().addWidget(self.varview)
         vertical_layout = QVBoxLayout(margin=0)
 
         self.methods_container = QWidget(enabled=False)
@@ -280,13 +275,13 @@ class OWImpute(OWWidget):
 
         self.value_combo = QComboBox(
             minimumContentsLength=8,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
             activated=self._on_value_selected
-            )
+        )
         self.value_double = DoubleSpinBox(
             editingFinished=self._on_value_selected,
             minimum=DBL_MIN, maximum=DBL_MAX, singleStep=.1,
-            )
+        )
         self.value_stack = value_stack = QStackedWidget()
         value_stack.addWidget(self.value_combo)
         value_stack.addWidget(self.value_double)
@@ -305,16 +300,11 @@ class OWImpute(OWWidget):
         vertical_layout.addStretch(2)
         vertical_layout.addWidget(self.reset_button)
 
-        horizontal_layout.addLayout(vertical_layout)
+        box.layout().addLayout(vertical_layout)
 
         self.variable_button_group = button_group
 
-        box = gui.auto_apply(self.controlArea, self, "autocommit")
-        box.button.setFixedWidth(180)
-        box.layout().insertStretch(0)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        gui.auto_apply(self.buttonsArea, self, "autocommit")
 
     def create_imputer(self, method, *args):
         # type: (Method, ...) -> impute.BaseImputeMethod
@@ -381,12 +371,9 @@ class OWImpute(OWWidget):
             # restore per variable imputation state
             self._restore_state(self._variable_imputation_state)
         self.reset_button.setEnabled(len(self.varmodel) > 0)
-        summary = len(data) if data else self.info.NoInput
-        details = format_summary_details(data) if data else ""
-        self.info.set_input_summary(summary, details)
 
         self.update_varview()
-        self.unconditional_commit()
+        self.commit.now()
 
     @Inputs.learner
     def set_learner(self, learner):
@@ -403,7 +390,7 @@ class OWImpute(OWWidget):
             self.default_method_index = Method.Model
 
         self.update_varview()
-        self.commit()
+        self.commit.deferred()
 
     def get_method_for_column(self, column_index):
         # type: (int) -> impute.BaseImputeMethod
@@ -421,16 +408,14 @@ class OWImpute(OWWidget):
         self.modified = True
         if self.__task is not None:
             self.cancel()
-        self.commit()
+        self.commit.deferred()
 
+    @gui.deferred
     def commit(self):
         self.cancel()
         self.warning()
         self.Error.imputation_failed.clear()
         self.Error.model_based_imputer_sparse.clear()
-        summary = len(self.data) if self.data else self.info.NoOutput
-        detail = format_summary_details(self.data) if self.data else ""
-        self.info.set_output_summary(summary, detail)
 
         if not self.data or not self.varmodel.rowCount():
             self.Outputs.data.send(self.data)
@@ -540,9 +525,6 @@ class OWImpute(OWWidget):
 
         self.Outputs.data.send(data)
         self.modified = False
-        summary = len(data) if data else self.info.NoOutput
-        details = format_summary_details(data) if data else ""
-        self.info.set_output_summary(summary, details)
 
     @Slot(int, int)
     def __progress_changed(self, n, d):
@@ -698,7 +680,8 @@ class OWImpute(OWWidget):
     def reset_variable_state(self):
         indexes = list(map(self.varmodel.index, range(len(self.varmodel))))
         self.set_method_for_indexes(indexes, Method.AsAboveSoBelow)
-        self.variable_button_group.button(Method.AsAboveSoBelow).setChecked(True)
+        self.variable_button_group.button(
+            Method.AsAboveSoBelow).setChecked(True)
 
     def _store_state(self):
         # type: () -> VariableState

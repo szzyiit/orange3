@@ -19,7 +19,6 @@ from Orange.widgets import widget, settings, gui
 from Orange.widgets.gui import HorizontalGridDelegate
 from Orange.widgets.utils import itemmodels, colorpalettes
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.report import colored_square as square
 from Orange.widgets.widget import Input, Output
 
@@ -41,6 +40,7 @@ class AttrDesc:
         var (Variable): an instance of variable
         new_name (str or `None`): a changed name or `None`
     """
+
     def __init__(self, var):
         self.var = var
         self.new_name = None
@@ -87,6 +87,7 @@ class DiscAttrDesc(AttrDesc):
         new_colors (list of tuple or None): new colors as tuples (R, G, B)
         new_values (list of str or None): new names for values, if changed
     """
+
     def __init__(self, var):
         super().__init__(var)
         self.new_colors = None
@@ -187,6 +188,7 @@ class ContAttrDesc(AttrDesc):
         name (str or `None`): a changed name or `None`
         palette_name (str or None): name of palette or None if unmodified
     """
+
     def __init__(self, var):
         super().__init__(var)
         self.new_palette_name = self._default_palette_name()
@@ -242,6 +244,7 @@ class ColorTableModel(QAbstractTableModel):
     Attribute:
         attrdescs (list of AttrDesc): attrdescs with user-defined changes
     """
+
     def __init__(self):
         QAbstractTableModel.__init__(self)
         self.attrdescs = []
@@ -292,6 +295,7 @@ class DiscColorTableModel(ColorTableModel):
     A model that stores the colors corresponding to values of discrete
     variables. Colors are shown as decorations.
     """
+
     def columnCount(self, parent=QModelIndex()):
         if parent.isValid():
             return 0
@@ -342,6 +346,7 @@ class ContColorTableModel(ColorTableModel):
     Attributes:
         mouse_row (int): the row over which the mouse is hovering
     """
+
     def __init__(self):
         super().__init__()
         self.mouse_row = None
@@ -449,6 +454,7 @@ class ColorTable(QTableView):
     calls handle_click with appropriate index. It also prepares a grid_deleagte
     that is used in derived classes.
     """
+
     def __init__(self, model):
         QTableView.__init__(self)
         self.horizontalHeader().hide()
@@ -469,6 +475,7 @@ class ColorTable(QTableView):
 
 class DiscreteTable(ColorTable):
     """Table view for discrete variables"""
+
     def __init__(self, model):
         super().__init__(model)
         self.horizontalHeader().setSectionResizeMode(
@@ -538,7 +545,7 @@ class OWColor(widget.OWWidget):
     name = "着色(Color)"
     description = "设置变量彩色图例。"
     icon = "icons/Colors.svg"
-    category = 'Data'
+    category = '数据(Data)'
     keywords = ['zhuose', 'yanse']
 
     class Inputs:
@@ -575,18 +582,12 @@ class OWColor(widget.OWWidget):
         self.cont_model.dataChanged.connect(self._on_data_changed)
         box.layout().addWidget(self.cont_view)
 
-        box = gui.auto_apply(self.controlArea, self, "auto_apply")
-        box.button.setFixedWidth(180)
-        save = gui.button(None, self, "报错", callback=self.save)
-        load = gui.button(None, self, "载入", callback=self.load)
-        reset = gui.button(None, self, "重置", callback=self.reset)
-        box.layout().insertWidget(0, save)
-        box.layout().insertWidget(0, load)
-        box.layout().insertWidget(2, reset)
-        box.layout().insertStretch(3)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        box = gui.hBox(self.buttonsArea)
+        gui.button(box, self, "保存", callback=self.save)
+        gui.button(box, self, "载入", callback=self.load)
+        gui.button(box, self, "重置", callback=self.reset)
+        gui.rubber(self.buttonsArea)
+        gui.auto_apply(self.buttonsArea, self, "auto_apply")
 
     @staticmethod
     def sizeHint():  # pragma: no cover
@@ -599,10 +600,8 @@ class OWColor(widget.OWWidget):
         self.cont_descs = []
         if data is None:
             self.data = self.domain = None
-            self.info.set_input_summary(self.info.NoInput)
         else:
             self.data = data
-            self.info.set_input_summary(len(data), format_summary_details(data))
             for var in chain(data.domain.variables, data.domain.metas):
                 if var.is_discrete:
                     self.disc_descs.append(DiscAttrDesc(var))
@@ -614,15 +613,17 @@ class OWColor(widget.OWWidget):
         self.openContext(data)
         self.disc_view.resizeColumnsToContents()
         self.cont_view.resizeColumnsToContents()
-        self.unconditional_commit()
+        self.commit.now()
 
     def _on_data_changed(self):
-        self.commit()
+        self.commit.deferred()
 
     def reset(self):
         self.disc_model.reset()
         self.cont_model.reset()
-        self.commit()
+        # Reset button is in the same box as Load, which has commit.now,
+        # and Apply, hence let Reset commit now, too.
+        self.commit.now()
 
     def save(self):
         fname, _ = QFileDialog.getSaveFileName(
@@ -644,7 +645,7 @@ class OWColor(widget.OWWidget):
                     if var_data}
                  for vartype, repo in (("categorical", self.disc_descs),
                                        ("numeric", self.cont_descs))
-                },
+                 },
                 f,
                 indent=4)
 
@@ -656,16 +657,15 @@ class OWColor(widget.OWWidget):
             return
 
         try:
-            f = open(fname)
+            with open(fname) as f:
+                js = json.load(f)  #: dict
+                self._parse_var_defs(js)
         except IOError:
             QMessageBox.critical(self, "File error", "File cannot be opened.")
             return
-
-        try:
-            js = json.load(f)  #: dict
-            self._parse_var_defs(js)
         except (json.JSONDecodeError, InvalidFileFormat):
             QMessageBox.critical(self, "File error", "Invalid file format.")
+            return
 
     def _parse_var_defs(self, js):
         if not isinstance(js, dict) or set(js) != {"categorical", "numeric"}:
@@ -699,6 +699,7 @@ class OWColor(widget.OWWidget):
 
         # First, construct all descriptions; assign later, after we know
         # there won't be exceptions due to invalid file format
+        unused_vars = []
         both_descs = []
         warnings = []
         for old_desc, repo, desc_type in (
@@ -709,11 +710,26 @@ class OWColor(widget.OWWidget):
             for var_name, var_data in js[repo].items():
                 var = var_by_name.get(var_name)
                 if var is None:
+                    unused_vars.append(var_name)
                     continue
                 # This can throw InvalidFileFormat
                 new_descs[var_name], warn = desc_type.from_dict(var, var_data)
                 warnings += warn
             both_descs.append(new_descs)
+        if unused_vars:
+            names = [f"'{name}'" for name in unused_vars]
+            if len(unused_vars) == 1:
+                warn = f'Definition for variable {names[0]}, which does not ' \
+                       f'appear in the data, was ignored.\n'
+            else:
+                if len(unused_vars) <= 5:
+                    warn = 'Definitions for variables ' \
+                           f'{", ".join(names[:-1])} and {names[-1]}'
+                else:
+                    warn = f'Definitions for {", ".join(names[:4])} ' \
+                           f'and {len(names) - 4} other variables'
+                warn += ", which do not appear in the data, were ignored.\n"
+            warnings.insert(0, warn)
 
         self.disc_descs = [both_descs[0].get(desc.var.name, desc)
                            for desc in self.disc_descs]
@@ -725,13 +741,14 @@ class OWColor(widget.OWWidget):
 
         self.disc_model.set_data(self.disc_descs)
         self.cont_model.set_data(self.cont_descs)
-        self.unconditional_commit()
+        self.commit.now()
 
     def _start_dir(self):
         return self.workflowEnv().get("basedir") \
-               or QSettings().value("colorwidget/last-location") \
-               or os.path.expanduser(f"~{os.sep}")
+            or QSettings().value("colorwidget/last-location") \
+            or os.path.expanduser(f"~{os.sep}")
 
+    @gui.deferred
     def commit(self):
         def make(variables):
             new_vars = []
@@ -743,7 +760,6 @@ class OWColor(widget.OWWidget):
 
         if self.data is None:
             self.Outputs.data.send(None)
-            self.info.set_output_summary(self.info.NoOutput)
             return
 
         disc_dict = {desc.var.name: desc for desc in self.disc_descs}
@@ -753,8 +769,6 @@ class OWColor(widget.OWWidget):
         new_domain = Orange.data.Domain(
             make(dom.attributes), make(dom.class_vars), make(dom.metas))
         new_data = self.data.transform(new_domain)
-        self.info.set_output_summary(len(new_data),
-                                     format_summary_details(new_data))
         self.Outputs.data.send(new_data)
 
     def send_report(self):

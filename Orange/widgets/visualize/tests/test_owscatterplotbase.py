@@ -514,10 +514,10 @@ class TestOWScatterPlotBase(WidgetTest):
         step_resizing.wait(200)
         end_resizing.wait(200)
         self.assertEqual(len(begin_resizing), 2)  # reset and update
-        self.assertEqual(len(step_resizing), 5)
+        self.assertEqual(len(step_resizing), 9)
         self.assertEqual(len(end_resizing), 2)  # reset and update
-        self.assertEqual(self.graph.scatterplot_item.setSize.call_count, 6)
-        self._update_sizes_for_points(6)
+        self.assertEqual(self.graph.scatterplot_item.setSize.call_count, 10)
+        self._update_sizes_for_points(10)
         self.graph.scatterplot_item.setSize.assert_called_once()
 
     def _update_sizes_for_points(self, n: int):
@@ -635,12 +635,12 @@ class TestOWScatterPlotBase(WidgetTest):
             self.master.get_subset_mask = lambda: np.arange(10) >= 5
             graph.update_colors()
             brushes = graph.scatterplot_item.data["brush"]
-            self.assertEqual(brushes[0].color().alpha(), 0)
-            self.assertEqual(brushes[1].color().alpha(), 0)
-            self.assertEqual(brushes[4].color().alpha(), 0)
-            self.assertEqual(brushes[5].color().alpha(), 123)
-            self.assertEqual(brushes[6].color().alpha(), 123)
-            self.assertEqual(brushes[7].color().alpha(), 123)
+            a0 = brushes[0].color().alpha()
+            self.assertEqual(brushes[1].color().alpha(), a0)
+            self.assertEqual(brushes[4].color().alpha(), a0)
+            self.assertGreater(brushes[5].color().alpha(), a0)
+            self.assertGreater(brushes[6].color().alpha(), a0)
+            self.assertGreater(brushes[7].color().alpha(), a0)
 
         graph = self.graph
 

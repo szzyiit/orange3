@@ -36,17 +36,17 @@ from typing import (
     List, Tuple, Dict, Iterator, Optional, Any, Union, Callable, Mapping
 )
 
-from PyQt5.QtCore import (
-    Qt, QSize, QPoint, QRect, QRectF, QRegExp, QAbstractTableModel,
+from AnyQt.QtCore import (
+    Qt, QSize, QPoint, QRect, QRectF, QRegularExpression, QAbstractTableModel,
     QModelIndex, QItemSelectionModel, QTextBoundaryFinder, QTimer, QEvent
 )
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
-from PyQt5.QtGui import (
-    QRegExpValidator, QColor, QBrush, QPalette, QHelpEvent,
+from AnyQt.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from AnyQt.QtGui import (
+    QRegularExpressionValidator, QColor, QBrush, QPalette, QHelpEvent,
     QStandardItemModel, QStandardItem, QIcon, QIconEngine, QPainter, QPixmap,
     QFont
 )
-from PyQt5.QtWidgets import (
+from AnyQt.QtWidgets import (
     QWidget, QComboBox, QFormLayout, QHBoxLayout, QVBoxLayout, QLineEdit,
     QHeaderView, QFrame, QTableView, QMenu, QLabel, QAction, QActionGroup,
     QStyleOptionFrame, QStyle, QStyledItemDelegate, QStyleOptionViewItem,
@@ -213,16 +213,14 @@ class LineEdit(QLineEdit):
         if nchar <= 0:
             nchar = 17
 
-        w = (fm.width("X") * nchar + 2 * self._horizontalMargin +
+        w = (fm.horizontalAdvance("X") * nchar + 2 * self._horizontalMargin +
              textmargins.left() + textmargins.right() +
              contentsmargins.left() + contentsmargins.right())
 
         opt = QStyleOptionFrame()
         self.initStyleOption(opt)
         size = self.style().sizeFromContents(
-            QStyle.CT_LineEdit, opt,
-            QSize(w, h).expandedTo(QApplication.globalStrut()),
-            self
+            QStyle.CT_LineEdit, opt, QSize(w, h), self
         )
         return size
 
@@ -295,7 +293,7 @@ class CSVOptionsWidget(QWidget):
 
         self.delimiter_cb = QComboBox(
             objectName="delimiter-combo-box",
-            toolTip="选择单元格分割字符"
+            toolTip="选择单元格分割字符."
         )
         self.delimiter_cb.addItems(
             [name for name, _ in CSVOptionsWidget.PresetDelimiters]
@@ -306,7 +304,7 @@ class CSVOptionsWidget(QWidget):
         self.delimiter_cb.setCurrentIndex(self._delimiter_idx)
         self.delimiter_cb.activated.connect(self.__on_delimiter_idx_activated)
 
-        validator = QRegExpValidator(QRegExp("."))
+        validator = QRegularExpressionValidator(QRegularExpression("."))
         self.delimiteredit = LineEdit(
             self._delimiter_custom,
             enabled=self._delimiter_idx == CSVOptionsWidget.DelimiterOther,
@@ -322,7 +320,7 @@ class CSVOptionsWidget(QWidget):
         delimlayout.addWidget(self.delimiteredit)
         self.quoteedit = TextEditCombo(
             editable=True, minimumContentsLength=1,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength,
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
             objectName="quote-edit-combo-box"
         )
         self.quoteedit.addItems(["\"", "'"])
@@ -488,7 +486,7 @@ class CSVOptionsWidget(QWidget):
         for c in codecs:
             cb.addItem(encodings.display_name(c), userData=c)
         cb.insertSeparator(cb.count())
-        cb.addItem("自定义编码列表...", userData=...)
+        cb.addItem("Customize Encodings List...", userData=...)
         idx = cb.findData(current, Qt.UserRole)
         if idx != -1:
             cb.setCurrentIndex(idx)
@@ -539,6 +537,7 @@ class Item(QStandardItem):
     `Qt.EditRole` to the same value. Also, accessing or setting via
     `model.itemData` `model.setItemData` and will not work.
     """
+
     def __init__(self, data=MappingProxyType({})):
         # type: (Mapping[Qt.ItemDataRole, Any]) -> None
         super().__init__()
@@ -650,11 +649,11 @@ class CSVImportWidget(QWidget):
             editable=True, objectName="grouping-separator-combo-box",
             toolTip="千位分割符",
             minimumContentsLength=1,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
         )
         items = [
             {Qt.DisplayRole: "None", Qt.EditRole: "",
-             Qt.ToolTipRole: "无"},
+             Qt.ToolTipRole: "无分隔符"},
             {Qt.DisplayRole: ".", Qt.EditRole: "."},
             {Qt.DisplayRole: ",", Qt.EditRole: ","},
             {Qt.DisplayRole: "空格", Qt.EditRole: " "},
@@ -668,7 +667,8 @@ class CSVImportWidget(QWidget):
         # Maybe just use unicodedata.normalize('NFKC', ...) as a converter?
         # For now only allow a limited set
         self.grouping_sep_edit_cb.setValidator(
-            QRegExpValidator(QRegExp(r"(\.|,| |')?"), self)
+            QRegularExpressionValidator(
+                QRegularExpression(r"(\.|,| |')?"), self)
         )
         self.grouping_sep_edit_cb.activated[str].connect(
             self.__group_sep_activated)
@@ -677,10 +677,10 @@ class CSVImportWidget(QWidget):
             editable=True, objectName="decimal-separator-combo-box",
             toolTip="小数点",
             minimumContentsLength=1,
-            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLength
+            sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon
         )
         self.decimal_sep_edit_cb.setValidator(
-            QRegExpValidator(QRegExp(r"(\.|,)"), self))
+            QRegularExpressionValidator(QRegularExpression(r"(\.|,)"), self))
         self.decimal_sep_edit_cb.addItems([".", ","])
         self.decimal_sep_edit_cb.activated[str].connect(
             self.__decimal_sep_activated)
@@ -990,9 +990,11 @@ class CSVImportWidget(QWidget):
             base = CachedBytesIOWrapper(self.__sample, self.__buffer)
 
         wrapper = io.TextIOWrapper(
-            base, encoding=self.encoding(), errors="replace"
+            base, encoding=self.encoding(),
+            # use surrogate escape to validate/detect encoding errors in
+            # delegates
+            errors="surrogateescape"
         )
-
         rows = csv.reader(
             wrapper, dialect=self.dialect()
         )
@@ -1099,8 +1101,8 @@ class CSVImportWidget(QWidget):
         menu = QMenu(self)
         menu.setAttribute(Qt.WA_DeleteOnClose)
         coltypes = {model.headerData(
-                        i, Qt.Horizontal, TablePreviewModel.ColumnTypeRole)
-                    for i in columns}
+            i, Qt.Horizontal, TablePreviewModel.ColumnTypeRole)
+            for i in columns}
         coltypes = {ColumnType.Auto if t is None else t for t in coltypes}
         if len(coltypes) == 1:
             current = coltypes.pop()
@@ -1270,6 +1272,7 @@ class CachedBytesIOWrapper(io.BufferedIOBase):
     Utility wrapper to implement restartable reads for streams that are not
     seekable.
     """
+
     def __init__(self, base, cache):
         # type: (io.BinaryIO, io.BytesIO) -> None
         super().__init__()
@@ -1371,6 +1374,11 @@ class TablePreview(QTableView):
         return sh.expandedTo(QSize(8 * hsection, 20 * vsection))
 
 
+def is_surrogate_escaped(text: str) -> bool:
+    """Does `text` contain any surrogate escape characters."""
+    return any("\udc80" <= c <= "\udcff" for c in text)
+
+
 class PreviewItemDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
         # type: (QStyleOptionViewItem, QModelIndex) -> None
@@ -1387,6 +1395,18 @@ class PreviewItemDelegate(QStyledItemDelegate):
                                    TablePreviewModel.ColumnTypeRole)
         if coltype == ColumnType.Numeric or coltype == ColumnType.Time:
             option.displayAlignment = Qt.AlignRight | Qt.AlignVCenter
+
+        if not self.validate(option.text):
+            option.palette.setBrush(
+                QPalette.All, QPalette.Text, QBrush(Qt.red, Qt.SolidPattern)
+            )
+            option.palette.setBrush(
+                QPalette.All, QPalette.HighlightedText,
+                QBrush(Qt.red, Qt.SolidPattern)
+            )
+
+    def validate(self, value: str) -> bool:  # pylint: disable=no-self-use
+        return not is_surrogate_escaped(value)
 
     def helpEvent(self, event, view, option, index):
         # type: (QHelpEvent, QAbstractItemView, QStyleOptionViewItem, QModelIndex) -> bool
@@ -1466,17 +1486,6 @@ class ColumnValidateItemDelegate(PreviewItemDelegate):
         super().__init__(*args, **kwargs)
         self.converter = converter or float
 
-    def initStyleOption(self, option, index):
-        super().initStyleOption(option, index)
-        if not self.validate(option.text):
-            option.palette.setBrush(
-                QPalette.All, QPalette.Text, QBrush(Qt.red, Qt.SolidPattern)
-            )
-            option.palette.setBrush(
-                QPalette.All, QPalette.HighlightedText,
-                QBrush(Qt.red, Qt.SolidPattern)
-            )
-
     def validate(self, value):
         if value in {"NA", "Na", "na", "n/a", "N/A", "?", "", "."}:
             return True
@@ -1485,7 +1494,7 @@ class ColumnValidateItemDelegate(PreviewItemDelegate):
         except ValueError:
             return False
         else:
-            return True
+            return super().validate(value)
 
 
 def number_parser(groupsep, decimalsep):
@@ -1572,7 +1581,8 @@ class TablePreviewModel(QAbstractTableModel):
 
                 if cols < extent[1]:
                     newColCount = max(cols, extent[1])
-                    self.beginInsertColumns(QModelIndex(), cols, newColCount - 1)
+                    self.beginInsertColumns(
+                        QModelIndex(), cols, newColCount - 1)
                     self.__colCount = newColCount
                     self.endInsertColumns()
 
@@ -1741,7 +1751,7 @@ def main(argv=None):  # pragma: no cover
         f = io.BytesIO(TEST_DATA)
     try:
         w.setSampleContents(f)
-        app.exec_()
+        app.exec()
     finally:
         f.close()
 

@@ -21,7 +21,7 @@ from Orange.widgets.utils import colorpalettes
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.visualize.utils.customizableplot import \
     CommonParameterSetter
-from Orange.widgets.visualize.utils.plotutils import AxisItem
+from Orange.widgets.visualize.utils.plotutils import GraphicsView, PlotItem
 from Orange.widgets.widget import Input, Output, Msg
 from Orange.widgets import report
 
@@ -31,30 +31,35 @@ MetricDefinition = namedtuple(
     ("name", "functions", "short_names", "explanation"))
 
 Metrics = [MetricDefinition(*args) for args in (
-    ("校准曲线", None, (), ""),
-    ("分类准确度", (Curves.ca, ), (), ""),
+    ("Calibration curve", None, (), ""),
+    ("Classification accuracy", (Curves.ca, ), (), ""),
     ("F1", (Curves.f1, ), (), ""),
-    ("灵敏度和特异度",
+    ("Sensitivity and specificity",
      (Curves.sensitivity, Curves.specificity),
      ("sens", "spec"),
-     "<p><b>灵敏度:</b> (降) 是指实际为阳性的样本中，判断为阳性的比例 "
-     "(真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;P).</p>"
-     "<p><b>特异度:</b> (升) 实际为阴性的样本中，判断为阴性的比例" 
-     "(真阴性&nbsp;/&nbsp;阴性 TN&nbsp;/&nbsp;N).</p>"),
-    ("精度和召回",
+     "<p><b>Sensitivity</b> (falling) is the proportion of correctly "
+     "detected positive instances (TP&nbsp;/&nbsp;P).</p>"
+     "<p><b>Specificity</b> (rising) is the proportion of detected "
+     "negative instances (TN&nbsp;/&nbsp;N).</p>"),
+    ("Precision and recall",
      (Curves.precision, Curves.recall),
      ("prec", "recall"),
-     "<p><b>精度</b> (升) 检索到的实例中相关实例的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性) TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-     "<p><b>召回</b> (降) 检索到的相关实例的比例, 真阳性&nbsp;/&nbsp;阳性 TP&nbsp;/&nbsp;阳性.</p>"),
-    ("阳/阴性预测值",
+     "<p><b>Precision</b> (rising) is the fraction of retrieved instances "
+     "that are relevant, TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+     "<p><b>Recall</b> (falling) is the proportion of discovered relevant "
+     "instances, TP&nbsp;/&nbsp;P.</p>"),
+    ("Pos and neg predictive value",
      (Curves.ppv, Curves.npv),
      ("PPV", "TPV"),
-     "<p><b>阳性预测值</b> (升) 正确预测为真的比例, 真阳性&nbsp;/&nbsp;(真阳性&nbsp;+&nbsp;假阳性), TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
-     "<p><b>阴性预测值</b> 正确预测为假的比例, 真阴性&nbsp;/&nbsp;(真阴性&nbsp;+&nbsp;假阴性) TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
-    ("真假阳性率",
+     "<p><b>Positive predictive value</b> (rising) is the proportion of "
+     "correct positives, TP&nbsp;/&nbsp;(TP&nbsp;+&nbsp;FP).</p>"
+     "<p><b>Negative predictive value</b> is the proportion of correct "
+     "negatives, TN&nbsp;/&nbsp;(TN&nbsp;+&nbsp;FN).</p>"),
+    ("True and false positive rate",
      (Curves.tpr, Curves.fpr),
      ("TPR", "FPR"),
-     "<p><b>真假阳性率</b> 检测到的和错检的阳性实例比例</p>"),
+     "<p><b>True and false positive rate</b> are proportions of detected "
+     "and omitted positive instances</p>"),
 )]
 
 
@@ -92,13 +97,15 @@ class OWCalibrationPlot(widget.OWWidget):
     icon = "icons/CalibrationPlot.svg"
     priority = 1030
     keywords = ['jiaozhun', 'jiaodui']
-    category = 'evaluate'
+    category = '评估(Evaluate)'
 
     class Inputs:
-        evaluation_results = Input("评估结果(Evaluation Results)", Results, replaces=['Evaluation Results'])
+        evaluation_results = Input("评估结果(Evaluation Results)", Results, replaces=[
+                                   'Evaluation Results'])
 
     class Outputs:
-        calibrated_model = Output("校准的模型(Calibrated Model)", Model, replaces=['Calibrated Model'])
+        calibrated_model = Output(
+            "校准的模型(Calibrated Model)", Model, replaces=['Calibrated Model'])
 
     class Error(widget.OWWidget.Error):
         non_discrete_target = Msg("Calibration plot requires a categorical "
@@ -180,24 +187,20 @@ class OWCalibrationPlot(widget.OWWidget):
         gui.radioButtons(
             box, self, value="output_calibration",
             btnLabels=("Sigmoid 校准", "Isotonic 校准"),
-            label="输出模型校准", callback=self.apply)
+            label="输出模型校准", callback=self.commit.deferred)
 
         self.info_box = gui.widgetBox(self.controlArea, "信息")
         self.info_label = gui.widgetLabel(self.info_box)
 
-        gui.auto_apply(self.controlArea, self, "auto_commit", commit=self.apply)
+        gui.auto_apply(self.buttonsArea, self, "auto_commit")
 
-        self.plotview = pg.GraphicsView(background="w")
-        axes = {"bottom": AxisItem(orientation="bottom"),
-                "left": AxisItem(orientation="left")}
-        self.plot = pg.PlotItem(enableMenu=False, axisItems=axes)
+        self.plotview = GraphicsView()
+        self.plot = PlotItem(enableMenu=False)
         self.plot.parameter_setter = ParameterSetter(self.plot)
         self.plot.setMouseEnabled(False, False)
         self.plot.hideButtons()
-
         for axis_name in ("bottom", "left"):
             axis = self.plot.getAxis(axis_name)
-            axis.setPen(pg.mkPen(color=0.0))
             # Remove the condition (that is, allow setting this for bottom
             # axis) when pyqtgraph is fixed
             # Issue: https://github.com/pyqtgraph/pyqtgraph/issues/930
@@ -236,7 +239,7 @@ class OWCalibrationPlot(widget.OWWidget):
                 self.openContext(class_var, self.classifier_names)
                 self._replot()
 
-        self.apply()
+        self.commit.now()
 
     def clear(self):
         self.plot.clear()
@@ -251,13 +254,13 @@ class OWCalibrationPlot(widget.OWWidget):
             self.threshold = 1 - self.threshold
         self._set_explanation()
         self._replot()
-        self.apply()
+        self.commit.deferred()
 
     def score_changed(self):
         self._set_explanation()
         self._replot()
         if self._last_score_value != self.score:
-            self.apply()
+            self.commit.deferred()
             self._last_score_value = self.score
 
     def _set_explanation(self):
@@ -276,8 +279,8 @@ class OWCalibrationPlot(widget.OWWidget):
             self.info_box.show()
 
         axis = self.plot.getAxis("bottom")
-        axis.setLabel("预测的概率" if self.score == 0
-                      else "分类为正的阈值概率")
+        axis.setLabel("Predicted probability" if self.score == 0
+                      else "Threshold probability to classify as positive")
 
         axis = self.plot.getAxis("left")
         axis.setLabel(Metrics[self.score].name)
@@ -377,7 +380,8 @@ class OWCalibrationPlot(widget.OWWidget):
                     antiAlias=True)
                 for fold in range(len(results.folds)):
                     fold_results = results.get_fold(fold)
-                    fold_curve = Curves.from_results(fold_results, target, clsf)
+                    fold_curve = Curves.from_results(
+                        fold_results, target, clsf)
                     # Can't check this before: p and n can be 0 because of
                     # nan probabilities
                     if fold_curve.p * fold_curve.n == 0:
@@ -424,7 +428,7 @@ class OWCalibrationPlot(widget.OWWidget):
 
     def _on_selection_changed(self):
         self._replot()
-        self.apply()
+        self.commit.deferred()
 
     def threshold_change(self):
         self.threshold = round(self.line.pos().x(), 2)
@@ -477,16 +481,17 @@ class OWCalibrationPlot(widget.OWWidget):
         self.info_label.setText(self.get_info_text(short=True))
 
     def threshold_change_done(self):
-        self.apply()
+        self.commit.deferred()
 
-    def apply(self):
+    @gui.deferred
+    def commit(self):
         self.Information.no_output.clear()
         wrapped = None
         results = self.results
         if results is not None:
             problems = [
                 msg for condition, msg in (
-                    (len(results.folds) > 1,
+                    (results.folds is not None and len(results.folds) > 1,
                      "each training data sample produces a different model"),
                     (results.models is None,
                      "test results do not contain stored models - try testing "
@@ -554,7 +559,7 @@ def gaussian_smoother(x, y, sigma=1.0):
         W = a * np.exp(-gamma * ((xs - x) ** 2))
         return np.average(y, weights=W)
 
-    return np.vectorize(smoother, otypes=[np.float])
+    return np.vectorize(smoother, otypes=[float])
 
 
 if __name__ == "__main__":  # pragma: no cover

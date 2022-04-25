@@ -11,19 +11,17 @@ from Orange.widgets.settings import Setting
 from Orange.data import Table
 from Orange.data.sql.table import SqlTable
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.widget import Msg, OWWidget, Input, Output
 from Orange.util import Reprable
 
 
 class OWDataSampler(OWWidget):
     name = "数据采样器(Data Sampler)"
-    description = "从输入数据集中随机抽取数据点的子集 " 
-    
+    description = "从输入数据集中随机抽取数据点的子集 "
     icon = "icons/DataSampler.svg"
     priority = 100
-    category = "Data"
-    keywords = ["shuju", 'caiyang', 'chouyang', 'yangben', 'shujucaiyang', 'shujuchouyang']
+    category = "变换(Transform)"
+    keywords = ["random", 'caiyang', 'chouyang']
 
     _MAX_SAMPLE_SIZE = 2 ** 31 - 1
 
@@ -31,8 +29,10 @@ class OWDataSampler(OWWidget):
         data = Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data_sample = Output("数据样本(Data Sample)", Table, default=True, replaces=['Data Sample'])
-        remaining_data = Output("剩余数据(Remaining Data)", Table, replaces=['Remaining Data'])
+        data_sample = Output("数据样本(Data Sample)", Table,
+                             default=True, replaces=['Data Sample'])
+        remaining_data = Output("剩余数据(Remaining Data)",
+                                Table, replaces=['Remaining Data'])
 
     want_main_area = False
     resizing_enabled = False
@@ -86,9 +86,6 @@ class OWDataSampler(OWWidget):
         self.indices = None
         self.sampled_instances = self.remaining_instances = None
 
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoInput)
-
         self.sampling_box = gui.vBox(self.controlArea, "采样类型")
         sampling = gui.radioButtons(self.sampling_box, self, "sampling_type",
                                     callback=self.sampling_type_changed)
@@ -99,15 +96,14 @@ class OWDataSampler(OWWidget):
                 self.sampling_type_changed()
             return set_sampling_type_i
 
-        gui.appendRadioButton(sampling, "固定数据比例(Fixed proportion of data):")
+        gui.appendRadioButton(sampling, "固定数据比例:")
         self.sampleSizePercentageSlider = gui.hSlider(
             gui.indentedBox(sampling), self,
             "sampleSizePercentage",
             minValue=0, maxValue=100, ticks=10, labelFormat="%d %%",
-            callback=set_sampling_type(self.FixedProportion),
-            addSpace=12)
+            callback=set_sampling_type(self.FixedProportion))
 
-        gui.appendRadioButton(sampling, "固定样本量(Fixed sample size)")
+        gui.appendRadioButton(sampling, "固定样本量")
         ibox = gui.indentedBox(sampling)
         self.sampleSizeSpin = gui.spin(
             ibox, self, "sampleSizeNumber", label="实例量: ",
@@ -116,15 +112,14 @@ class OWDataSampler(OWWidget):
             controlWidth=90)
         gui.checkBox(
             ibox, self, "replacement", "放回抽样(Sample with replacement)",
-            callback=set_sampling_type(self.FixedSize),
-            addSpace=12)
+            callback=set_sampling_type(self.FixedSize))
 
         gui.appendRadioButton(sampling, "交叉验证(Cross validation)")
         form = QFormLayout(
             formAlignment=Qt.AlignLeft | Qt.AlignTop,
             labelAlignment=Qt.AlignLeft,
             fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow)
-        ibox = gui.indentedBox(sampling, addSpace=True, orientation=form)
+        ibox = gui.indentedBox(sampling, orientation=form)
         form.addRow("子集数量:",
                     gui.spin(
                         ibox, self, "number_of_folds", 2, 100,
@@ -154,10 +149,11 @@ class OWDataSampler(OWWidget):
         spin.setSuffix(" %")
         self.sql_box.setVisible(False)
 
-        self.options_box = gui.vBox(self.controlArea, "选项")
+        self.options_box = gui.vBox(
+            self.controlArea, "选项", addSpaceBefore=False)
         self.cb_seed = gui.checkBox(
             self.options_box, self, "use_seed",
-            "可复制(确定性)抽样 Replicable (deterministic) sampling",
+            "可复制(确定性)抽样",
             callback=self.settings_changed)
         self.cb_stratify = gui.checkBox(
             self.options_box, self, "stratify",
@@ -167,7 +163,7 @@ class OWDataSampler(OWWidget):
             callback=self.settings_changed)
         self.cb_sql_dl.setVisible(False)
 
-        gui.button(self.buttonsArea, self, "执行抽样(Sample Data)",
+        gui.button(self.buttonsArea, self, "执行抽样",
                    callback=self.commit)
 
     def sampling_type_changed(self):
@@ -196,14 +192,11 @@ class OWDataSampler(OWWidget):
             self.cb_seed.setVisible(not sql)
             self.cb_stratify.setVisible(not sql)
             self.cb_sql_dl.setVisible(sql)
-            self.info.set_input_summary(dataset.approx_len(),
-                                        format_summary_details(dataset))
 
             if not sql:
                 self._update_sample_max_size()
                 self.updateindices()
         else:
-            self.info.set_input_summary(self.info.NoInput)
             self.indices = None
             self.clear_messages()
         self.commit()
@@ -249,10 +242,6 @@ class OWDataSampler(OWWidget):
             other = self.data[remaining]
             self.sampled_instances = len(sample)
             self.remaining_instances = len(other)
-
-        summary = sample.approx_len() if sample else self.info.NoOutput
-        details = format_summary_details(sample) if sample else ""
-        self.info.set_output_summary(summary, details)
 
         self.Outputs.data_sample.send(sample)
         self.Outputs.remaining_data.send(other)
@@ -459,7 +448,7 @@ class SampleBootstrap(Reprable):
         rgen = np.random.RandomState(self.random_state)
         sample = rgen.randint(0, self.size, self.size)
         sample.sort()  # not needed for the code below, just for the user
-        insample = np.ones((self.size,), dtype=np.bool)
+        insample = np.ones((self.size,), dtype=bool)
         insample[sample] = False
         remaining = np.flatnonzero(insample)
         return remaining, sample

@@ -11,7 +11,6 @@ from Orange.preprocess import Normalize
 from Orange.widgets.tests.base import WidgetTest
 from Orange.widgets.tests.utils import table_dense_sparse
 from Orange.widgets.unsupervised.owlouvainclustering import OWLouvainClustering
-from Orange.widgets.utils.state_summary import format_summary_details
 
 # Deterministic tests
 np.random.seed(42)
@@ -22,7 +21,7 @@ class TestOWLouvain(WidgetTest):
         self.widget = self.create_widget(
             OWLouvainClustering, stored_settings={'auto_commit': False}
         )
-        self.iris = Table('iris')[::5]
+        self.iris = Table('iris')[::5].copy()
 
     def tearDown(self):
         self.widget.onDeleteWidget()
@@ -65,7 +64,8 @@ class TestOWLouvain(WidgetTest):
         meta = np.array([0] * 5)
         meta_var = ContinuousVariable(name='meta_var')
         table = Table.from_domain(domain=Domain([], metas=[meta_var]), n_rows=5)
-        table.get_column_view(meta_var)[0][:] = meta
+        with table.unlocked():
+            table.get_column_view(meta_var)[0][:] = meta
 
         self.send_signal(self.widget.Inputs.data, table)
         self.commit_and_wait()
@@ -90,7 +90,8 @@ class TestOWLouvain(WidgetTest):
         )
         # X is different, should cause update
         table3 = table1.copy()
-        table3.X[:, 0] = 1
+        with table3.unlocked():
+            table3.X[:, 0] = 1
 
         with patch.object(self.widget, '_invalidate_output') as commit:
             self.send_signal(self.widget.Inputs.data, table1)
@@ -217,7 +218,8 @@ class TestOWLouvain(WidgetTest):
         # Randomly set some values to zero
         dense_data = self.iris
         mask = random_state.beta(1, 2, size=self.iris.X.shape) > 0.5
-        dense_data.X[mask] = 0
+        with dense_data.unlocked():
+            dense_data.X[mask] = 0
         sparse_data = dense_data.to_sparse()
 
         def _compute_clustering(data):
@@ -272,23 +274,3 @@ class TestOWLouvain(WidgetTest):
         correct = {'apply_pca': True, 'k_neighbors': 29, 'metric_idx': 1,
                    'normalize': False, 'pca_components': 10, 'resolution': 1.0}
         self.assertEqual(sorted(settings.items()), sorted(correct.items()))
-
-    def test_summary(self):
-        """Check if the status bar updates"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        self.send_signal(self.widget.Inputs.data, self.iris)
-        summary, details = f"{len(self.iris)}", format_summary_details(self.iris)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        output = self.get_output(self.widget.Outputs.annotated_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)

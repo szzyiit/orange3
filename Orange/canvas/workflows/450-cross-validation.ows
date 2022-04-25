@@ -1,31 +1,31 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="您的分类数据集上的监督数据挖掘方法有多好？ 这个工作流程对医学数据集采用不同分类方法并比较评分。 这里的中心小部件是用于测试和评分的小部件，其输入为数据和一组学习器，进行交叉验证和分数预测准确性，并输出分数以供进一步检查。" title="交叉验证" version="2.0">
+<scheme description="How good are supervised data mining methods on your classification dataset? Here's a workflow that scores various classification techniques on a dataset from medicine. The central widget here is the one for testing and scoring, which is given the data and a set of learners, does cross-validation and scores predictive accuracy, and outputs the scores for further examination." title="Cross-Validation" version="2.0">
 	<nodes>
-		<node id="0" name="文件(File)" position="(91.0, 170.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="文件" version="" />
-		<node id="1" name="测试和评分(Test and Score)" position="(364.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owtestlearners.OWTestLearners" title="测试与评分" version="" />
-		<node id="2" name="逻辑回归(Logistic Regression)" position="(202.0, 245.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owlogisticregression.OWLogisticRegression" title="逻辑回归" version="" />
-		<node id="3" name="支持向量机(SVM)" position="(295.0, 395.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owsvm.OWSVM" title="支持向量机" version="" />
-		<node id="4" name="数据表(Data Table)" position="(300.0, 93.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表" version="" />
-		<node id="5" name="数据表(Data Table)" position="(651.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="数据表 (1)" version="" />
-		<node id="6" name="混淆矩阵(Confusion Matrix)" position="(499.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owconfusionmatrix.OWConfusionMatrix" title="混淆矩阵" version="" />
-		<node id="7" name="随机森林(Random Forest)" position="(225.0, 328.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owrandomforest.OWRandomForest" title="随机森林分类器" version="" />
+		<node id="0" name="File" position="(91.0, 170.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owfile.OWFile" title="File" version="" />
+		<node id="1" name="Test &amp; Score" position="(364.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owtestlearners.OWTestLearners" title="Test &amp; Score" version="" />
+		<node id="2" name="Logistic Regression" position="(202.0, 245.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owlogisticregression.OWLogisticRegression" title="Logistic Regression" version="" />
+		<node id="3" name="Random Forest" position="(225.0, 328.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owrandomforest.OWRandomForest" title="Random Forest Classification" version="" />
+		<node id="4" name="SVM" position="(295.0, 395.0)" project_name="Orange3" qualified_name="Orange.widgets.model.owsvm.OWSVM" title="SVM" version="" />
+		<node id="5" name="Data Table" position="(300.0, 93.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table" version="" />
+		<node id="6" name="Data Table" position="(651.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.data.owtable.OWDataTable" title="Data Table (1)" version="" />
+		<node id="7" name="Confusion Matrix" position="(499.0, 218.0)" project_name="Orange3" qualified_name="Orange.widgets.evaluate.owconfusionmatrix.OWConfusionMatrix" title="Confusion Matrix" version="" />
 	</nodes>
 	<links>
-		<link enabled="true" id="0" sink_channel="Data" sink_node_id="4" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="1" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
-		<link enabled="true" id="2" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="2" />
-		<link enabled="true" id="3" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="3" />
-		<link enabled="true" id="4" sink_channel="Evaluation Results" sink_node_id="6" source_channel="Evaluation Results" source_node_id="1" />
-		<link enabled="true" id="5" sink_channel="Data" sink_node_id="5" source_channel="Selected Data" source_node_id="6" />
-		<link enabled="true" id="6" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="7" />
+		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="1" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="2" />
+		<link enabled="true" id="2" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="3" />
+		<link enabled="true" id="3" sink_channel="Learner" sink_node_id="1" source_channel="Learner" source_node_id="4" />
+		<link enabled="true" id="4" sink_channel="Data" sink_node_id="5" source_channel="Data" source_node_id="0" />
+		<link enabled="true" id="5" sink_channel="Evaluation Results" sink_node_id="7" source_channel="Evaluation Results" source_node_id="1" />
+		<link enabled="true" id="6" sink_channel="Data" sink_node_id="6" source_channel="Selected Data" source_node_id="7" />
 	</links>
 	<annotations>
-		<text font-family="Helvetica" font-size="14" id="0" rect="(16.0, 56.0, 180.0, 82.0)" type="text/plain">选择类标记的数据集。 比如文档数据集中的“iris.tab”。</text>
-		<text font-family="Helvetica" font-size="14" id="1" rect="(381.0, 76.0, 171.0, 54.0)" type="text/plain">先检查数据总是一个好主意。</text>
-		<text font-family="Helvetica" font-size="14" id="2" rect="(586.0, 90.0, 197.0, 96.0)" type="text/plain">在混淆矩阵中选择一个单元格以获取相关的数据实例。 我们在电子表格中检查它们。</text>
-		<text font-family="Helvetica" font-size="14" id="3" rect="(533.0, 308.0, 150.0, 54.0)" type="text/plain">用于进一步分析交叉验证结果。</text>
-		<text font-family="Helvetica" font-size="14" id="4" rect="(373.0, 319.0, 132.0, 82.0)" type="text/plain">可以同时对多个学习器进行交叉验证。</text>
-		<text font-family="Helvetica" font-size="14" id="5" rect="(42.0, 394.0, 150.0, 68.0)" type="text/plain">可以同时对多个学习器进行交叉验证。</text>
+		<text font-family="Helvetica" font-size="14" id="0" rect="(16.0, 56.0, 180.0, 82.0)" type="text/plain">Choose class-labeled dataset. Say, "iris.tab" from documentation datasets.</text>
+		<text font-family="Helvetica" font-size="14" id="1" rect="(381.0, 76.0, 171.0, 54.0)" type="text/plain">It's always a good idea to check out the data first.</text>
+		<text font-family="Helvetica" font-size="14" id="2" rect="(586.0, 90.0, 197.0, 96.0)" type="text/plain">Select a cell in confusion matrix to obtain related data instances. Here we examine them in the spreadheet.</text>
+		<text font-family="Helvetica" font-size="14" id="3" rect="(533.0, 308.0, 150.0, 54.0)" type="text/plain">Use for additional analysis of cross-validation results.</text>
+		<text font-family="Helvetica" font-size="14" id="4" rect="(373.0, 319.0, 132.0, 82.0)" type="text/plain">Cross-validation takes place here. Double click to see the performance scores.</text>
+		<text font-family="Helvetica" font-size="14" id="5" rect="(42.0, 394.0, 150.0, 68.0)" type="text/plain">Several learners can be scored in cross-validation at the same time.</text>
 		<arrow end="(67.0, 150.0)" fill="#C1272D" id="6" start="(47.0, 116.0)" />
 		<arrow end="(336.0, 94.0)" fill="#C1272D" id="7" start="(378.0, 94.0)" />
 		<arrow end="(373.0, 272.0)" fill="#C1272D" id="8" start="(398.0, 318.0)" />

@@ -9,7 +9,7 @@ class OWSaveDistances(OWSaveBase):
     description = "将距离矩阵保存到输出文件。"
     icon = "icons/SaveDistances.svg"
     keywords = ["distance matrix", "save", 'baocunjuli', 'juli']
-    category = 'unsupervised'
+    category = '非监督(Unsupervised)'
 
     filters = ["Distance File (*.dst)"]
 
@@ -33,13 +33,6 @@ class OWSaveDistances(OWSaveBase):
         self.Warning.table_not_saved(shown=skip_row and skip_col)
         self.Warning.part_not_saved("columns" if skip_col else "rows",
                                     shown=skip_row != skip_col,)
-
-    def update_status(self):
-        dist = self.data
-        if dist is None:
-            self.info.set_input_summary(self.info.NoInput)
-        else:
-            self.info.set_input_summary(str(len(dist)), self._description())
 
     def send_report(self):
         self.report_items((

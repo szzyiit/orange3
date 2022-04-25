@@ -1,5 +1,5 @@
-Name: 住房数据集
-Description: 美国人口普查局收集的有关波士顿住房的数据。
+Name: Housing dataset
+Description: Data collected by the U.S Census Service concerning housing in Boston.
 Author: U.S Census Service
 Year: 1978
 Reference: Harrison, D. and Rubinfeld, D.L. (1978) Hedonic prices and the demand for clean air. J. Environ. Economics and Management 5, 81–102.

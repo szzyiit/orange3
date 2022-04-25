@@ -14,6 +14,7 @@ from AnyQt.QtWidgets import (
     QComboBox, QSpinBox, QDoubleSpinBox, QSlider
 )
 
+from orangewidget.widget import StateInfo
 from orangewidget.tests.base import (
     GuiTest, WidgetTest as WidgetTestBase, DummySignalManager, DEFAULT_TIMEOUT
 )
@@ -32,7 +33,7 @@ from Orange.regression.base_regression import (
 )
 from Orange.widgets.tests.utils import simulate
 from Orange.widgets.utils.annotated_data import (
-    ANNOTATED_DATA_FEATURE_NAME, ANNOTATED_DATA_SIGNAL_Chinese_NAME
+    ANNOTATED_DATA_FEATURE_NAME, ANNOTATED_DATA_SIGNAL_NAME
 )
 from Orange.widgets.utils.owlearnerwidget import OWBaseLearner
 from Orange.widgets.visualize.utils.plotutils import AnchorItem
@@ -40,10 +41,6 @@ from Orange.widgets.widget import OWWidget
 
 
 class WidgetTest(WidgetTestBase):
-    '''
-    Assert two tables are equal
-    '''
-
     def assert_table_equal(self, table1, table2):
         if table1 is None or table2 is None:
             self.assertIs(table1, table2)
@@ -224,11 +221,9 @@ class WidgetLearnerTestMixin:
     widget = None  # type: OWBaseLearner
 
     def init(self):
-        # init dataset for classification and regression
         cls_ds = Table(datasets.path("testing_dataset_cls"))
         reg_ds = Table(datasets.path("testing_dataset_reg"))
 
-        # init models
         if issubclass(self.widget.LEARNER, Fitter):
             self.data = cls_ds
             self.valid_datasets = (cls_ds, reg_ds)
@@ -254,11 +249,6 @@ class WidgetLearnerTestMixin:
         self.parameters = []
 
     def test_has_unconditional_apply(self):
-        '''
-        If there is a new signal comes in, handle that signal immediately
-        widgets should Apply, Send or Run when their input signals changed even if auto-apply/send/run is disabled.
-        see: https://github.com/biolab/orange3/issues/3455#issuecomment-449428361
-        '''
         self.assertTrue(hasattr(self.widget, "unconditional_apply"))
 
     def test_input_data(self):
@@ -344,7 +334,7 @@ class WidgetLearnerTestMixin:
         self.assertIsNone(self.get_output(self.widget.Outputs.model))
         self.widget.apply_button.button.click()
         self.assertIsNone(self.get_output(self.widget.Outputs.model))
-        self.send_signal("数据(Data)", self.data)
+        self.send_signal('数据(Data)', self.data)
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         model = self.get_output(self.widget.Outputs.model)
@@ -379,6 +369,7 @@ class WidgetLearnerTestMixin:
         self.widget.apply_button.button.click()
         self.wait_until_stop_blocking()
         model = self.get_output(self.widget.Outputs.model)
+        self.assertIsNotNone(model)
         pickle.dumps(model)
 
     @staticmethod
@@ -510,10 +501,11 @@ class WidgetOutputsTestMixin:
     _compare_selected_annotated_domains.
     """
 
-    def init(self, same_table_attributes=True):
+    def init(self, same_table_attributes=True, output_all_on_no_selection=False):
         self.data = Table("iris")
         self.same_input_output_domain = True
         self.same_table_attributes = same_table_attributes
+        self.output_all_on_no_selection = output_all_on_no_selection
 
     def test_outputs(self, timeout=DEFAULT_TIMEOUT):
         self.send_signal(self.signal_name, self.signal_data)
@@ -521,11 +513,15 @@ class WidgetOutputsTestMixin:
         self.wait_until_finished(timeout=timeout)
 
         # check selected data output
-        self.assertIsNone(self.get_output("选定的数据(Selected Data)"))
+        output = self.get_output("选定的数据(Selected Data)")
+        if self.output_all_on_no_selection:
+            self.assertEqual(output, self.signal_data)
+        else:
+            self.assertIsNone(output)
 
         # check annotated data output
         feature_name = ANNOTATED_DATA_FEATURE_NAME
-        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+        annotated = self.get_output("数据(Data)")
         self.assertEqual(0, np.sum([i[feature_name] for i in annotated]))
 
         # select data instances
@@ -543,7 +539,7 @@ class WidgetOutputsTestMixin:
             self.assertEqual(selected.attributes, self.data.attributes)
 
         # check annotated data output
-        annotated = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+        annotated = self.get_output("数据(Data)")
         self.assertEqual(n_sel, np.sum([i[feature_name] for i in annotated]))
         if self.same_table_attributes:
             self.assertEqual(annotated.attributes, self.data.attributes)
@@ -554,7 +550,7 @@ class WidgetOutputsTestMixin:
         # check output when data is removed
         self.send_signal(self.signal_name, None)
         self.assertIsNone(self.get_output("选定的数据(Selected Data)"))
-        self.assertIsNone(self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME))
+        self.assertIsNone(self.get_output("数据(Data)"))
 
     def _select_data(self):
         raise NotImplementedError("Subclasses should implement select_data")
@@ -657,19 +653,19 @@ class ProjectionWidgetTestMixin:
         """Test if data is plotted only once but committed on every input change"""
         table = Table("heart_disease")
         self.widget.setup_plot = Mock()
-        self.widget.commit = self.widget.unconditional_commit = Mock()
+        self.widget.commit.now = self.widget.commit.deferred = Mock()
         self.send_signal(self.widget.Inputs.data, table)
         self.widget.setup_plot.assert_called_once()
-        self.widget.commit.assert_called_once()
+        self.widget.commit.now.assert_called_once()
 
         self.wait_until_finished(timeout=timeout)
         self.widget.setup_plot.assert_called_once()
-        self.widget.commit.assert_called_once()
+        self.widget.commit.now.assert_called_once()
 
-        self.widget.commit.reset_mock()
+        self.widget.commit.now.reset_mock()
         self.send_signal(self.widget.Inputs.data_subset, table[::10])
         self.widget.setup_plot.assert_called_once()
-        self.widget.commit.assert_called_once()
+        self.widget.commit.now.assert_called_once()
 
     def test_subset_data_color(self, timeout=DEFAULT_TIMEOUT):
         self.send_signal(self.widget.Inputs.data, self.data)
@@ -767,39 +763,6 @@ class ProjectionWidgetTestMixin:
         self.wait_until_finished(timeout=timeout)
         self.send_signal(self.widget.Inputs.data, table)
 
-    def test_in_out_summary(self, timeout=DEFAULT_TIMEOUT):
-        info = self.widget.info
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertIn(info._StateInfo__input_summary.details,
-                      ["", "No data on input"])
-        self.assertIn(info._StateInfo__output_summary.details,
-                      ["", "No data on output"])
-
-        self.send_signal(self.widget.Inputs.data, self.data)
-        self.assertTrue(
-            self.signal_manager.wait_for_finished(self.widget, timeout),
-            f"Did not finish in the specified {timeout}ms timeout"
-        )
-        ind = self._select_data()
-        self.assertEqual(info._StateInfo__input_summary.brief,
-                         str(len(self.data)))
-        self.assertEqual(info._StateInfo__output_summary.brief, str(len(ind)))
-        self.assertGreater(info._StateInfo__input_summary.details, "")
-        self.assertGreater(info._StateInfo__output_summary.details, "")
-        self.assertNotIn(info._StateInfo__input_summary.details,
-                         ["", "No data on input"])
-        self.assertNotIn(info._StateInfo__output_summary.details,
-                         ["", "No data on output"])
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertIn(info._StateInfo__input_summary.details,
-                      ["", "No data on input"])
-        self.assertIn(info._StateInfo__output_summary.details,
-                      ["", "No data on output"])
-
     def test_visual_settings(self, timeout=DEFAULT_TIMEOUT):
         graph = self.widget.graph
         font = QFont()
@@ -868,10 +831,11 @@ class ProjectionWidgetTestMixin:
 class AnchorProjectionWidgetTestMixin(ProjectionWidgetTestMixin):
     def test_embedding_missing_values(self):
         table = Table("heart_disease")
-        table.X[0] = np.nan
+        with table.unlocked():
+            table.X[0] = np.nan
         self.send_signal(self.widget.Inputs.data, table)
         self.assertFalse(np.all(self.widget.valid_data))
-        output = self.get_output(ANNOTATED_DATA_SIGNAL_Chinese_NAME)
+        output = self.get_output(ANNOTATED_DATA_SIGNAL_NAME)
         embedding_mask = np.all(np.isnan(output.metas[:, :2]), axis=1)
         np.testing.assert_array_equal(~embedding_mask, self.widget.valid_data)
         # reload
@@ -879,7 +843,8 @@ class AnchorProjectionWidgetTestMixin(ProjectionWidgetTestMixin):
 
     def test_sparse_data(self, timeout=DEFAULT_TIMEOUT):
         table = Table("iris")
-        table.X = sp.csr_matrix(table.X)
+        with table.unlocked():
+            table.X = sp.csr_matrix(table.X)
         self.assertTrue(sp.issparse(table.X))
         self.send_signal(self.widget.Inputs.data, table)
         self.assertTrue(self.widget.Error.sparse_data.is_shown())
@@ -890,7 +855,8 @@ class AnchorProjectionWidgetTestMixin(ProjectionWidgetTestMixin):
 
     def test_manual_move(self):
         data = self.data.copy()
-        data[1, 0] = np.nan
+        with data.unlocked():
+            data[1, 0] = np.nan
         nvalid, nsample = len(self.data) - 1, self.widget.SAMPLE_SIZE
         self.send_signal(self.widget.Inputs.data, data)
         self.widget.graph.select_by_indices(list(range(0, len(data), 10)))
@@ -999,7 +965,8 @@ class datasets:
                 ["", "", "", ""],
                 "ynyn"
             )))
-        table[:, 1] = value
+        with table.unlocked():
+            table[:, 1] = value
         return table
 
     @classmethod

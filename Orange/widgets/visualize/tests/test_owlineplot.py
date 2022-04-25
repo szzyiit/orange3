@@ -10,7 +10,6 @@ import scipy.sparse as sp
 from AnyQt.QtCore import Qt, QPointF
 from AnyQt.QtGui import QFont
 
-import pyqtgraph
 from pyqtgraph import PlotCurveItem
 from pyqtgraph.Point import Point
 
@@ -21,9 +20,48 @@ from Orange.widgets.tests.base import (
     WidgetTest, WidgetOutputsTestMixin, datasets
 )
 from Orange.widgets.visualize.owlineplot import (
-    OWLinePlot, ccw, intersects, line_intersects_profiles
+    OWLinePlot, ccw, intersects, line_intersects_profiles, ProfileGroup
 )
-from Orange.widgets.utils.state_summary import format_summary_details
+
+
+class TestProfileGroup(unittest.TestCase):
+    def test_get_disconnected_curve_missing_data_sizes(self):
+        y = np.array([[1.2, 1.5, 2., 1.4, 2.],
+                      [1.3, np.nan, 4., 1.5, 3.],
+                      [np.nan, np.nan, 5.6, np.nan, 3.4],
+                      [3.4, 5.7, 3.5, 3.3, 3.7]])
+        x, y, connect = \
+            ProfileGroup._ProfileGroup__get_disconnected_curve_missing_data(y)
+        self.assertEqual(x.shape, (20,))
+        self.assertEqual(y.shape, (20,))
+        self.assertEqual(connect.shape, (20,))
+
+    def test_get_disconnected_curve_missing_data_connect(self):
+        y = np.array([[1.2, 1.5, 2., 1.4, 2.],
+                      [1.3, np.nan, 4., 1.5, 3.],
+                      [np.nan, np.nan, 5.6, np.nan, 3.4],
+                      [3.4, 5.7, 3.5, 3.3, 3.7]])
+        _, _, connect = \
+            ProfileGroup._ProfileGroup__get_disconnected_curve_missing_data(y)
+        con = [False] * 6 + [True] + [False] * 6 + [True] + [False] * 6
+        np.testing.assert_array_equal(connect, con)
+
+        y = np.array([[1.2, 1.5, 2., 1.4, 2.],
+                      [np.nan, np.nan, np.nan, np.nan, 3.],
+                      [np.nan, np.nan, np.nan, np.nan, 3.4],
+                      [3.4, 5.7, 3.5, 3.3, 3.7]])
+        _, _, connect = \
+            ProfileGroup._ProfileGroup__get_disconnected_curve_missing_data(y)
+        np.testing.assert_array_equal(connect, [False] * 20)
+
+        y = np.array([[np.nan, np.nan, np.nan, np.nan, np.nan],
+                      [np.nan, np.nan, np.nan, np.nan, 3.4],
+                      [np.nan, np.nan, np.nan, np.nan, np.nan],
+                      [3.4, 5.7, 3.5, 3.3, 3.7]])
+        _, _, connect = \
+            ProfileGroup._ProfileGroup__get_disconnected_curve_missing_data(y)
+        con = [True] * 4 + [False] * 6 + [True] * 4 + [False] * 6
+        np.testing.assert_array_equal(connect, con)
 
 
 class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
@@ -32,7 +70,7 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         super().setUpClass()
         WidgetOutputsTestMixin.init(cls)
 
-        cls.signal_name = "数据(Data)"
+        cls.signal_name = "Data"
         cls.signal_data = cls.data
 
     def setUp(self):
@@ -47,13 +85,10 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         return self.widget.selection
 
     def test_input_data(self):
-        no_data = "No data on input"
-        self.assertEqual(self.widget.info._StateInfo__input_summary.details, no_data)
         self.send_signal(self.widget.Inputs.data, self.data)
         self.assertEqual(self.widget.group_view.model().rowCount(), 2)
         self.send_signal(self.widget.Inputs.data, None)
         self.assertEqual(self.widget.group_view.model().rowCount(), 1)
-        self.assertEqual(self.widget.info._StateInfo__input_summary.details, no_data)
 
     def test_input_continuous_class(self):
         self.send_signal(self.widget.Inputs.data, self.housing)
@@ -124,9 +159,10 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
 
     def test_saved_selection(self):
         data = self.data.copy()
-        data[0, 0] = np.nan
+        with data.unlocked():
+            data[0, 0] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
-        mask = np.zeros(len(data) - 1, dtype=bool)
+        mask = np.zeros(len(data), dtype=bool)
         mask[::10] = True
         self.widget.selection_changed(mask)
         settings = self.widget.settingsHandler.pack_data(self.widget)
@@ -158,14 +194,6 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         pos_down, pos_up = QPointF(2.38, 4.84), QPointF(3.58, 4.76)
         mapToParent = self.widget.graph.view_box.childGroup.mapToParent
 
-        # On pyqtgraph < 0.11.1 mapping does not work unless the widget is shown
-        # Delete when Orange stops supporting pyqtgraph < 0.11.1,
-        to_and_back = self.widget.graph.view_box.childGroup.mapFromParent(
-            mapToParent(pos_down))
-        successful_mapping = (to_and_back - pos_down).manhattanLength() < 0.001
-        if not successful_mapping:  # on pyqtgraph < 0.11.1
-            mapToParent = lambda x: x
-
         event.buttonDownPos.return_value = mapToParent(pos_down)
         event.pos.return_value = mapToParent(pos_up)
 
@@ -177,12 +205,6 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         self.assertEqual(len(self.widget.selection), 55)
         self.widget.graph.view_box.mouseClickEvent(event)
         self.assertListEqual(self.widget.selection, [])
-
-    def test_remove_old_pyqtgraph_support(self):
-        # When 0.11.2 is released there is probably time to drop support
-        # for pyqtgraph <= 0.11.0:
-        # - remove test_selection_line workaround for 0.11.0
-        self.assertLess(pyqtgraph.__version__, "0.11.2")
 
     @patch("Orange.widgets.visualize.owlineplot.SEL_MAX_INSTANCES", 100)
     def test_select_lines_enabled(self):
@@ -203,11 +225,9 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
 
     def test_data_with_missing_values(self):
         data = self.data.copy()
-        data[0, 0] = np.nan
+        with data.unlocked():
+            data[0, 0] = np.nan
         self.send_signal(self.widget.Inputs.data, data)
-        self.assertTrue(self.widget.Information.hidden_instances.is_shown())
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertFalse(self.widget.Information.hidden_instances.is_shown())
 
     def test_display_options(self):
         self.send_signal(self.widget.Inputs.data, self.data[::10])
@@ -244,11 +264,18 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         self.assertEqual(p, 2)
         self.assertFalse(self.widget.graph.legend.isVisible())
 
+    def test_group_var_none_single_instance(self):
+        self.send_signal(self.widget.Inputs.data, self.housing[:1])
+        m, n, p = self.widget.graph.view_box._profile_items.shape
+        self.assertEqual(m, len(self.housing.domain.attributes))
+        self.assertEqual(n, 1)
+        self.assertEqual(p, 2)
+        self.assertFalse(self.widget.graph.legend.isVisible())
+
     def test_datasets(self):
         for ds in datasets.datasets():
             self.send_signal(self.widget.Inputs.data, ds)
         self.send_signal(self.widget.Inputs.data, None)
-        self.assertFalse(self.widget.Error.no_valid_data.is_shown())
 
     def test_none_data(self):
         self.send_signal(self.widget.Inputs.data, self.data[:0])
@@ -287,7 +314,6 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         self.send_signal(self.widget.Inputs.data_subset, table[::30])
         self.assertEqual(len(self.widget.subset_indices), 5)
 
-    @unittest.skip("not work in chinese version")
     def test_send_report(self):
         self.send_signal(self.widget.Inputs.data, self.data)
         self.widget.report_button.click()
@@ -295,37 +321,11 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         self.widget.report_button.click()
 
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_commit') as commit:
+        with patch.object(self.widget.commit, 'now') as commit:
             self.widget.auto_commit = False
             commit.reset_mock()
             self.send_signal(self.widget.Inputs.data, self.titanic)
             commit.assert_called()
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        info = self.widget.info
-        no_input, no_output = "No data on input", "No data on output"
-
-        data = self.housing
-        self.send_signal(self.widget.Inputs.data, data)
-        summary, details = f"{len(data)}", format_summary_details(data)
-        self.assertEqual(info._StateInfo__input_summary.brief, summary)
-        self.assertEqual(info._StateInfo__input_summary.details, details)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
-
-        sel_indices = list(range(5))
-        self.widget.selection_changed(sel_indices)
-        output = self.get_output(self.widget.Outputs.selected_data)
-        summary, details = f"{len(output)}", format_summary_details(output)
-        self.assertEqual(info._StateInfo__output_summary.brief, summary)
-        self.assertEqual(info._StateInfo__output_summary.details, details)
-
-        self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(info._StateInfo__input_summary.brief, "-")
-        self.assertEqual(info._StateInfo__input_summary.details, no_input)
-        self.assertEqual(info._StateInfo__output_summary.brief, "-")
-        self.assertEqual(info._StateInfo__output_summary.details, no_output)
 
     def test_visual_settings(self, timeout=DEFAULT_TIMEOUT):
         graph = self.widget.graph
@@ -388,6 +388,16 @@ class TestOWLinePLot(WidgetTest, WidgetOutputsTestMixin):
         axis = graph.parameter_setter.getAxis("left")
         self.assertEqual(axis.label.toPlainText().strip(), "Foo3")
         self.assertEqual(axis.labelText, "Foo3")
+
+        key, value = ("Figure", "Lines (missing value)", "Width"), 10
+        self.widget.set_visual_settings(key, value)
+        for line in graph.parameter_setter.missing_lines_items:
+            self.assertEqual(line.opts["pen"].width(), 10)
+
+        key, value = ("Figure", "Selected lines (missing value)", "Width"), 11
+        self.widget.set_visual_settings(key, value)
+        for line in graph.parameter_setter.sel_missing_lines_items:
+            self.assertEqual(line.opts["pen"].width(), 11)
 
     def assertFontEqual(self, font1, font2):
         self.assertEqual(font1.family(), font2.family())

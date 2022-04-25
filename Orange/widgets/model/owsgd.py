@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from AnyQt.QtCore import Qt
-from AnyQt.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QLabel
+from AnyQt.QtWidgets import QHBoxLayout, QGridLayout, QLabel, QWidget
 
 from Orange.widgets.report import bool_str
 from Orange.data import ContinuousVariable, StringVariable, Domain, Table
@@ -24,25 +24,25 @@ class OWSGD(OWBaseLearner):
         "Orange.widgets.regression.owsgdregression.OWSGDRegression",
     ]
     priority = 90
-    keywords = ["sgd", 'suiji', 'suijitidu', 'tiduxiajiang']
-    category = 'model'
+    keywords = ["sgd", 'suiji', 'tiduxiajiang']
+    category = '模型(Model)'
 
     settings_version = 2
 
     LEARNER = SGDLearner
 
-    left_side_scrolling = True
-
     class Outputs(OWBaseLearner.Outputs):
-        coefficients = Output("系数(Coefficients)", Table, explicit=True, replaces=['Coefficients'])
+        coefficients = Output("系数(Coefficients)", Table,
+                              explicit=True, replaces=['Coefficients'])
 
     reg_losses = (
-        ('Squared Loss', 'squared_loss'),
+        ('Squared Loss', 'squared_error'),
         ('Huber', 'huber'),
         ('ε insensitive', 'epsilon_insensitive'),
         ('Squared ε insensitive', 'squared_epsilon_insensitive'))
+
     Chinese_reg_losses = (
-        ('平方损失', 'squared_loss'),
+        ('平方损失', 'squared_error'),
         ('Huber', 'huber'),
         ('ε insensitive', 'epsilon_insensitive'),
         ('Squared ε insensitive', 'squared_epsilon_insensitive'))
@@ -107,17 +107,15 @@ class OWSGD(OWBaseLearner):
     tol = Setting(1e-3)
     tol_enabled = Setting(True)
 
-    def __init__(self):
-        super().__init__()
-        self.apply_button.layout().insertStretch(0)
-
     def add_main_layout(self):
+        main_widget = QWidget()
         layout = QHBoxLayout()
-        self.controlArea.layout().addLayout(layout)
-        left = QVBoxLayout()
-        right = QVBoxLayout()
-        layout.addLayout(left)
-        layout.addLayout(right)
+        layout.setContentsMargins(0, 0, 0, 0)
+        main_widget.setLayout(layout)
+        self.controlArea.layout().addWidget(main_widget)
+
+        left = gui.vBox(main_widget).layout()
+        right = gui.vBox(main_widget).layout()
         self._add_algorithm_to_layout(left)
         self._add_regularization_to_layout(left)
         self._add_learning_params_to_layout(right)
@@ -125,7 +123,7 @@ class OWSGD(OWBaseLearner):
     def _foc_frame_width(self):
         style = self.style()
         return style.pixelMetric(style.PM_FocusFrameHMargin) + \
-               style.pixelMetric(style.PM_ComboBoxFrameWidth)
+            style.pixelMetric(style.PM_ComboBoxFrameWidth)
 
     def _add_algorithm_to_layout(self, layout):
         # this is part of init, pylint: disable=attribute-defined-outside-init
@@ -368,7 +366,8 @@ class OWSGD(OWBaseLearner):
             else:
                 attrs = [ContinuousVariable("coef")]
                 domain = Domain(attrs, metas=[StringVariable("name")])
-                cfs = list(self.model.intercept) + list(self.model.coefficients)
+                cfs = list(self.model.intercept) + \
+                    list(self.model.coefficients)
                 names = ["intercept"] + \
                         [attr.name for attr in self.model.domain.attributes]
                 coeffs = Table.from_list(domain, list(zip(cfs, names)))

@@ -1,6 +1,6 @@
 import logging
 import warnings
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from functools import partial
 from itertools import chain
 from types import SimpleNamespace
@@ -8,9 +8,9 @@ from typing import Any, Callable, List, Tuple
 
 import numpy as np
 from AnyQt.QtCore import (
-    QItemSelection, QItemSelectionModel, QItemSelectionRange, Qt
+    QItemSelection, QItemSelectionModel, QItemSelectionRange, Qt,
+    pyqtSignal as Signal
 )
-from AnyQt.QtGui import QFontMetrics
 from AnyQt.QtWidgets import (
     QButtonGroup, QCheckBox, QGridLayout, QHeaderView, QItemDelegate,
     QRadioButton, QStackedWidget, QTableView
@@ -31,9 +31,8 @@ from Orange.widgets.unsupervised.owdistances import InterruptException
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
 from Orange.widgets.utils.itemmodels import PyTableModel
 from Orange.widgets.utils.sql import check_sql_input
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.widget import AttributeList, Input, Msg, Output, OWWidget
+from Orange.widgets.widget import AttributeList, Input, MultiInput, Output, Msg, OWWidget
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +46,9 @@ class ProblemType:
                 cls.REGRESSION if isinstance(variable, ContinuousVariable) else
                 cls.UNSUPERVISED)
 
-ScoreMeta = namedtuple("score_meta", ["name", "zh_name", "shortname", "zh_shortname", "scorer", 'problem_type', 'is_default'])
+
+ScoreMeta = namedtuple("score_meta", [
+                       "name", "zh_name", "shortname", "zh_shortname", "scorer", 'problem_type', 'is_default'])
 
 # Default scores.
 CLS_SCORES = [
@@ -74,7 +75,12 @@ REG_SCORES = [
 ]
 SCORES = CLS_SCORES + REG_SCORES
 
+VARNAME_COL, NVAL_COL = range(2)
+
+
 class TableView(QTableView):
+    manualSelection = Signal()
+
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent=parent,
                          selectionBehavior=QTableView.SelectRows,
@@ -84,25 +90,22 @@ class TableView(QTableView):
                          cornerButtonEnabled=False,
                          alternatingRowColors=False,
                          **kwargs)
-        self.setItemDelegate(gui.ColoredBarItemDelegate(self))
-        self.setItemDelegateForColumn(0, QItemDelegate())
-
-        header = self.verticalHeader()
-        header.setSectionResizeMode(header.Fixed)
-        header.setFixedWidth(50)
-        header.setDefaultSectionSize(22)
-        header.setTextElideMode(Qt.ElideMiddle)  # Note: https://bugreports.qt.io/browse/QTBUG-62091
+        # setItemDelegate(ForColumn) doesn't take ownership of delegates
+        self._bar_delegate = gui.ColoredBarItemDelegate(self)
+        self._del0, self._del1 = QItemDelegate(), QItemDelegate()
+        self.setItemDelegate(self._bar_delegate)
+        self.setItemDelegateForColumn(VARNAME_COL, self._del0)
+        self.setItemDelegateForColumn(NVAL_COL, self._del1)
 
         header = self.horizontalHeader()
         header.setSectionResizeMode(header.Fixed)
-        header.setFixedHeight(24)
+        header.setFixedHeight(34)  # 增大行高
         header.setDefaultSectionSize(80)
         header.setTextElideMode(Qt.ElideMiddle)
 
-    def setVHeaderFixedWidthFromLabel(self, max_label):
-        header = self.verticalHeader()
-        width = QFontMetrics(header.font()).width(max_label)
-        header.setFixedWidth(min(width + 40, 400))
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.manualSelection.emit()
 
 
 class TableModel(PyTableModel):
@@ -119,20 +122,21 @@ class TableModel(PyTableModel):
             value = (value - vmin) / ((vmax - vmin) or 1)
             return value
 
-        if role == Qt.DisplayRole:
+        if role == Qt.DisplayRole and index.column() != VARNAME_COL:
             role = Qt.EditRole
 
         value = super().data(index, role)
 
-        # Display nothing for non-existent attr value counts in the first column
-        if role == Qt.EditRole and index.column() == 0 and np.isnan(value):
+        # Display nothing for non-existent attr value counts in column 1
+        if role == Qt.EditRole \
+                and index.column() == NVAL_COL and np.isnan(value):
             return ''
 
         return value
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.InitialSortOrderRole:
-            return Qt.DescendingOrder
+            return Qt.DescendingOrder if section > 0 else Qt.AscendingOrder
         return super().headerData(section, orientation, role)
 
     def setExtremesFrom(self, column, values):
@@ -159,10 +163,14 @@ class TableModel(PyTableModel):
             super().resetSorting()
 
     def _argsortData(self, data, order):
-        """Always sort NaNs last"""
+        if data.dtype not in (float, int):
+            data = np.char.lower(data)
         indices = np.argsort(data, kind='mergesort')
         if order == Qt.DescendingOrder:
-            return np.roll(indices[::-1], -np.isnan(data).sum())
+            indices = indices[::-1]
+            if data.dtype == float:
+                # Always sort NaNs last
+                return np.roll(indices, -np.isnan(data).sum())
         return indices
 
 
@@ -244,18 +252,21 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     icon = "icons/Rank.svg"
     priority = 1102
     keywords = ['paiming', 'mingci', 'paixu']
-    category = "Data"
+    category = "数据(Data)"
 
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
-        scorer = Input("评分器(Scorer)", score.Scorer, multiple=True, replaces=['Scorer'])
+        scorer = MultiInput("评分器(Scorer)", score.Scorer,
+                            filter_none=True, replaces=['Scorer'])
 
     class Outputs:
-        reduced_data = Output("选中的数据(Reduced Data)", Table, default=True, replaces=['Reduced Data'])
+        reduced_data = Output("选中的数据(Reduced Data)", Table,
+                              default=True, replaces=['Reduced Data'])
         scores = Output("评分(Scores)", Table, replaces=['Scores'])
-        features = Output("特征(Features)", AttributeList, dynamic=False, replaces=['Features'])
+        features = Output("特征(Features)", AttributeList,
+                          dynamic=False, replaces=['Features'])
 
     SelectNone, SelectAll, SelectManual, SelectNBest = range(4)
 
@@ -286,7 +297,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     def __init__(self):
         OWWidget.__init__(self)
         ConcurrentWidgetMixin.__init__(self)
-        self.scorers = OrderedDict()
+        self.scorers: List[ScoreMeta] = []
         self.out_domain_desc = None
         self.data = None
         self.problem_type_mode = ProblemType.CLASSIFICATION
@@ -304,13 +315,13 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         self.ranksView = view = TableView(self)            # type: TableView
         self.mainArea.layout().addWidget(view)
         view.setModel(model)
-        view.setColumnWidth(0, 30)
+        view.setColumnWidth(NVAL_COL, 30)
         view.selectionModel().selectionChanged.connect(self.on_select)
 
         def _set_select_manual():
             self.setSelectionMethod(OWRank.SelectManual)
 
-        view.pressed.connect(_set_select_manual)
+        view.manualSelection.connect(_set_select_manual)
         view.verticalHeader().sectionClicked.connect(_set_select_manual)
         view.horizontalHeader().sectionClicked.connect(self.headerClick)
 
@@ -320,7 +331,8 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         for scoring_methods in (CLS_SCORES,
                                 REG_SCORES,
                                 []):
-            box = gui.vBox(None, "评分方法(Scoring Methods)" if scoring_methods else None)
+            box = gui.vBox(
+                None, "评分方法" if scoring_methods else None)
             stacked.addWidget(box)
             for method in scoring_methods:
                 box.layout().addWidget(QCheckBox(
@@ -331,12 +343,14 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             gui.rubber(box)
 
         gui.rubber(self.controlArea)
+
         self.switchProblemType(ProblemType.CLASSIFICATION)
 
-        selMethBox = gui.vBox(self.controlArea, "选择属性", addSpace=True)
+        selMethBox = gui.vBox(self.buttonsArea, "选择特征")
 
         grid = QGridLayout()
-        grid.setContentsMargins(6, 0, 6, 0)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(6)
         self.selectButtons = QButtonGroup()
         self.selectButtons.buttonClicked[int].connect(self.setSelectionMethod)
 
@@ -353,7 +367,9 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         b4 = button(self.tr("最佳排名:"), OWRank.SelectNBest)
 
         s = gui.spin(selMethBox, self, "nSelected", 1, 999,
-                     callback=lambda: self.setSelectionMethod(OWRank.SelectNBest))
+                     callback=lambda: self.setSelectionMethod(
+                         OWRank.SelectNBest),
+                     addToLayout=False)
 
         grid.addWidget(b1, 0, 0)
         grid.addWidget(b2, 1, 0)
@@ -365,10 +381,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
         selMethBox.layout().addLayout(grid)
 
-        gui.auto_send(selMethBox, self, "auto_apply", box=False)
-
-        self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        gui.auto_send(self.buttonsArea, self, "auto_apply")
 
         self.resize(690, 500)
 
@@ -403,9 +416,6 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         self.switchProblemType(ProblemType.CLASSIFICATION)
         if self.data is not None:
             domain = self.data.domain
-            self.info.set_input_summary(len(self.data),
-                                        format_summary_details(self.data))
-
             if domain.has_discrete_class:
                 problem_type = ProblemType.CLASSIFICATION
             elif domain.has_continuous_class:
@@ -421,13 +431,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             if problem_type is not None:
                 self.switchProblemType(problem_type)
 
-            self.ranksModel.setVerticalHeaderLabels(domain.attributes)
-            self.ranksView.setVHeaderFixedWidthFromLabel(
-                max((a.name for a in domain.attributes), key=len))
-
             self.selectionMethod = OWRank.SelectNBest
-        else:
-            self.info.set_input_summary(self.info.NoInput)
 
         self.openContext(data)
         self.selectButtons.button(self.selectionMethod).setChecked(True)
@@ -439,18 +443,27 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         self.on_select()
 
     @Inputs.scorer
-    def set_learner(self, scorer, id):  # pylint: disable=redefined-builtin
-        if scorer is None:
-            self.scorers.pop(id, None)
-        else:
-            # Avoid caching a (possibly stale) previous instance of the same
-            # Scorer passed via the same signal
-            if id in self.scorers:
-                self.scorers_results = {}
+    def set_learner(self, index, scorer):
+        self.scorers[index] = ScoreMeta(
+            scorer.name, scorer.name, scorer,
+            ProblemType.from_variable(scorer.class_type),
+            False
+        )
+        self.scorers_results = {}
 
-            self.scorers[id] = ScoreMeta(scorer.name, scorer.name, scorer.name, scorer.name, scorer,
-                                         ProblemType.from_variable(scorer.class_type),
-                                         False)
+    @Inputs.scorer.insert
+    def insert_learner(self, index: int, scorer):
+        self.scorers.insert(index, ScoreMeta(
+            scorer.name, scorer.name, scorer,
+            ProblemType.from_variable(scorer.class_type),
+            False
+        ))
+        self.scorers_results = {}
+
+    @Inputs.scorer.remove
+    def remove_learner(self, index):
+        self.scorers.pop(index)
+        self.scorers_results = {}
 
     def _get_methods(self):
         return [
@@ -468,7 +481,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
     def _get_scorers(self):
         scorers = []
-        for scorer in self.scorers.values():
+        for scorer in self.scorers:
             if scorer.problem_type in (
                 self.problem_type_mode,
                 ProblemType.UNSUPERVISED,
@@ -501,7 +514,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         self.scorers_results.update(result.scorer_scores)
 
         methods = self._get_methods()
-        method_labels = tuple(m.shortname for m in methods)
+        method_labels = tuple(m.zh_shortname for m in methods)
         method_scores = tuple(self.methods_results[m] for m in methods)
 
         scores = [self.scorers_results[s] for s in self._get_scorers()]
@@ -509,28 +522,31 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
         labels = method_labels + tuple(chain.from_iterable(scorer_labels))
         model_array = np.column_stack(
-            (
-                [len(a.values) if a.is_discrete else np.nan
+            (list(self.data.domain.attributes), )
+            + (
+                [float(len(a.values)) if a.is_discrete else np.nan
                  for a in self.data.domain.attributes],
             )
             + method_scores
             + scorer_scores
         )
-        for column, values in enumerate(model_array.T):
+        for column, values in enumerate(model_array.T[2:].astype(float),
+                                        start=2):
             self.ranksModel.setExtremesFrom(column, values)
 
         self.ranksModel.wrap(model_array.tolist())
-        self.ranksModel.setHorizontalHeaderLabels(('#',) + labels)
-        self.ranksView.setColumnWidth(0, 40)
+        self.ranksModel.setHorizontalHeaderLabels(('', '#',) + labels)
+        self.ranksView.setColumnWidth(NVAL_COL, 40)
+        self.ranksView.resizeColumnToContents(VARNAME_COL)
 
         # Re-apply sort
         try:
             sort_column, sort_order = self.sorting
             if sort_column < len(labels):
-                # adds 1 for '#' (discrete count) column
-                self.ranksModel.sort(sort_column + 1, sort_order)
+                # adds 2 to skip the first two columns
+                self.ranksModel.sort(sort_column + 2, sort_order)
                 self.ranksView.horizontalHeader().setSortIndicator(
-                    sort_column + 1, sort_order
+                    sort_column + 2, sort_order
                 )
         except ValueError:
             pass
@@ -550,7 +566,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         row_indices = [i.row() for i in selected_rows]
         attr_indices = self.ranksModel.mapToSourceRows(row_indices)
         self.selected_attrs = [self.data.domain[idx] for idx in attr_indices]
-        self.commit()
+        self.commit.deferred()
 
     def setSelectionMethod(self, method):
         self.selectionMethod = method
@@ -588,13 +604,14 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         selModel.select(selection, QItemSelectionModel.ClearAndSelect)
 
     def headerClick(self, index):
-        if index >= 1 and self.selectionMethod == OWRank.SelectNBest:
+        if index >= 2 and self.selectionMethod == OWRank.SelectNBest:
             # Reselect the top ranked attributes
             self.autoSelection()
 
         # Store the header states
         sort_order = self.ranksModel.sortOrder()
-        sort_column = self.ranksModel.sortColumn() - 1  # -1 for '#' (discrete count) column
+        # -2 for '#' (discrete count) column
+        sort_column = self.ranksModel.sortColumn() - 2
         self.sorting = (sort_column, sort_order)
 
     def methodSelectionChanged(self, state, method_name):
@@ -613,12 +630,12 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         if self.out_domain_desc is not None:
             self.report_items("Output", self.out_domain_desc)
 
+    @gui.deferred
     def commit(self):
         if not self.selected_attrs:
             self.Outputs.reduced_data.send(None)
             self.Outputs.features.send(None)
             self.out_domain_desc = None
-            self.info.set_output_summary(self.info.NoOutput)
         else:
             reduced_domain = Domain(
                 self.selected_attrs, self.data.domain.class_var,
@@ -627,13 +644,12 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             self.Outputs.reduced_data.send(data)
             self.Outputs.features.send(AttributeList(self.selected_attrs))
             self.out_domain_desc = report.describe_domain(data.domain)
-            self.info.set_output_summary(len(data),
-                                         format_summary_details(data))
 
     def create_scores_table(self, labels):
         self.Warning.renamed_variables.clear()
         model_list = self.ranksModel.tolist()
-        if not model_list or len(model_list[0]) == 1:  # Empty or just n_values column
+        # Empty or just first two columns
+        if not model_list or len(model_list[0]) == 2:
             return None
         unique, renamed = get_unique_names_duplicates(labels + ('Feature',),
                                                       return_duplicated=True)
@@ -645,7 +661,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
         # Prevent np.inf scores
         finfo = np.finfo(np.float64)
-        scores = np.clip(np.array(model_list)[:, 1:], finfo.min, finfo.max)
+        scores = np.clip(np.array(model_list)[:, 2:], finfo.min, finfo.max)
 
         feature_names = np.array([a.name for a in self.data.domain.attributes])
         # Reshape to 2d array as Table does not like 1d arrays

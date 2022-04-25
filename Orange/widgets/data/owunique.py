@@ -12,24 +12,24 @@ from Orange.widgets.utils.widgetpreview import WidgetPreview
 
 
 class OWUnique(widget.OWWidget):
-    name = 'Unique'
+    name = '唯一(Unique)'
     icon = 'icons/Unique.svg'
-    description = 'Filter instances unique by specified key attribute(s).'
-    category = "Transform"
+    description = '根据所选特征删除重复的实例。'
+    category = "变换(Transform)"
 
     class Inputs:
-        data = widget.Input("Data", Table)
+        data = widget.Input("数据(Data)", Table, replaces=['Data'])
 
     class Outputs:
-        data = widget.Output("Data", Table)
+        data = widget.Output("数据(Data)", Table, replaces=['Data'])
 
     want_main_area = False
 
-    TIEBREAKERS = {'Last instance': itemgetter(-1),
-                   'First instance': itemgetter(0),
-                   'Middle instance': lambda seq: seq[len(seq) // 2],
-                   'Random instance': np.random.choice,
-                   'Discard non-unique instances':
+    TIEBREAKERS = {'最后的实例': itemgetter(-1),
+                   '第一个实例': itemgetter(0),
+                   '中间的实例': lambda seq: seq[len(seq) // 2],
+                   '随机实例': np.random.choice,
+                   '丢弃重复实例':
                    lambda seq: seq[0] if len(seq) == 1 else None}
 
     settingsHandler = settings.DomainContextHandler()
@@ -45,7 +45,7 @@ class OWUnique(widget.OWWidget):
 
         self.var_model = DomainModel(parent=self, order=DomainModel.MIXED)
         var_list = gui.listView(
-            self.controlArea, self, "selected_vars", box="Group by",
+            self.controlArea, self, "selected_vars", box="分组依据",
             model=self.var_model, callback=self.commit.deferred,
             viewType=ListViewSearch
         )
@@ -53,7 +53,7 @@ class OWUnique(widget.OWWidget):
 
         gui.comboBox(
             self.controlArea, self, 'tiebreaker', box=True,
-            label='Instance to select in each group:',
+            label='每组中选择的实例:',
             items=tuple(self.TIEBREAKERS),
             callback=self.commit.deferred, sendSelectedValue=True)
         gui.auto_commit(

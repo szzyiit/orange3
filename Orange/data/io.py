@@ -13,7 +13,8 @@ from itertools import chain
 
 from os import path, remove
 from tempfile import NamedTemporaryFile
-from urllib.parse import urlparse, urlsplit, urlunsplit, unquote as urlunquote
+from urllib.parse import urlparse, urlsplit, urlunsplit, \
+    unquote as urlunquote, quote
 from urllib.request import urlopen, Request
 from pathlib import Path
 
@@ -264,7 +265,7 @@ class _BaseExcelReader(FileFormat, DataTableMixin):
             cells = self.get_cells()
             table = self.data_table(cells)
             table.name = path.splitext(path.split(self.filename)[-1])[0]
-            if self.sheet:
+            if self.sheet and len(self.sheets) > 1:
                 table.name = '-'.join((table.name, self.sheet))
         except Exception:
             raise IOError("Couldn't load spreadsheet from " + self.filename)
@@ -276,6 +277,11 @@ class ExcelReader(_BaseExcelReader):
     EXTENSIONS = ('.xlsx',)
     DESCRIPTION = 'Microsoft Excel spreadsheet'
     ERRORS = ("#VALUE!", "#DIV/0!", "#REF!", "#NUM!", "#NULL!", "#NAME?")
+    OPTIONAL_TYPE_ANNOTATIONS = True
+
+    def __init__(self, filename):
+        super().__init__(filename)
+        self.sheet = self.workbook.active.title
 
     @property
     def workbook(self) -> openpyxl.Workbook:
@@ -314,7 +320,7 @@ class ExcelReader(_BaseExcelReader):
             return self.workbook.active
 
     @classmethod
-    def write_file(cls, filename, data):
+    def write_file(cls, filename, data, with_annotations=False):
         vars = list(chain((ContinuousVariable('_w'),) if data.has_weights() else (),
                           data.domain.attributes,
                           data.domain.class_vars,
@@ -324,12 +330,20 @@ class ExcelReader(_BaseExcelReader):
                                data.X,
                                data.Y if data.Y.ndim > 1 else data.Y[:, np.newaxis],
                                data.metas)
-        headers = cls.header_names(data)
+        names = cls.header_names(data)
+        headers = (names,)
+        if with_annotations:
+            types = cls.header_types(data)
+            flags = cls.header_flags(data)
+            headers = (names, types, flags)
+
         workbook = xlsxwriter.Workbook(filename)
         sheet = workbook.add_worksheet()
-        for c, header in enumerate(headers):
-            sheet.write(0, c, header)
-        for i, row in enumerate(zipped_list_data, 1):
+
+        for r, parts in enumerate(headers):
+            for c, part in enumerate(parts):
+                sheet.write(r, c, part)
+        for i, row in enumerate(zipped_list_data, len(headers)):
             for j, (fmt, v) in enumerate(zip(formatters, flatten(row))):
                 sheet.write(i, j, fmt(v))
         workbook.close()
@@ -339,6 +353,10 @@ class XlsReader(_BaseExcelReader):
     """Reader for .xls files"""
     EXTENSIONS = ('.xls',)
     DESCRIPTION = 'Microsoft Excel 97-2004 spreadsheet'
+
+    def __init__(self, filename):
+        super().__init__(filename)
+        self.sheet = self.workbook.sheet_by_index(0).name
 
     @property
     def workbook(self) -> xlrd.Book:
@@ -397,6 +415,13 @@ class UrlReader(FileFormat):
         filename = filename.strip()
         if not urlparse(filename).scheme:
             filename = 'http://' + filename
+
+        # Fully support URL with query or fragment like http://filename.txt?a=1&b=2#c=3
+        def quote_byte(b):
+            return chr(b) if b < 0x80 else '%{:02X}'.format(b)
+
+        filename = ''.join(map(quote_byte, filename.encode("utf-8")))
+
         super().__init__(filename)
 
     @staticmethod

@@ -2,24 +2,21 @@
 # pylint: disable=all
 import pickle
 import unittest
-from itertools import product
+from functools import partial
+from itertools import product, chain
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import numpy as np
 from numpy.testing import assert_array_equal
-import pandas as pd
 
-from AnyQt.QtCore import QItemSelectionModel, Qt, QItemSelection
+from AnyQt.QtCore import QItemSelectionModel, Qt, QItemSelection, QPoint
+from AnyQt.QtGui import QPalette, QColor, QHelpEvent
 from AnyQt.QtWidgets import QAction, QComboBox, QLineEdit, \
-    QStyleOptionViewItem, QDialog, QMenu
+    QStyleOptionViewItem, QDialog, QMenu, QToolTip, QListView
 from AnyQt.QtTest import QTest, QSignalSpy
 
-from orangewidget.widget import StateInfo
-
-from Orange.widgets.utils import colorpalettes
 from orangewidget.tests.utils import simulate
-from orangewidget.utils.itemmodels import PyListModel
 
 from Orange.data import (
     ContinuousVariable, DiscreteVariable, StringVariable, TimeVariable,
@@ -36,13 +33,14 @@ from Orange.widgets.data.oweditdomain import (
     table_column_data, ReinterpretVariableEditor, CategoricalVector,
     VariableEditDelegate, TransformRole,
     RealVector, TimeVector, StringVector, make_dict_mapper, DictMissingConst,
-    LookupMappingTransform, as_float_or_nan, column_str_repr, time_parse,
-    GroupItemsDialog)
+    LookupMappingTransform, as_float_or_nan, column_str_repr,
+    GroupItemsDialog, VariableListModel, StrpTime
+)
 from Orange.widgets.data.owcolor import OWColor, ColorRole
 from Orange.widgets.tests.base import WidgetTest, GuiTest
 from Orange.widgets.tests.utils import contextMenu
+from Orange.widgets.utils import colorpalettes
 from Orange.tests import test_filename, assert_array_nanequal
-from Orange.widgets.utils.state_summary import format_summary_details
 
 MArray = np.ma.MaskedArray
 
@@ -217,6 +215,30 @@ class TestOWEditDomain(WidgetTest):
         t2 = self.get_output(self.widget.Outputs.data)
         self.assertEqual(t2.domain["a"].attributes["list"], [1, 2, 4])
 
+    def test_annotation_bool(self):
+        """Check if bool labels remain bool"""
+        a = ContinuousVariable("a")
+        a.attributes["hidden"] = True
+        d = Domain([a])
+        t = Table.from_domain(d)
+
+        self.send_signal(self.widget.Inputs.data, t)
+
+        assert isinstance(self.widget, OWEditDomain)
+        # select first variable
+        idx = self.widget.domain_view.model().index(0)
+        self.widget.domain_view.setCurrentIndex(idx)
+
+        # change first attribute value
+        editor = self.widget.findChild(ContinuousVariableEditor)
+        assert isinstance(editor, ContinuousVariableEditor)
+        idx = editor.labels_model.index(0, 1)
+        editor.labels_model.setData(idx, "False", Qt.EditRole)
+
+        self.widget.commit()
+        t2 = self.get_output(self.widget.Outputs.data)
+        self.assertFalse(t2.domain["a"].attributes["hidden"])
+
     def test_duplicate_names(self):
         """
         Tests if widget shows error when duplicate name is entered.
@@ -277,8 +299,6 @@ class TestOWEditDomain(WidgetTest):
         self.assertIsNone(out1.compute_value)
         self.assertIsNone(out2.compute_value)
 
-
-
     def test_time_variable_preservation(self):
         """Test if time variables preserve format specific attributes"""
         table = Table(test_filename("datasets/cyber-security-breaches.tab"))
@@ -317,45 +337,6 @@ class TestOWEditDomain(WidgetTest):
         restore({viris: [("AsString", ()), ("Rename", ("Z",))]})
         tr = model.data(model.index(4), TransformRole)
         self.assertEqual(tr, [AsString(), Rename("Z")])
-
-    def test_summary(self):
-        """Check if status bar is updated when data is received"""
-        data = Table("iris")
-        input_sum = self.widget.info.set_input_summary = Mock()
-        output_sum = self.widget.info.set_output_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(len(data), format_summary_details(data))
-        output = self.get_output(self.widget.Outputs.data)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-
-        def enter_text(widget, text):
-            # type: (QLineEdit, str) -> None
-            widget.selectAll()
-            QTest.keyClick(widget, Qt.Key_Delete)
-            QTest.keyClicks(widget, text)
-            QTest.keyClick(widget, Qt.Key_Return)
-
-        editor = self.widget.findChild(ContinuousVariableEditor)
-        enter_text(editor.name_edit, "sepal height")
-        self.widget.commit()
-        output = self.get_output(self.widget.Outputs.data)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-        output_sum.reset_mock()
-        enter_text(editor.name_edit, "sepal width")
-        self.widget.commit()
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
-
-        input_sum.reset_mock()
-        output_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_once()
-        self.assertIsInstance(input_sum.call_args[0][0], StateInfo.Empty)
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
 
 
 class TestEditors(GuiTest):
@@ -491,9 +472,9 @@ class TestEditors(GuiTest):
         self.assertGreaterEqual(len(changedspy), 1, "Did not change data")
         w.grab()
 
-    # mocking exec_ make dialog never show - dialog blocks running until closed
+    # mocking exec make dialog never show - dialog blocks running until closed
     @patch(
-        "Orange.widgets.data.oweditdomain.GroupItemsDialog.exec_",
+        "Orange.widgets.data.oweditdomain.GroupItemsDialog.exec",
         Mock(side_effect=lambda: QDialog.Accepted)
     )
     def test_discrete_editor_merge_action(self):
@@ -608,8 +589,9 @@ class TestEditors(GuiTest):
         ),
     ]
     ReinterpretTransforms = {
-        Categorical: AsCategorical, Real: AsContinuous, Time: AsTime,
-        String: AsString
+        Categorical: [AsCategorical], Real: [AsContinuous],
+        Time: [AsTime, partial(StrpTime, 'Detect automatically', None, 1, 1)],
+        String: [AsString]
     }
 
     def test_reinterpret_editor(self):
@@ -622,13 +604,13 @@ class TestEditors(GuiTest):
         self.assertEqual(w.get_data(), (data.vtype, [Rename("Z")]))
 
         for vec, tr in product(self.DataVectors, self.ReinterpretTransforms.values()):
-            w.set_data(vec, [tr()])
+            w.set_data(vec, [t() for t in tr])
             v, tr_ = w.get_data()
             self.assertEqual(v, vec.vtype)
             if not tr_:
                 self.assertEqual(tr, self.ReinterpretTransforms[type(v)])
             else:
-                self.assertEqual(tr_, [tr()])
+                self.assertListEqual(tr_, [t() for t in tr])
 
     def test_reinterpret_editor_simulate(self):
         w = ReinterpretVariableEditor()
@@ -638,7 +620,9 @@ class TestEditors(GuiTest):
             var, tr = w.get_data()
             type_ = tc.currentData()
             if type_ is not type(var):
-                self.assertEqual(tr, [self.ReinterpretTransforms[type_](), Rename("Z")])
+                self.assertEqual(
+                    tr, [t() for t in self.ReinterpretTransforms[type_]] + [Rename("Z")]
+                )
             else:
                 self.assertEqual(tr, [Rename("Z")])
 
@@ -685,32 +669,72 @@ class TestEditors(GuiTest):
         self.assertFalse(cbox.isChecked())
 
 
+class TestModels(GuiTest):
+    def test_variable_model(self):
+        model = VariableListModel()
+        self.assertEqual(model.effective_name(model.index(-1, -1)), None)
+
+        def data(row, role):
+            return model.data(model.index(row,), role)
+
+        def set_data(row, data, role):
+            model.setData(model.index(row), data, role)
+
+        model[:] = [
+            RealVector(Real("A", (3, "g"), (), False), lambda: MArray([])),
+            RealVector(Real("B", (3, "g"), (), False), lambda: MArray([])),
+        ]
+        self.assertEqual(data(0, Qt.DisplayRole), "A")
+        self.assertEqual(data(1, Qt.DisplayRole), "B")
+        self.assertEqual(model.effective_name(model.index(1)), "B")
+        set_data(1, [Rename("A")], TransformRole)
+        self.assertEqual(model.effective_name(model.index(1)), "A")
+        self.assertEqual(data(0, MultiplicityRole), 2)
+        self.assertEqual(data(1, MultiplicityRole), 2)
+        set_data(1, [], TransformRole)
+        self.assertEqual(data(0, MultiplicityRole), 1)
+        self.assertEqual(data(1, MultiplicityRole), 1)
+
+
 class TestDelegates(GuiTest):
     def test_delegate(self):
-        model = PyListModel([None])
+        model = VariableListModel([None, None])
 
-        def set_item(v: dict):
-            model.setItemData(model.index(0),  v)
+        def set_item(row: int, v: dict):
+            model.setItemData(model.index(row),  v)
 
-        def get_style_option() -> QStyleOptionViewItem:
+        def get_style_option(row: int) -> QStyleOptionViewItem:
             opt = QStyleOptionViewItem()
-            delegate.initStyleOption(opt, model.index(0))
+            delegate.initStyleOption(opt, model.index(row))
             return opt
 
-        set_item({Qt.EditRole: Categorical("a", (), (), False)})
+        set_item(0, {Qt.EditRole: Categorical("a", (), (), False)})
         delegate = VariableEditDelegate()
-        opt = get_style_option()
+        opt = get_style_option(0)
         self.assertEqual(opt.text, "a")
         self.assertFalse(opt.font.italic())
-        set_item({TransformRole: [Rename("b")]})
-        opt = get_style_option()
+        set_item(0, {TransformRole: [Rename("b")]})
+        opt = get_style_option(0)
         self.assertEqual(opt.text, "a \N{RIGHTWARDS ARROW} b")
         self.assertTrue(opt.font.italic())
 
-        set_item({TransformRole: [AsString()]})
-        opt = get_style_option()
+        set_item(0, {TransformRole: [AsString()]})
+        opt = get_style_option(0)
         self.assertIn("reinterpreted", opt.text)
         self.assertTrue(opt.font.italic())
+        set_item(1, {
+            Qt.EditRole: String("b", (), False),
+            TransformRole: [Rename("a")]
+        })
+        opt = get_style_option(1)
+        self.assertEqual(opt.palette.color(QPalette.Text), QColor(Qt.red))
+        view = QListView()
+        with patch.object(QToolTip, "showText") as p:
+            delegate.helpEvent(
+                QHelpEvent(QHelpEvent.ToolTip, QPoint(0, 0), QPoint(0, 0)),
+                view, opt, model.index(1),
+            )
+            p.assert_called_once()
 
 
 class TestTransforms(TestCase):
@@ -891,24 +915,41 @@ class TestReinterpretTransforms(TestCase):
         )
 
     def test_as_time(self):
-        table = self.data
-        domain = table.domain
+        # this test only test type of format that can be string, continuous and discrete
+        # correctness of time formats is already tested in TimeVariable module
+        d = TimeVariable("_").parse_exact_iso
+        times = (
+            ["07.02.2022", "18.04.2021"],  # date only
+            ["07.02.2022 01:02:03", "18.04.2021 01:02:03"],  # datetime
+            ["010203", "010203"],  # time
+            ["02-07", "04-18"],
+        )
+        formats = ["25.11.2021", "25.11.2021 00:00:00", "000000", "11-25"]
+        expected = [
+            [d("2022-02-07"), d("2021-04-18")],
+            [d("2022-02-07 01:02:03"), d("2021-04-18 01:02:03")],
+            [d("01:02:03"), d("01:02:03")],
+            [d("1900-02-07"), d("1900-04-18")],
+        ]
+        variables = [StringVariable(f"s{i}") for i in range(len(times))]
+        variables += [DiscreteVariable(f"d{i}", values=t) for i, t in enumerate(times)]
+        domain = Domain([], metas=variables)
+        metas = [t for t in times] + [list(range(len(x))) for x in times]
+        table = Table(domain, np.empty((len(times[0]), 0)), metas=np.array(metas).transpose())
 
         tr = AsTime()
         dtr = []
-        for v in domain.variables:
-            vtr = apply_reinterpret(v, tr, table_column_data(table, v))
+        for v, f in zip(domain.metas, chain(formats, formats)):
+            strp = StrpTime(f, *TimeVariable.ADDITIONAL_FORMATS[f])
+            vtr = apply_transform_var(
+                apply_reinterpret(v, tr, table_column_data(table, v)), [strp]
+            )
             dtr.append(vtr)
 
-        ttable = table.transform(Domain(dtr))
+        ttable = table.transform(Domain([], metas=dtr))
         assert_array_equal(
-            ttable.X,
-            np.array([
-                [np.nan, np.nan, 0.25, 180],
-                [np.nan, np.nan, 1.25, 360],
-                [np.nan, np.nan, 0.20, 720],
-                [np.nan, np.nan, 0.00, 000],
-            ], dtype=float)
+            ttable.metas,
+            np.array(list(chain(expected, expected)), dtype=float).transpose()
         )
 
     def test_reinterpret_string(self):
@@ -916,9 +957,16 @@ class TestReinterpretTransforms(TestCase):
         domain = table.domain
         tvars = []
         for v in domain.metas:
-            for i, tr in enumerate([AsContinuous(), AsCategorical(), AsTime(), AsString()]):
-                tr = apply_reinterpret(v, tr, table_column_data(table, v)).renamed(f'{v.name}_{i}')
-                tvars.append(tr)
+            for i, tr in enumerate(
+                [AsContinuous(), AsCategorical(), AsTime(), AsString()]
+            ):
+                vtr = apply_reinterpret(v, tr, table_column_data(table, v)).renamed(
+                    f"{v.name}_{i}"
+                )
+                if isinstance(tr, AsTime):
+                    strp = StrpTime("Detect automatically", None, 1, 1)
+                    vtr = apply_transform_var(vtr, [strp])
+                tvars.append(vtr)
         tdomain = Domain([], metas=tvars)
         ttable = table.transform(tdomain)
         assert_array_nanequal(
@@ -1017,19 +1065,6 @@ class TestUtils(TestCase):
         v = TimeVariable("T", have_date=False, have_time=True)
         d = column_str_repr(v, np.array([0., np.nan, 1.0]))
         assert_array_equal(d, ["00:00:00", "?", "00:00:01"])
-
-    def test_time_parse(self):
-        """parsing additional datetimes by pandas"""
-        date = ["1/22/20", "1/23/20", "1/24/20"]
-        # we use privet method, check if still exists
-        assert hasattr(pd.DatetimeIndex, '_is_dates_only')
-
-        tval, values = time_parse(date)
-
-        self.assertTrue(tval.have_date)
-        self.assertFalse(tval.have_time)
-        self.assertListEqual(list(values),
-                             [1579651200.0, 1579737600.0, 1579824000.0])
 
 
 class TestLookupMappingTransform(TestCase):
@@ -1199,4 +1234,3 @@ class TestGroupLessFrequentItemsDialog(GuiTest):
 
 if __name__ == '__main__':
     unittest.main()
-

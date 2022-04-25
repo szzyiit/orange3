@@ -1,15 +1,12 @@
 # Test methods with long descriptive names can omit docstrings
 # pylint: disable=missing-docstring,unsubscriptable-object
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 import numpy as np
-
-from orangewidget.widget import StateInfo
 
 from Orange.data import Table
 from Orange.widgets.data.owrandomize import OWRandomize
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.utils.state_summary import format_summary_details
 
 
 class TestOWRandomize(WidgetTest):
@@ -71,34 +68,14 @@ class TestOWRandomize(WidgetTest):
         self.assertTrue((output.Y != self.zoo.Y).any())
         self.assertTrue((np.sort(output.Y, axis=0) ==
                          np.sort(self.zoo.Y, axis=0)).all())
-        self.widget.apply()
+        self.widget.commit.now()
         output2 = self.get_output(self.widget.Outputs.data)
         np.testing.assert_array_equal(output.X, output2.X)
         np.testing.assert_array_equal(output.Y, output2.Y)
         np.testing.assert_array_equal(output.metas, output2.metas)
 
-    def test_summary(self):
-        """"Check if status bar displays correct input/output summary"""
-        output_sum = self.widget.info.set_output_summary = Mock()
-        input_sum = self.widget.info.set_input_summary = Mock()
-
-        data = self.zoo
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(len(data),
-                                     format_summary_details(data))
-        output = self.get_output(self.widget.Outputs.data)
-        output_sum.assert_called_with(len(output),
-                                      format_summary_details(output))
-        input_sum.reset_mock()
-        output_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_once()
-        self.assertIsInstance(input_sum.call_args[0][0], StateInfo.Empty)
-        output_sum.assert_called_once()
-        self.assertIsInstance(output_sum.call_args[0][0], StateInfo.Empty)
-
     def test_unconditional_commit_on_new_signal(self):
-        with patch.object(self.widget, 'unconditional_apply') as apply:
+        with patch.object(self.widget.commit, 'now') as apply:
             self.widget.auto_apply = False
             apply.reset_mock()
             self.send_signal(self.widget.Inputs.data, self.zoo)
