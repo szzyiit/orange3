@@ -303,7 +303,7 @@ def block_signals(widget):
 class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
     name = "分组(Group by)"
     description = "按所选变量对数据进行分组，并聚合列。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/GroupBy.svg"
     keywords = ["fenzu", "aggregate", "group by"]
 

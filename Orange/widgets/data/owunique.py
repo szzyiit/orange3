@@ -15,7 +15,7 @@ class OWUnique(widget.OWWidget):
     name = '唯一(Unique)'
     icon = 'icons/Unique.svg'
     description = '根据所选特征删除重复的实例。'
-    category = "变换(Transform)"
+    category = "数据(Data)"
 
     class Inputs:
         data = widget.Input("数据(Data)", Table, replaces=['Data'])

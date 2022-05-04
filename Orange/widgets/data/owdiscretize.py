@@ -255,7 +255,7 @@ class OWDiscretize(widget.OWWidget):
     # pylint: disable=too-many-instance-attributes
     name = "离散化(Discretize)"
     description = "离散化数值型特征."
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Discretize.svg"
     keywords = ['lisan', "bin"]
 

@@ -18,7 +18,7 @@ from Orange.widgets.utils.itemmodels import DomainModel
 class OWAggregateColumns(widget.OWWidget):
     name = "聚合列(Aggregate Columns)"
     description = "计算选定列的和，最大值，最小值等."
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/AggregateColumns.svg"
     priority = 100
     keywords = ['juhe', "aggregate", "sum", "product", "max", "min", "mean",

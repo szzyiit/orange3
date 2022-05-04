@@ -141,7 +141,7 @@ class OWSelectRows(widget.OWWidget):
     description = "根据变量值从数据中选择行。"
     icon = "icons/SelectRows.svg"
     priority = 100
-    category = "变换(Transform)"
+    category = "数据(Data)"
     keywords = ["filter", 'xuanzehang']
 
     class Inputs:

@@ -245,7 +245,7 @@ class MergeDataContextHandler(ContextHandler):
 class OWMergeData(widget.OWWidget):
     name = "合并数据(Merge Data)"
     description = "根据选择的特征合并数据集."
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/MergeData.svg"
     priority = 1110
     keywords = ["join", 'hebing']

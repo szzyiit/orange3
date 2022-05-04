@@ -12,7 +12,7 @@ from Orange.widgets.utils.annotated_data import (create_annotated_table)
 class OWSelectByDataIndex(widget.OWWidget):
     name = "按数据索引选择(Select by Data Index)"
     description = "根据数据子集的索引匹配实例。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/SelectByDataIndex.svg"
     priority = 1112
 

@@ -451,7 +451,7 @@ class OWCreateInstance(OWWidget):
     name = "创建实例(Create Instance)"
     description = "从样本数据集中交互创建实例。"
     icon = "icons/CreateInstance.svg"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     keywords = ["simulator", 'chuangjian']
     priority = 4000
 

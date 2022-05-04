@@ -35,7 +35,7 @@ def run(data: Table,
 class OWTranspose(OWWidget, ConcurrentWidgetMixin):
     name = "转置(Transpose)"
     description = "转置数据表。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Transpose.svg"
     priority = 2000
     keywords = ['zhuanzhi']

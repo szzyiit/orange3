@@ -20,7 +20,7 @@ class OWDataSampler(OWWidget):
     description = "从输入数据集中随机抽取数据点的子集 "
     icon = "icons/DataSampler.svg"
     priority = 100
-    category = "变换(Transform)"
+    category = "数据(Data)"
     keywords = ["random", 'caiyang', 'chouyang']
 
     _MAX_SAMPLE_SIZE = 2 ** 31 - 1

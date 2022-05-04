@@ -522,7 +522,7 @@ if TYPE_CHECKING:
 class OWPythonScript(OWWidget):
     name = "python脚本(Python Script)"
     description = "编写一个 python 脚本并在输入数据或模型上运行它。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/PythonScript.svg"
     priority = 3150
     keywords = ["program", "function"]

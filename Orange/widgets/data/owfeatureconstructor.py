@@ -481,7 +481,7 @@ class OWFeatureConstructor(OWWidget):
     description = "用输入数据集中的现有特征构造新特征。"
     icon = "icons/FeatureConstructor.svg"
     keywords = ['tezheng', 'gouzao', 'tezhenggouzao']
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/FeatureConstructor.svg"
 
     class Inputs:

@@ -136,7 +136,7 @@ class OWImpute(OWWidget):
     icon = "icons/Impute.svg"
     priority = 2130
     keywords = ["missing", 'tianchong', 'queshi']
-    category = "变换(Transform)"
+    category = "数据(Data)"
 
     class Inputs:
         data = Input("数据(Data)", Orange.data.Table, replaces=['Data'])

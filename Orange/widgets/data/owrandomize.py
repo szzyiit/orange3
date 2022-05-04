@@ -14,7 +14,7 @@ from Orange.widgets import gui
 class OWRandomize(OWWidget):
     name = "随机化(Randomize)"
     description = "随机化数据表中的特征、类别(和/或)元。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Random.svg"
     priority = 2100
     keywords = ['suiji']

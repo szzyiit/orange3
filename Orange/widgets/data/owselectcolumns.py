@@ -149,7 +149,7 @@ class OWSelectAttributes(widget.OWWidget):
     # pylint: disable=too-many-instance-attributes
     name = "选择列(Select Columns)"
     description = "从数据表选择列, 并将它们设为特征, 目标或者元属性."
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/SelectColumns.svg"
     priority = 100
     keywords = ["filter", "attributes", "target", "variable", 'xuanzelie']

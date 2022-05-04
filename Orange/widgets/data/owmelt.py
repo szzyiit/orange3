@@ -60,7 +60,7 @@ class MeltContextHandler(ContextHandler):
 class OWMelt(widget.OWWidget):
     name = "宽转窄(Melt)"
     description = "将宽数据转换为窄数据，即项目-值对的列表"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Melt.svg"
     keywords = ["kuanzhuanzhai", "shopping list", "wide", "narrow"]
 

@@ -11,7 +11,7 @@ from Orange.widgets.widget import OWWidget, Input, Output, Msg
 class OWTransform(OWWidget):
     name = "应用变换(Apply Domain)"
     description = "在数据表上应用模板域"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Transform.svg"
     priority = 2110
     keywords = ["transform"]

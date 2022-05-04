@@ -13,7 +13,7 @@ class OWPurgeDomain(widget.OWWidget):
     name = "清除特征(Purge Domain)"
     description = "从数据集中删除冗余值和特征,对值进行排序。"
     icon = "icons/PurgeDomain.svg"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     keywords = ["remove", "delete", "unused", 'qinli', 'qinchu']
 
     class Inputs:

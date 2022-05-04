@@ -748,7 +748,7 @@ class OWPaintData(OWWidget):
     icon = "icons/PaintData.svg"
     priority = 60
     keywords = ["create", "draw", 'huizhi']
-    category = "变换(Transform)"
+    category = "数据(Data)"
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])

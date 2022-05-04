@@ -28,7 +28,7 @@ from Orange.widgets.widget import Input, MultiInput, Output, Msg
 class OWConcatenate(widget.OWWidget):
     name = "连接(Concatenate)"
     description = "连接（附加）两个或多个数据集。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     priority = 1111
     icon = "icons/Concatenate.svg"
     keywords = ["lianjie", "append", "join", "extend"]

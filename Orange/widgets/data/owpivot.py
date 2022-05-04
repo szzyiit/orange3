@@ -743,7 +743,7 @@ class PivotTableView(QTableView):
 class OWPivot(OWWidget):
     name = "数据透视表(Pivot Table)"
     description = "根据列值重新调整数据表的形状。"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     icon = "icons/Pivot.svg"
     priority = 1000
     keywords = ["pivot", "group", "aggregate", 'toushibiao']

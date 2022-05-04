@@ -169,7 +169,7 @@ class OWCreateClass(widget.OWWidget):
     name = "创建类别(Create Class)"
     description = "从字符串属性创类别属性"
     icon = "icons/CreateClass.svg"
-    category = "变换(Transform)"
+    category = "数据(Data)"
     keywords = ['chuangjian', 'leibie', 'fenlei']
 
     class Inputs:

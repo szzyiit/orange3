@@ -27,15 +27,15 @@ def widget_discovery(discovery):
     for pkg in pkgs:
         discovery.handle_category(category_from_package_globals(pkg))
     # manually described category (without 'package' definition)
-    discovery.handle_category(
-        CategoryDescription(
-            name="变换(Transform)",
-            priority=1,
-            background="#FF9D5E",
-            icon="data/icons/Transform.svg",
-            package=__package__,
-        )
-    )
+    # discovery.handle_category(
+    #     CategoryDescription(
+    #         name="变换(Transform)",
+    #         priority=1,
+    #         background="#FF9D5E",
+    #         icon="data/icons/Transform.svg",
+    #         package=__package__,
+    #     )
+    # )
     for pkg in pkgs:
         discovery.process_category_package(pkg, distribution=dist)
 
