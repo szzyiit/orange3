@@ -6,7 +6,7 @@ from Orange.widgets import gui
 from Orange.widgets.utils.signals import Output
 
 import torch.nn as nn
-from torchsummary import summary
+from torchinfo import summary
 
 # https://stackoverflow.com/questions/21341096/redirect-print-to-string-list
 
@@ -131,7 +131,7 @@ class CNNLearner(OWWidget):
         self.make_model()
         sys.stdout = x = ListStream()
 
-        print(summary(self.model, (1, 28, 28)))
+        print(summary(self.model, input_size=(16,1, 28, 28)))
 
         sys.stdout = sys.__stdout__
 
