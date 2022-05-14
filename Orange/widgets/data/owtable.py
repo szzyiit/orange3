@@ -188,12 +188,12 @@ class OWDataTable(OWWidget):
 
     class Inputs:
         data = MultiInput("数据(Data)", Table,
-                          auto_summary=False, filter_none=True, replaces=['Selected Data'])
+                          auto_summary=False, filter_none=True, replaces=['Data'])
 
     class Outputs:
         selected_data = Output("选定的数据(Selected Data)",
                                Table, default=True, replaces=['Selected Data'])
-        annotated_data = Output('数据(Data)', Table)
+        annotated_data = Output('数据(Data)', Table, replaces=['Data'])
 
     buttons_area_orientation = Qt.Vertical
 
