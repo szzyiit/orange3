@@ -779,14 +779,6 @@ class OWPythonScript(OWWidget):
 
         self.controlBox.layout().addWidget(w)
 
-        # TODO: callback on script change
-        self.execute_button = gui.button(
-            self.controlArea, self, '更多内置脚本', callback=self.commit)
-
-
-        # self.scriptControl = gui.vBox(self.controlArea, '脚本参数')
-        # self.scriptControl.layout().setSpacing(1)
-
         box = gui.vBox(self.controlArea, '脚本参数', stretch=100)
         self.add_ui_list = QTableWidget(
             box, showGrid=False, selectionMode=QTableWidget.NoSelection)
@@ -795,9 +787,9 @@ class OWPythonScript(OWWidget):
         self.add_ui_list.setRowCount(0)
         self.add_ui_list.verticalHeader().hide()
         self.add_ui_list.horizontalHeader().hide()
-        for i in range(1):
-            self.add_ui_list.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-        self.add_ui_list.horizontalHeader().resizeSection(3, 30)
+
+        self.add_ui_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        # self.add_ui_list.horizontalHeader().resizeSection(3, 30)
         self.add_ui_list.viewport().setBackgroundRole(QPalette.Window)
 
         self.execute_button = gui.button(
@@ -1027,14 +1019,9 @@ class OWPythonScript(OWWidget):
             line_edit.textChanged.connect(lambda text: setattr(self, name, text))
             self.add_ui_list.setCellWidget(row, 1, line_edit)
 
-            # line_edit = gui.lineEdit(None, self, name, name, placeholderText=description)
-            # self.add_ui_list.setCellWidget(row, 1, line_edit)
-            pass
-
-        self.add_ui_list.resizeColumnsToContents()
+        # self.add_ui_list.resizeColumnsToContents()
 
 
-    # # TODO
     def clear_additional_controls(self):
         self.additional_controls = []
         for row in range(self.add_ui_list.rowCount()):
@@ -1049,21 +1036,6 @@ class OWPythonScript(OWWidget):
             delattr(self, n)
         self.add_ui_list.clear()
         self.add_ui_list.setRowCount(0)
-
-    def _make_control(self, control):
-        if control['options'] == []: # 填空题
-            hbox = gui.hBox(self.scriptControl, margin=0, spacing=0)
-            gui.lineEdit(hbox, self, control['name'], control['name'], 
-                        placeholderText=control['description'])
-            gui.separator(hbox)
-        else: # 选择题
-            vbox = gui.vBox(self.scriptControl, margin=0, spacing=0)
-            box = gui.radioButtons(vbox, self, control['name'])
-            gui.widgetLabel(box, control['description'])
-            for opts in control['options']:
-                gui.appendRadioButton(box, opts.name)
-            gui.separator(box)
-
 
     def onRemoveScript(self, *_):
         index = self.selectedScriptIndex()
