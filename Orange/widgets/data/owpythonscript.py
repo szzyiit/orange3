@@ -1,20 +1,27 @@
 import sys
 import os
+import ast
+from collections import namedtuple
 import code
 import itertools
 import tokenize
 import unicodedata
 from unittest.mock import patch
+from pathlib import Path
 
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from Orange.widgets import widget
 
 import pygments.style
 from pygments.token import Comment, Keyword, Number, String, Punctuation, Operator, Error, Name
 from qtconsole.pygments_highlighter import PygmentsHighlighter
 
+from orangewidget.utils.combobox import ComboBoxSearch
+from Orange.widgets.utils.itemmodels import DomainModel
 from AnyQt.QtWidgets import (
     QPlainTextEdit, QListView, QSizePolicy, QMenu, QSplitter, QLineEdit,
-    QAction, QToolButton, QFileDialog, QStyledItemDelegate,
+    QAction, QToolButton, QFileDialog, QStyledItemDelegate, 
+    QTableWidget, QHeaderView, QComboBox,
     QStyleOptionViewItem, QPlainTextDocumentLayout,
     QLabel, QWidget, QHBoxLayout, QApplication)
 from AnyQt.QtGui import (
@@ -22,7 +29,7 @@ from AnyQt.QtGui import (
     QTextCursor, QKeySequence, QFontMetrics, QPainter
 )
 from AnyQt.QtCore import (
-    Qt, QByteArray, QItemSelectionModel, QSize, QRectF, QMimeDatabase,
+    Qt, QByteArray, QItemSelectionModel, QSize, QRectF, QMimeDatabase, QCoreApplication
 )
 
 from orangewidget.workflow.drophandler import SingleFileDropHandler
@@ -42,8 +49,9 @@ if TYPE_CHECKING:
 
 __all__ = ["OWPythonScript"]
 
+AddOpts = namedtuple("AddOpts", ["name", "value", "is_default"])
 
-DEFAULT_SCRIPT = """import numpy as np
+NUMPY_SCRIPT = """import numpy as np
 from Orange.data import Table, Domain, ContinuousVariable, DiscreteVariable
 
 domain = Domain([ContinuousVariable("age"),
@@ -53,6 +61,23 @@ arr = np.array([
   [25, 186, 0],
   [30, 164, 1]])
 out_data = Table.from_numpy(domain, arr)
+"""
+
+PANDAS_SCRIPT = """import numpy as np
+import pandas as pd
+from Orange.data.pandas_compat import table_from_frame,table_to_frame
+from Orange.data import Domain, Table
+
+df = table_to_frame(in_data) # 你的数据就叫 df 了
+
+############## 以下写入你自己的代码 #####################################
+
+
+
+
+############# 以上写入你自己的代码 #####################################
+
+out_data = table_from_frame(df) # 将你的数据输出
 """
 
 
@@ -314,6 +339,9 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
     def updateLocals(self, locals):
         self.locals.update(locals)
 
+    def clearInParams(self):
+        self.locals['in_params'] = {}
+
     def interact(self, banner=None, _=None):
         try:
             sys.ps1
@@ -549,12 +577,19 @@ class OWPythonScript(OWWidget):
 
     signal_names = ("data", "learner", "classifier", "object")
 
-    settings_version = 2
-    scriptLibrary: 'List[_ScriptData]' = Setting([{
-        "name": "Table from numpy",
-        "script": DEFAULT_SCRIPT,
+    settings_version = 3
+    scriptLibrary: 'List[_ScriptData]' = Setting([
+    {
+        "name": "Table from pandas",
+        "script": PANDAS_SCRIPT,
         "filename": None
-    }])
+    },
+     {
+        "name": "Table from numpy",
+        "script": NUMPY_SCRIPT,
+        "filename": None
+    }
+    ])
     currentScriptIndex = Setting(0)
     scriptText: Optional[str] = Setting(None, schema_only=True)
     splitterState: Optional[bytes] = Setting(None)
@@ -566,6 +601,9 @@ class OWPythonScript(OWWidget):
 
     def __init__(self):
         super().__init__()
+
+        # name, discription, options
+        self.additional_controls = []
 
         for name in self.signal_names:
             setattr(self, name, [])
@@ -741,6 +779,27 @@ class OWPythonScript(OWWidget):
 
         self.controlBox.layout().addWidget(w)
 
+        # TODO: callback on script change
+        self.execute_button = gui.button(
+            self.controlArea, self, '更多内置脚本', callback=self.commit)
+
+
+        # self.scriptControl = gui.vBox(self.controlArea, '脚本参数')
+        # self.scriptControl.layout().setSpacing(1)
+
+        box = gui.vBox(self.controlArea, '脚本参数', stretch=100)
+        self.add_ui_list = QTableWidget(
+            box, showGrid=False, selectionMode=QTableWidget.NoSelection)
+        box.layout().addWidget(self.add_ui_list)
+        self.add_ui_list.setColumnCount(2)
+        self.add_ui_list.setRowCount(0)
+        self.add_ui_list.verticalHeader().hide()
+        self.add_ui_list.horizontalHeader().hide()
+        for i in range(1):
+            self.add_ui_list.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+        self.add_ui_list.horizontalHeader().resizeSection(3, 30)
+        self.add_ui_list.viewport().setBackgroundRole(QPalette.Window)
+
         self.execute_button = gui.button(
             self.buttonsArea, self, '运行', callback=self.commit)
 
@@ -872,9 +931,13 @@ class OWPythonScript(OWWidget):
         self.setSelectedScript(len(self.libraryList) - 1)
 
     def onAddScriptFromFile(self, *_):
+        dir_path = Path(__file__).resolve()
+        parent_path = dir_path.parent.parent.parent
+        scriptStore = f'{str(parent_path)}/scriptStore'
+
         filename, _ = QFileDialog.getOpenFileName(
             self, 'Open Python Script',
-            os.path.expanduser("~/"),
+            os.path.expanduser(scriptStore),
             'Python files (*.py)\nAll files(*.*)'
         )
         if filename:
@@ -883,6 +946,124 @@ class OWPythonScript(OWWidget):
                 contents = f.read()
             self.libraryList.append(Script(name, contents, 0, filename))
             self.setSelectedScript(len(self.libraryList) - 1)
+            # self.make_gui_controls_from_doc_string(contents)
+
+    def make_gui_controls_from_doc_string(self, contents):
+        self.clear_additional_controls()
+        try:
+            doc_string = contents.split("'''")[1]
+        except IndexError:
+            print('没有参数吧？')
+            return
+        self._parse_doc_string(doc_string)
+
+        for control in self.additional_controls:
+            # opt_name_list = [option.name for option in control['options']]
+            if control['options'] == []:
+                self._add_row(control['name'], control['description'], control['options'], to_choose=False)
+            else:
+                self._add_row(control['name'], control['description'], control['options'])
+
+
+    def _parse_doc_string(self, doc_string):
+        """
+        将doc_string解析为一个字典, 分别为name, description 和 options
+        其中, options为一个namedtuple("AddOpts", ["name", "value", "is_default"])
+        """
+
+
+        # 添加新的
+        for line in doc_string.split('\n'):
+            if line == '':
+                continue
+            name, description, options = line.split('|')
+            if not name.startswith('-'):
+                print('只有以 - 开头的会转为GUI控件')
+                continue
+            name = name.split('-')[1].strip()
+            discription = description.strip()
+            options = ast.literal_eval(options)
+
+            options = [AddOpts._make(opt) for opt in options]
+                
+            self.additional_controls.append({'name': name, 'description': description, 'options': options})
+
+            # 设置默认选项     
+            if (options == []): # 填空题
+                setattr(self, name, '')
+            else: # 选择题
+                for i, opt in enumerate(options):
+                    setattr(self, name, 0)
+                    if opt.is_default:
+                        setattr(self, name, i)
+                        break
+            
+
+    def _add_row(self, name, description, options, to_choose=True):
+        model = self.add_ui_list.model()
+        row = model.rowCount()
+        model.insertRow(row)
+
+        # self.add_ui_list
+        label = gui.label(None, self, description, tooltip=description)
+        self.add_ui_list.setCellWidget(row, 0, label)
+
+        if to_choose: # 选择题
+            opt_name = [opt.name for opt in options]
+            opt_values = [opt.value for opt in options]
+            opt_is_default = [opt.is_default for opt in options]
+
+            oper_combo = QComboBox()
+            # oper_combo.row = row
+            oper_combo.addItems(opt_name)
+            oper_combo.setCurrentIndex(opt_is_default.index(True))
+
+            self.add_ui_list.setCellWidget(row, 1, oper_combo)
+            oper_combo.currentIndexChanged.connect(
+                lambda index: setattr(self, name, index))
+        else: # 填空题
+            line_edit = QLineEdit()
+            line_edit.setPlaceholderText(description)
+            line_edit.textChanged.connect(lambda text: setattr(self, name, text))
+            self.add_ui_list.setCellWidget(row, 1, line_edit)
+
+            # line_edit = gui.lineEdit(None, self, name, name, placeholderText=description)
+            # self.add_ui_list.setCellWidget(row, 1, line_edit)
+            pass
+
+        self.add_ui_list.resizeColumnsToContents()
+
+
+    # # TODO
+    def clear_additional_controls(self):
+        self.additional_controls = []
+        for row in range(self.add_ui_list.rowCount()):
+            widg = self.add_ui_list.cellWidget(row, 1)
+            if widg and type(widget) == QComboBox:
+                widg.currentIndexChanged.disconnect()
+            elif widg and type(widget) == QLineEdit:
+                widg.textChanged.disconnect()
+
+        add_names = [control['name'] for control in self.additional_controls]
+        for n in add_names:
+            delattr(self, n)
+        self.add_ui_list.clear()
+        self.add_ui_list.setRowCount(0)
+
+    def _make_control(self, control):
+        if control['options'] == []: # 填空题
+            hbox = gui.hBox(self.scriptControl, margin=0, spacing=0)
+            gui.lineEdit(hbox, self, control['name'], control['name'], 
+                        placeholderText=control['description'])
+            gui.separator(hbox)
+        else: # 选择题
+            vbox = gui.vBox(self.scriptControl, margin=0, spacing=0)
+            box = gui.radioButtons(vbox, self, control['name'])
+            gui.widgetLabel(box, control['description'])
+            for opts in control['options']:
+                gui.appendRadioButton(box, opts.name)
+            gui.separator(box)
+
 
     def onRemoveScript(self, *_):
         index = self.selectedScriptIndex()
@@ -905,6 +1086,11 @@ class OWPythonScript(OWWidget):
 
             self.text.setDocument(self.documentForScript(current))
             self.currentScriptIndex = current
+            self.make_gui_controls_from_doc_string(self.libraryList[current].script)
+            self.clear_in_params()
+            
+    def clear_in_params(self):
+        self.console.clearInParams()
 
     def documentForScript(self, script=0):
         if not isinstance(script, Script):
@@ -969,13 +1155,20 @@ class OWPythonScript(OWWidget):
             f.close()
 
     def initial_locals_state(self):
-        d = {}
+        d = {'in_params': {}}
         for name in self.signal_names:
             value = getattr(self, name)
             all_values = list(value)
             one_value = all_values[0] if len(all_values) == 1 else None
             d["in_" + name + "s"] = all_values
             d["in_" + name] = one_value
+        for control in self.additional_controls:
+            name = control['name']
+            v = getattr(self, name)
+            if control['options'] == []: # 填空题
+                 d["in_params"][name] = v
+            else:
+                d["in_params"][name] = control['options'][v].value
         return d
 
     def commit(self):
