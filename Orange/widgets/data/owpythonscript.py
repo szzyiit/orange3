@@ -1122,7 +1122,7 @@ class OWPythonScript(OWWidget):
             else:
                 fn = filename
 
-            f = open(fn, 'w')
+            f = open(fn, 'w', encoding='utf-8')
             f.write(self.text.toPlainText())
             f.close()
 

@@ -1,9 +1,10 @@
+# - 参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 '''
 - time|包含时间（小时，分钟，秒）数据|[('是', True, True), ('否', False, False)]
 - drop|删除原始日期特征|[('是', True, False), ('否', False, True)]
 - someN|随便|[]
 '''
-# 参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
+
 import re
 import numpy as np
 import pandas as pd
