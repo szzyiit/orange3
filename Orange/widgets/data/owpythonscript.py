@@ -966,12 +966,17 @@ class OWPythonScript(OWWidget):
 
         # 添加新的
         for line in doc_string.split('\n'):
+            if not line.startswith('-'):
+                continue
             if line == '':
                 continue
-            name, description, options = line.split('|')
-            if not name.startswith('-'):
-                print('只有以 - 开头的会转为GUI控件')
-                continue
+            try:
+                name, description, options = line.split('|')
+            except ValueError:
+                return
+            # if not name.startswith('-'):
+            #     print('只有以 - 开头的会转为GUI控件')
+            #     continue
             name = name.split('-')[1].strip()
             discription = description.strip()
             options = ast.literal_eval(options)

@@ -1,6 +1,7 @@
 import warnings
 from functools import partial
 from itertools import chain
+from typing import Union
 
 import numpy as np
 
@@ -11,12 +12,13 @@ from AnyQt.QtCore import Qt, QSize, QObject, pyqtSignal as Signal, \
     QSortFilterProxyModel
 from sklearn.exceptions import UndefinedMetricWarning
 
-from Orange.data import Variable, DiscreteVariable, ContinuousVariable
+from Orange.data import DiscreteVariable, ContinuousVariable, Domain, Variable
 from Orange.evaluation import scoring
 from Orange.widgets import gui
 from Orange.widgets.utils.tableview import table_selection_to_mime_data
 from Orange.widgets.gui import OWComponent
 from Orange.widgets.settings import Setting
+from Orange.util import OrangeDeprecationWarning
 
 
 def check_results_adequacy(results, error_group, check_nan=True):
@@ -78,13 +80,30 @@ def learner_name(learner):
     return getattr(learner, "name", type(learner).__name__)
 
 
-def usable_scorers(target: Variable):
+def usable_scorers(domain_or_var: Union[Variable, Domain]):
+    if domain_or_var is None:
+        return []
+
     order = {name: i
-             for i, name in enumerate(BUILTIN_SCORERS_ORDER[type(target)])}
+             for i, name in enumerate(chain.from_iterable(BUILTIN_SCORERS_ORDER.values()))}
+
     # 'abstract' is retrieved from __dict__ to avoid inheriting
-    usable = (cls for cls in scoring.Score.registry.values()
-              if cls.is_scalar and not cls.__dict__.get("abstract")
-              and isinstance(target, cls.class_types))
+    scorer_candidates = [cls for cls in scoring.Score.registry.values()
+                         if cls.is_scalar and not cls.__dict__.get("abstract")]
+
+    if isinstance(domain_or_var, Variable):
+        warnings.warn(
+            "Passing Variable to usable_scorers is deprecated, and using Domain "
+            "is preferred. In light of this change, all Scorers should implement "
+            "the is_compatible method.",
+            OrangeDeprecationWarning)
+
+        usable = [scorer for scorer in scorer_candidates if
+                  isinstance(domain_or_var, scorer.class_types)]
+    else:
+        usable = [scorer for scorer in scorer_candidates if
+                  scorer.is_compatible(domain_or_var) and scorer.class_types]
+
     return sorted(usable, key=lambda cls: order.get(cls.name, 99))
 
 
@@ -131,9 +150,7 @@ class ScoreModel(QSortFilterProxyModel):
 
 
 class ScoreTable(OWComponent, QObject):
-    shown_scores = \
-        Setting(set(chain(*BUILTIN_SCORERS_ORDER.values())))
-
+    shown_scores = Setting(set(chain(*BUILTIN_SCORERS_ORDER.values())))
     shownScoresChanged = Signal()
 
     class ItemDelegate(QStyledItemDelegate):
@@ -160,6 +177,18 @@ class ScoreTable(OWComponent, QObject):
         header.setStretchLastSection(False)
         header.setContextMenuPolicy(Qt.CustomContextMenu)
         header.customContextMenuRequested.connect(self.show_column_chooser)
+
+        # Currently, this component will never show scoring methods
+        # defined in add-ons by default. To support them properly, the
+        # "shown_scores" settings will need to be reworked.
+        # The following is a temporary solution to show the scoring method
+        # for survival data (it does not influence other problem types).
+        # It is added here so that the "C-Index" method
+        # will show up even if the users already have the setting defined.
+        # This temporary fix is here due to a paper deadline needing the feature.
+        # When removing, also remove TestScoreTable.test_column_settings_reminder
+        if isinstance(self.shown_scores, set):  # TestScoreTable does not initialize settings
+            self.shown_scores.add("C-Index")
 
         self.model = QStandardItemModel(master)
         self.model.setHorizontalHeaderLabels(["Method"])
@@ -203,9 +232,9 @@ class ScoreTable(OWComponent, QObject):
     def update_header(self, scorers):
         # Set the correct horizontal header labels on the results_model.
         self.model.setColumnCount(3 + len(scorers))
-        self.model.setHorizontalHeaderItem(0, QStandardItem("模型"))
-        self.model.setHorizontalHeaderItem(1, QStandardItem("训练时间 [s]"))
-        self.model.setHorizontalHeaderItem(2, QStandardItem("测试时间 [s]"))
+        self.model.setHorizontalHeaderItem(0, QStandardItem("Model"))
+        self.model.setHorizontalHeaderItem(1, QStandardItem("Train time [s]"))
+        self.model.setHorizontalHeaderItem(2, QStandardItem("Test time [s]"))
         for col, score in enumerate(scorers, start=3):
             item = QStandardItem(score.name)
             item.setToolTip(score.long_name)

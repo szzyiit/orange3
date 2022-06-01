@@ -56,7 +56,7 @@ Using the graphic user interface requires some additional packages.
 
 To start Orange GUI from the command line, run:
 
-    python3 -m Orange.canvas
+    python -m Orange.canvas
 
 Contributing
 ------------

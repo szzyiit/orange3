@@ -46,31 +46,29 @@ class ProblemType:
                 cls.REGRESSION if isinstance(variable, ContinuousVariable) else
                 cls.UNSUPERVISED)
 
-
-ScoreMeta = namedtuple("score_meta", [
-                       "name", "zh_name", "shortname", "zh_shortname", "scorer", 'problem_type', 'is_default'])
+ScoreMeta = namedtuple("score_meta", ["name", "shortname", "scorer", 'problem_type', 'is_default'])
 
 # Default scores.
 CLS_SCORES = [
-    ScoreMeta("Information Gain", "信息增益", "Info. gain", "信息增益",
+    ScoreMeta("Information Gain", "Info. gain",
               score.InfoGain, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("Information Gain Ratio", "信息增益比", "Gain ratio", "增益比",
+    ScoreMeta("Information Gain Ratio", "Gain ratio",
               score.GainRatio, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("Gini Decrease", "基尼下降", "Gini", "基尼",
+    ScoreMeta("Gini Decrease", "Gini",
               score.Gini, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("ANOVA", "ANOVA", "ANOVA", "ANOVA",
+    ScoreMeta("ANOVA", "ANOVA",
               score.ANOVA, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("χ²", "χ²", "χ²", "χ²",
+    ScoreMeta("χ²", "χ²",
               score.Chi2, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("ReliefF", "ReliefF", "ReliefF", "ReliefF",
+    ScoreMeta("ReliefF", "ReliefF",
               score.ReliefF, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("FCBF", "FCBF", "FCBF", "FCBF",
+    ScoreMeta("FCBF", "FCBF",
               score.FCBF, ProblemType.CLASSIFICATION, False)
 ]
 REG_SCORES = [
-    ScoreMeta("Univariate Regression", "单变量回归", "Univar. reg.", "单变量回归",
+    ScoreMeta("Univariate Regression", "Univar. reg.",
               score.UnivariateLinearRegression, ProblemType.REGRESSION, True),
-    ScoreMeta("RReliefF", "RReliefF", "RReliefF", "RReliefF",
+    ScoreMeta("RReliefF", "RReliefF",
               score.RReliefF, ProblemType.REGRESSION, True)
 ]
 SCORES = CLS_SCORES + REG_SCORES
@@ -99,7 +97,7 @@ class TableView(QTableView):
 
         header = self.horizontalHeader()
         header.setSectionResizeMode(header.Fixed)
-        header.setFixedHeight(34)  # 增大行高
+        header.setFixedHeight(24)
         header.setDefaultSectionSize(80)
         header.setTextElideMode(Qt.ElideMiddle)
 
@@ -251,8 +249,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     description = "根据数据特征的相关性对其进行排名和筛选。"
     icon = "icons/Rank.svg"
     priority = 1102
-    keywords = ['paiming', 'mingci', 'paixu']
-    category = "数据(Data)"
+    keywords = []
 
     buttons_area_orientation = Qt.Vertical
 
@@ -336,7 +333,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
             stacked.addWidget(box)
             for method in scoring_methods:
                 box.layout().addWidget(QCheckBox(
-                    method.zh_name, self,
+                    method.name, self,
                     objectName=method.shortname,  # To be easily found in tests
                     checked=method.name in self.selected_methods,
                     stateChanged=partial(self.methodSelectionChanged, method_name=method.name)))
@@ -367,8 +364,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         b4 = button(self.tr("最佳排名:"), OWRank.SelectNBest)
 
         s = gui.spin(selMethBox, self, "nSelected", 1, 999,
-                     callback=lambda: self.setSelectionMethod(
-                         OWRank.SelectNBest),
+                     callback=lambda: self.setSelectionMethod(OWRank.SelectNBest),
                      addToLayout=False)
 
         grid.addWidget(b1, 0, 0)
@@ -514,7 +510,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
         self.scorers_results.update(result.scorer_scores)
 
         methods = self._get_methods()
-        method_labels = tuple(m.zh_shortname for m in methods)
+        method_labels = tuple(m.shortname for m in methods)
         method_scores = tuple(self.methods_results[m] for m in methods)
 
         scores = [self.scorers_results[s] for s in self._get_scorers()]
@@ -610,8 +606,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
 
         # Store the header states
         sort_order = self.ranksModel.sortOrder()
-        # -2 for '#' (discrete count) column
-        sort_column = self.ranksModel.sortColumn() - 2
+        sort_column = self.ranksModel.sortColumn() - 2  # -2 for '#' (discrete count) column
         self.sorting = (sort_column, sort_order)
 
     def methodSelectionChanged(self, state, method_name):
@@ -648,8 +643,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     def create_scores_table(self, labels):
         self.Warning.renamed_variables.clear()
         model_list = self.ranksModel.tolist()
-        # Empty or just first two columns
-        if not model_list or len(model_list[0]) == 2:
+        if not model_list or len(model_list[0]) == 2:  # Empty or just first two columns
             return None
         unique, renamed = get_unique_names_duplicates(labels + ('Feature',),
                                                       return_duplicated=True)
