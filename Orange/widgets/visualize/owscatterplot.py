@@ -127,35 +127,30 @@ class ParameterSetter(ScatterBaseParameterSetter):
 
     def update_setters(self):
         super().update_setters()
-        self.initial_settings[self.LABELS_BOX].update(
-            {
-                self.AXIS_TITLE_LABEL: self.FONT_SETTING,
-                self.AXIS_TICKS_LABEL: self.FONT_SETTING,
-                self.LINE_LAB_LABEL: self.FONT_SETTING,
-            }
-        )
+        self.initial_settings[self.LABELS_BOX].update({
+            self.AXIS_TITLE_LABEL: self.FONT_SETTING,
+            self.AXIS_TICKS_LABEL: self.FONT_SETTING,
+            self.LINE_LAB_LABEL: self.FONT_SETTING
+        })
         self.initial_settings[self.PLOT_BOX] = {}
         self.initial_settings[self.PLOT_BOX][self.LINE_LABEL] = {
             Updater.WIDTH_LABEL: (range(1, 10), self.DEFAULT_LINE_WIDTH),
             Updater.ALPHA_LABEL: (range(0, 255, 5), self.DEFAULT_LINE_ALPHA),
-            Updater.STYLE_LABEL: (
-                list(Updater.LINE_STYLES),
-                Updater.DEFAULT_LINE_STYLE,
-            ),
+            Updater.STYLE_LABEL: (list(Updater.LINE_STYLES),
+                                  Updater.DEFAULT_LINE_STYLE),
         }
 
         def update_lines(**settings):
             self.reg_line_settings.update(**settings)
-            Updater.update_inf_lines(self.reg_line_items, **self.reg_line_settings)
+            Updater.update_inf_lines(self.reg_line_items,
+                                     **self.reg_line_settings)
             self.master.update_reg_line_label_colors()
 
         def update_line_label(**settings):
-            self.reg_line_label_font = Updater.change_font(
-                self.reg_line_label_font, settings
-            )
-            Updater.update_label_font(
-                self.reg_line_label_items, self.reg_line_label_font
-            )
+            self.reg_line_label_font = \
+                Updater.change_font(self.reg_line_label_font, settings)
+            Updater.update_label_font(self.reg_line_label_items,
+                                      self.reg_line_label_font)
 
         self._setters[self.LABELS_BOX][self.LINE_LAB_LABEL] = update_line_label
         self._setters[self.PLOT_BOX] = {self.LINE_LABEL: update_lines}
@@ -175,6 +170,15 @@ class ParameterSetter(ScatterBaseParameterSetter):
         return [
             line.label for line in self.master.reg_line_items if hasattr(line, "label")
         ]
+
+    @property
+    def reg_line_items(self):
+        return self.master.reg_line_items
+
+    @property
+    def reg_line_label_items(self):
+        return [line.label for line in self.master.reg_line_items
+                if hasattr(line, "label")]
 
 
 class OWScatterPlotGraph(OWScatterPlotBase):
@@ -264,14 +268,12 @@ class OWScatterPlotGraph(OWScatterPlotBase):
         slope, intercept, rvalue, _, _ = linregress(x, y)
         angle = np.degrees(np.arctan(slope))
         start_y = min_x * slope + intercept
-        l_opts = dict(color=color, position=0.85, rotateAxis=(1, 0), movable=True)
+        l_opts = dict(color=color, position=0.85,
+                      rotateAxis=(1, 0), movable=True)
         return pg.InfiniteLine(
-            pos=QPointF(min_x, start_y),
-            angle=angle,
+            pos=QPointF(min_x, start_y), angle=angle,
             pen=pg.mkPen(color=color, width=width, style=style),
-            label=f"r = {rvalue:.2f}",
-            labelOpts=l_opts,
-        )
+            label=f"r = {rvalue:.2f}", labelOpts=l_opts)
 
     def _add_line(self, x, y, color):
         width = self.parameter_setter.reg_line_settings[Updater.WIDTH_LABEL]
@@ -296,7 +298,8 @@ class OWScatterPlotGraph(OWScatterPlotBase):
     def update_reg_line_label_colors(self):
         for line in self.reg_line_items:
             if hasattr(line, "label"):
-                color = 0.0 if self.class_density else line.pen.color().darker(175)
+                color = 0.0 if self.class_density \
+                    else line.pen.color().darker(175)
                 line.label.setColor(color)
 
     def update_density(self):
@@ -635,11 +638,9 @@ class OWScatterPlot(OWDataProjectionWidget):
     def set_shown_attributes(self, attributes):
         if attributes and len(attributes) >= 2:
             self.attribute_selection_list = attributes[:2]
-            self._xy_invalidated = (
-                self._xy_invalidated
-                or self.attr_x != attributes[0]
+            self._xy_invalidated = self._xy_invalidated \
+                or self.attr_x != attributes[0] \
                 or self.attr_y != attributes[1]
-            )
         else:
             self.attribute_selection_list = None
 

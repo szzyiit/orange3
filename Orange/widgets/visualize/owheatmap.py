@@ -19,13 +19,8 @@ import numpy as np
 import scipy.sparse as sp
 
 from AnyQt.QtWidgets import (
-    QGraphicsView,
-    QFormLayout,
-    QComboBox,
-    QGroupBox,
-    QMenu,
-    QAction,
-    QSizePolicy,
+    QGraphicsView, QFormLayout, QComboBox, QGroupBox, QMenu, QAction,
+    QSizePolicy
 )
 from AnyQt.QtGui import QStandardItemModel, QStandardItem, QFont, QKeySequence
 from AnyQt.QtCore import Qt, QSize, QRectF, QObject

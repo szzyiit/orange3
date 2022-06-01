@@ -14,7 +14,7 @@ from Orange.classification import (
 from Orange.preprocess import Scale, Continuize
 from Orange.tests import test_filename
 from Orange.widgets.tests.base import WidgetTest
-from Orange.widgets.tests.utils import simulate
+from Orange.widgets.tests.utils import simulate, qbuttongroup_emit_clicked
 from Orange.widgets.visualize.ownomogram import (
     OWNomogram, DiscreteFeatureItem, ContinuousFeatureItem, ProbabilitiesDotItem,
     MovableToolTip
@@ -87,7 +87,7 @@ class TestOWNomogram(WidgetTest):
         """Check probabilities for logistic regression classifier for various
         values of classes and radio buttons"""
         self.widget.display_index = 0  # show ALL features
-        self._test_helper(self.lr_cls, [58, 42])
+        self._test_helper(self.lr_cls, [61, 39])
 
     def test_nomogram_nb_multiclass(self):
         """Check probabilities for naive bayes classifier for various values
@@ -240,7 +240,7 @@ class TestOWNomogram(WidgetTest):
 
         # Set to output all
         self.widget.display_index = 0
-        self.widget.controls.display_index.group.buttonClicked[int].emit(0)
+        qbuttongroup_emit_clicked(self.widget.controls.display_index.group, 0)
         attrs = self.get_output(self.widget.Outputs.features)
         self.assertEqual(attrs, [age, sex, status])
 

@@ -29,7 +29,7 @@ from AnyQt.QtGui import (
     QTextCursor, QKeySequence, QFontMetrics, QPainter
 )
 from AnyQt.QtCore import (
-    Qt, QByteArray, QItemSelectionModel, QSize, QRectF, QMimeDatabase, QCoreApplication
+    Qt, QByteArray, QItemSelectionModel, QSize, QRectF, QMimeDatabase,
 )
 
 from orangewidget.workflow.drophandler import SingleFileDropHandler
@@ -240,8 +240,8 @@ class ReturnStatement(FakeSignatureMixin, QWidget):
         layout.setSpacing(0)
 
         # `return `
-        ret_lbl = QLabel('<b style="color: ' +
-                         highlighting_scheme[Keyword].split(' ')[-1] +
+        ret_lbl = QLabel('<b style="color: ' + \
+                         highlighting_scheme[Keyword].split(' ')[-1] + \
                          ';">return </b>', self)
         ret_lbl.setFont(self.font())
         ret_lbl.setContentsMargins(0, 0, 0, 0)
@@ -312,8 +312,8 @@ class VimIndicator(QWidget):
         p.drawRoundedRect(rect, 5, 5)
         p.restore()
 
-        textstart = (width - fm.width(self.indicator_text)) / 2
-        p.drawText(textstart, height / 2 + 5, self.indicator_text)
+        textstart = (width - fm.width(self.indicator_text)) // 2
+        p.drawText(textstart, height // 2 + 5, self.indicator_text)
 
     def minimumSizeHint(self):
         fm = QFontMetrics(self.font())
@@ -704,7 +704,6 @@ class OWPythonScript(OWWidget):
             callback=enable_vim_mode
         )
         self.vim_box.layout().addWidget(self.vim_indicator)
-
         @editor.vimModeIndicationChanged.connect
         def _(color, text):
             self.vim_indicator.indicator_color = color
@@ -787,13 +786,6 @@ class OWPythonScript(OWWidget):
         self.add_ui_list.setRowCount(0)
         self.add_ui_list.verticalHeader().hide()
         self.add_ui_list.horizontalHeader().hide()
-
-        self.add_ui_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        # self.add_ui_list.horizontalHeader().resizeSection(3, 30)
-        self.add_ui_list.viewport().setBackgroundRole(QPalette.Window)
-
-        self.execute_button = gui.button(
-            self.buttonsArea, self, '运行', callback=self.commit)
 
         self.run_action = QAction("Run script", self, triggered=self.commit,
                                   shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_R))
@@ -1079,8 +1071,7 @@ class OWPythonScript(OWWidget):
             doc.setDefaultFont(QFont(self.defaultFont))
             doc.highlighter = PygmentsHighlighter(doc)
             doc.highlighter.set_style(self.pygments_style_class)
-            doc.setDefaultFont(
-                QFont(self.defaultFont, pointSize=self.defaultFontSize))
+            doc.setDefaultFont(QFont(self.defaultFont, pointSize=self.defaultFontSize))
             doc.modificationChanged[bool].connect(self.onModificationChanged)
             doc.setModified(False)
             self._cachedDocuments[script] = doc

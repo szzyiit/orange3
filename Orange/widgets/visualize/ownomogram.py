@@ -1120,9 +1120,7 @@ class OWNomogram(OWWidget):
         self.scene.setSceneRect(rect)
 
         # Clip top and bottom (60 and 150) parts from the main view
-        self.view.setSceneRect(
-            rect.x(), rect.y() + 80, rect.width() - 10, rect.height() - 160
-        )
+        self.view.setSceneRect(rect.x(), rect.y() + 80, rect.width() - 10, rect.height() - 160)
         self.view.viewport().setMaximumHeight(int(rect.height() - 160))
         # Clip main part from top/bottom views
         # below point values are imprecise (less/more than required) but this
@@ -1458,10 +1456,8 @@ class OWNomogram(OWWidget):
 
         orig_clv = original.class_var
         orig_data = classifier.original_data
-        values = (
-            orig_clv.values[int(i)]
-            for i in np.unique(orig_data.get_column_view(orig_clv)[0])
-        )
+        values = (orig_clv.values[int(i)] for i in
+                  np.unique(orig_data.get_column_view(orig_clv)[0]))
         class_var = DiscreteVariable(original.class_var.name, values)
         return Domain(attrs, class_var, original.metas)
 

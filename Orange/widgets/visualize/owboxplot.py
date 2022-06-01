@@ -67,9 +67,8 @@ class BoxData:
         self.mean = np.nanmean(col)
         self.var = np.nanvar(col)
         self.dev = np.sqrt(self.var)
-        self.q25, self.median, self.q75 = np.nanquantile(
-            col, [0.25, 0.5, 0.75], interpolation="midpoint"
-        )
+        self.q25, self.median, self.q75 = \
+            np.nanquantile(col, [0.25, 0.5, 0.75], interpolation="midpoint")
         self.data_range = ContDataRange(self.q25, self.q75, group_val)
         if self.q25 == self.median:
             self.q25 = None
@@ -583,17 +582,17 @@ class OWBoxPlot(widget.OWWidget):
             if self.attribute.is_continuous:
                 stats, label_texts = [], []
                 attr_col = dataset.get_column_view(attr)[0].astype(float)
-                for group, value in zip(
-                    self._group_cols(dataset, self.group_var, attr_col),
-                    group_var_labels,
-                ):
+                for group, value in \
+                        zip(self._group_cols(dataset, self.group_var, attr_col),
+                            group_var_labels):
                     if group.size:
                         stats.append(BoxData(group, value))
                         label_texts.append(value or missing_val_str)
                 self.stats = stats
                 self.label_txts_all = label_texts
             else:
-                self.conts = contingency.get_contingency(dataset, attr, self.group_var)
+                self.conts = contingency.get_contingency(
+                    dataset, attr, self.group_var)
                 self.label_txts_all = [
                     v or missing_val_str
                     for v, c in zip(group_var_labels, self.conts.array_with_unknowns)
@@ -929,10 +928,8 @@ class OWBoxPlot(widget.OWWidget):
     def draw_axis(self):
         """Draw the horizontal axis and sets self.scale_x"""
         misssing_stats = not self.stats
-        stats = self.stats or [BoxData(np.array([0.0]), self.attribute)]
-        mean_labels = self.mean_labels or [
-            self.mean_label(stats[0], self.attribute, "")
-        ]
+        stats = self.stats or [BoxData(np.array([0.]), self.attribute)]
+        mean_labels = self.mean_labels or [self.mean_label(stats[0], self.attribute, "")]
         bottom = min(stat.a_min for stat in stats)
         top = max(stat.a_max for stat in stats)
 
@@ -1352,8 +1349,7 @@ class OWBoxPlot(widget.OWWidget):
             painter.drawText(
                 int(option.rect.x()),
                 int(option.rect.y() + self.boundingRect().height() - self.PADDING),
-                text,
-            )
+                text)
 
 
 if __name__ == "__main__":  # pragma: no cover

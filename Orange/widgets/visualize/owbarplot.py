@@ -39,15 +39,10 @@ from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.plot import OWPlotGUI, SELECT, PANNING, ZOOMING
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem
-from Orange.widgets.visualize.utils.customizableplot import (
-    Updater,
-    CommonParameterSetter,
-)
-from Orange.widgets.visualize.utils.plotutils import (
-    AxisItem,
-    HelpEventDelegate,
-    PlotWidget,
-)
+from Orange.widgets.visualize.utils.customizableplot import Updater, \
+    CommonParameterSetter
+from Orange.widgets.visualize.utils.plotutils import AxisItem, \
+    HelpEventDelegate, PlotWidget
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
 MAX_INSTANCES = 200
@@ -172,10 +167,9 @@ class BarPlotGraph(PlotWidget):
             parent=parent,
             viewBox=BarPlotViewBox(self),
             enableMenu=False,
-            axisItems={
-                "bottom": AxisItem(orientation="bottom", rotate_ticks=True),
-                "left": AxisItem(orientation="left"),
-            },
+            axisItems={"bottom": AxisItem(orientation="bottom",
+                                          rotate_ticks=True),
+                       "left": AxisItem(orientation="left")}
         )
         self.hideAxis("left")
         self.hideAxis("bottom")

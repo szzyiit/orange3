@@ -366,8 +366,7 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
 
         # aggregations checkboxes
         grid_layout = QGridLayout()
-        gui.widgetBox(self.mainArea, orientation=grid_layout,
-                      box="Aggregations")
+        gui.widgetBox(self.mainArea, orientation=grid_layout, box="Aggregations")
 
         col = 0
         row = 0
@@ -390,8 +389,7 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
         selected_attrs = self.get_selected_attributes()
 
         types = {type(attr) for attr in selected_attrs}
-        active_aggregations = [self.aggregations[attr]
-                               for attr in selected_attrs]
+        active_aggregations = [self.aggregations[attr] for attr in selected_attrs]
         for agg, cb in self.agg_checkboxes.items():
             cb.setDisabled(not types & AGGREGATIONS[agg].types)
 
@@ -474,8 +472,7 @@ class OWGroupBy(OWWidget, ConcurrentWidgetMixin):
         self.Error.clear()
         self.Warning.clear()
         if self.data:
-            self.start(_run, self.data, self.gb_attrs,
-                       self.aggregations, self.result)
+            self.start(_run, self.data, self.gb_attrs, self.aggregations, self.result)
 
     def on_done(self, result: Result) -> None:
         self.result = result

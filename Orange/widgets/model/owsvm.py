@@ -230,30 +230,15 @@ class OWSVM(OWBaseLearner):
         # this is part of init, pylint: disable=attribute-defined-outside-init
         self.optimization_box = gui.vBox(self.controlArea, "优化参数")
         self.tol_spin = gui.doubleSpin(
-            self.optimization_box,
-            self,
-            "tol",
-            1e-4,
-            1.0,
-            1e-4,
+            self.optimization_box, self, "tol", 1e-4, 1.0, 1e-4,
             label="数值公差: ",
-            alignment=Qt.AlignRight,
-            controlWidth=100,
-            callback=self.settings_changed,
-        )
+            alignment=Qt.AlignRight, controlWidth=100,
+            callback=self.settings_changed)
         self.max_iter_spin = gui.spin(
-            self.optimization_box,
-            self,
-            "max_iter",
-            5,
-            1000000,
-            50,
-            label="迭代极限: ",
-            checked="limit_iter",
-            alignment=Qt.AlignRight,
-            controlWidth=100,
+            self.optimization_box, self, "max_iter", 5, 1000000, 50,
+            label="迭代极限: ", checked="limit_iter",
+            alignment=Qt.AlignRight, controlWidth=100,
             callback=self.settings_changed,
-            checkCallback=self.settings_changed,
         )
 
     def _show_right_kernel(self):

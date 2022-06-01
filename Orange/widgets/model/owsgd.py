@@ -58,7 +58,7 @@ class OWSGD(OWBaseLearner):
         ('逻辑回归', 'log'),
         ('Modified Huber', 'modified_huber'),
         ('Squared Hinge', 'squared_hinge'),
-        ('感知器', 'perceptron')) + Chinese_reg_losses
+        ('感知机', 'perceptron')) + Chinese_reg_losses
 
     #: Regularization methods
     penalties = (

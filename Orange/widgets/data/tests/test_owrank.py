@@ -95,11 +95,7 @@ class TestOWRank(WidgetTest):
                             model.columnCount() - 1, Qt.Horizontal).lower()
                         self.assertIn(name, last_column)
 
-                self.send_signal("评分器(Scorer)", None, 1)
                 self.assertEqual(self.widget.scorers, [])
-
-    def test_input_scorer_disconnect(self):
-        """Check widget's scorer after disconnecting scorer on the input"""
         self.send_signal(self.widget.Inputs.scorer, self.log_reg, 1)
         self.assertEqual(len(self.widget.scorers), 1)
         self.send_signal(self.widget.Inputs.scorer, None, 1)

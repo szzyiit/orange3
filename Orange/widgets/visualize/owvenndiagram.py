@@ -41,10 +41,8 @@ from Orange.data.util import get_unique_names_duplicates
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import DomainContextHandler, ContextSetting, Setting
 from Orange.widgets.utils import itemmodels, colorpalettes
-from Orange.widgets.utils.annotated_data import (
-    create_annotated_table,
-    ANNOTATED_DATA_SIGNAL_NAME,
-)
+from Orange.widgets.utils.annotated_data import (create_annotated_table,
+                                                 ANNOTATED_DATA_SIGNAL_NAME)
 from Orange.widgets.utils.sql import check_sql_input_sequence
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import MultiInput, Output, Msg
@@ -194,9 +192,9 @@ class OWVennDiagram(widget.OWWidget):
             "输出重复值",
             callback=lambda: self.commit(),  # pylint: disable=unnecessary-lambda
             stateWhenDisabled=False,
-            attribute=Qt.WA_LayoutUsesWidgetRect,
-        )
-        gui.auto_send(box, self, "autocommit", box=False, contentsMargins=(0, 0, 0, 0))
+            attribute=Qt.WA_LayoutUsesWidgetRect)
+        gui.auto_send(
+            box, self, "autocommit", box=False, contentsMargins=(0, 0, 0, 0))
         gui.rubber(box)
         self._update_duplicates_cb()
         self._queue = []
@@ -220,8 +218,7 @@ class OWVennDiagram(widget.OWWidget):
     def data(self) -> Mapping[Any, _InputData]:
         if self.__data is None:
             self.__data = {
-                item.key: item
-                for item in self._data_inputs[:5]
+                item.key: item for item in self._data_inputs[:5]
                 if item.table is not None
             }
         return self.__data
@@ -230,7 +227,10 @@ class OWVennDiagram(widget.OWWidget):
     @check_sql_input_sequence
     def setData(self, index: int, data: Optional[Table]):
         item = self._data_inputs[index]
-        item = item._replace(name=data.name if data is not None else "", table=data)
+        item = item._replace(
+            name=data.name if data is not None else "",
+            table=data
+        )
         self._data_inputs[index] = item
         self.__data = None  # invalidate self.data
         self._setInterAttributes()
@@ -239,7 +239,9 @@ class OWVennDiagram(widget.OWWidget):
     @check_sql_input_sequence
     def insertData(self, index: int, data: Optional[Table]):
         key = next(self.__id_gen)
-        item = _InputData(key, name=data.name if data is not None else "", table=data)
+        item = _InputData(
+            key, name=data.name if data is not None else "", table=data
+        )
         self._data_inputs.insert(index, item)
         self.__data = None  # invalidate self.data
         if len(self._data_inputs) > 5:

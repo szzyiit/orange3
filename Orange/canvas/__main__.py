@@ -401,12 +401,12 @@ class OMain(Main):
     def argument_parser(self) -> argparse.ArgumentParser:
         parser = super().argument_parser()
         parser.add_argument(
-            "--clear-widget-settings",
-            action="store_true",
+            "--clear-widget-settings", action="store_true",
             help="Clear stored widget setting/defaults",
         )
         parser.add_argument(
-            "--clear-all", action="store_true", help="Clear all settings and caches"
+            "--clear-all", action="store_true",
+            help="Clear all settings and caches"
         )
         return parser
 
@@ -426,7 +426,6 @@ class OMain(Main):
 
     def clear_caches(self):  # pylint: disable=import-outside-toplevel
         from Orange.misc import environ
-
         log.info("Clearing caches")
         self._rm_tree(environ.cache_dir())
         log.info("Clearing data")
@@ -442,10 +441,12 @@ class OMain(Main):
 
     def setup_application(self):
         super().setup_application()
-        clear_settings_flag = os.path.join(widget_settings_dir(), "DELETE_ON_START")
+        clear_settings_flag = os.path.join(widget_settings_dir(),
+                                           "DELETE_ON_START")
         # NOTE: No OWWidgetBase subclass should be imported before this
         options = self.options
-        if options.clear_widget_settings or os.path.isfile(clear_settings_flag):
+        if options.clear_widget_settings or \
+                os.path.isfile(clear_settings_flag):
             self.clear_widget_settings()
 
         if options.clear_all:
@@ -461,11 +462,11 @@ class OMain(Main):
         self._pull_notifs = pull_notifications()
 
         settings = QSettings()
-        settings.setValue(
-            "startup/launch-count", settings.value("startup/launch-count", 0, int) + 1
-        )
+        settings.setValue('startup/launch-count',
+                          settings.value('startup/launch-count', 0, int) + 1)
 
-        if settings.value("reporting/send-statistics", False, type=bool) and is_release:
+        if settings.value("reporting/send-statistics", False, type=bool) \
+                and is_release:
             UsageStatistics.set_enabled(True)
 
         app = self.application
@@ -476,11 +477,11 @@ class OMain(Main):
             bg = p.base().color().name()
             fg = p.windowText().color().name()
 
-            log.info("Setting pyqtgraph background to %s", bg)
-            pyqtgraph.setConfigOption("background", bg)
-            log.info("Setting pyqtgraph foreground to %s", fg)
-            pyqtgraph.setConfigOption("foreground", fg)
-            app.setProperty("darkMode", p.color(QPalette.Base).value() < 127)
+            log.info('Setting pyqtgraph background to %s', bg)
+            pyqtgraph.setConfigOption('background', bg)
+            log.info('Setting pyqtgraph foreground to %s', fg)
+            pyqtgraph.setConfigOption('foreground', fg)
+            app.setProperty('darkMode', p.color(QPalette.Base).value() < 127)
 
         app.paletteChanged.connect(onPaletteChange)
         onPaletteChange()

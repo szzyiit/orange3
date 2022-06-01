@@ -233,11 +233,12 @@ class OWPythagoreanForest(OWWidget):
         self.ui_info = gui.widgetLabel(box_info)
 
         # Display controls area
-        box_display = gui.widgetBox(self.controlArea, "显示")
+        box_display = gui.widgetBox(self.controlArea, '显示')
         # maxValue is set to a wide three-digit number to probably ensure the
         # proper label width. The maximum is later set to match the tree depth
         self.ui_depth_slider = gui.hSlider(
-            box_display, self, "depth_limit", label="深度", ticks=False, maxValue=900
+            box_display, self, 'depth_limit', label='深度', ticks=False,
+            maxValue=900
         )  # type: QSlider
         self.ui_target_class_combo = gui.comboBox(
             box_display,

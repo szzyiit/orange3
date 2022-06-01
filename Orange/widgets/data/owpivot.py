@@ -109,8 +109,7 @@ class Pivot:
             raise TypeError("Column variable should be DiscreteVariable")
 
         self._row_var_col = table.get_column_view(row_var)[0].astype(float)
-        self._col_var_col = table.get_column_view(self._col_var)[
-            0].astype(float)
+        self._col_var_col = table.get_column_view(self._col_var)[0].astype(float)
         self._row_var_groups = nanunique(self._row_var_col)
         self._col_var_groups = nanunique(self._col_var_col)
 

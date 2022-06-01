@@ -265,6 +265,19 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         layout.addWidget(box, 0, 1)
 
         box = gui.vBox(self.controlArea, "信息")
+        self.infolabel = gui.widgetLabel(box, '数据未加载.')
+
+        box = gui.hBox(None, addToLayout=False, margin=0)
+        box.setSizePolicy(Policy.Expanding, Policy.Fixed)
+        self.reader_combo = QComboBox(self)
+        self.reader_combo.setSizePolicy(Policy.Expanding, Policy.Fixed)
+        self.reader_combo.setMinimumSize(QSize(100, 1))
+        self.reader_combo.activated[int].connect(self.select_reader)
+
+        box.layout().addWidget(self.reader_combo)
+        layout.addWidget(box, 0, 1)
+
+        box = gui.vBox(self.controlArea, "信息")
         self.infolabel = gui.widgetLabel(box, '未加载数据.')
 
         box = gui.widgetBox(self.controlArea, "列(双击编辑)")
@@ -364,8 +377,7 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
         else:
             start_file = self.last_path() or os.path.expanduser("~/")
 
-        filename, reader, _ = open_filename_dialog(
-            start_file, None, self.available_readers)
+        filename, reader, _ = open_filename_dialog(start_file, None, self.available_readers)
         if not filename:
             return
         self.add_path(filename)
@@ -452,21 +464,18 @@ class OWFile(widget.OWWidget, RecentPathsWComboMixin):
             self.reader_combo.setEnabled(True)
             if self.recent_paths and self.recent_paths[0].file_format:
                 qname = self.recent_paths[0].file_format
-                qname_index = {r.qualified_name(): i for i,
-                               r in enumerate(self.available_readers)}
+                qname_index = {r.qualified_name(): i for i, r in enumerate(self.available_readers)}
                 if qname in qname_index:
                     self.reader_combo.setCurrentIndex(qname_index[qname] + 1)
                 else:
                     # reader may be accessible, but not in self.available_readers
                     # (perhaps its code was moved)
                     self.reader_combo.addItem(qname)
-                    self.reader_combo.setCurrentIndex(
-                        len(self.reader_combo) - 1)
+                    self.reader_combo.setCurrentIndex(len(self.reader_combo) - 1)
                 try:
                     reader_class = class_from_qualified_name(qname)
                 except Exception as ex:
-                    raise MissingReaderException(
-                        f'Can not find reader "{qname}"') from ex
+                    raise MissingReaderException(f'Can not find reader "{qname}"') from ex
                 reader = reader_class(path)
             else:
                 self.reader_combo.setCurrentIndex(0)

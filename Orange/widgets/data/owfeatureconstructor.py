@@ -16,9 +16,11 @@ import ast
 import types
 import unicodedata
 
+from concurrent.futures import CancelledError
+from dataclasses import dataclass
 from traceback import format_exception_only
 from collections import namedtuple, OrderedDict
-from itertools import chain, count
+from itertools import chain, count, starmap
 from typing import List, Dict, Any
 
 import numpy as np
@@ -32,14 +34,19 @@ from AnyQt.QtCore import Qt, pyqtSignal as Signal, pyqtProperty as Property
 from orangewidget.utils.combobox import ComboBoxSearch
 
 import Orange
+from Orange.data import Variable, Table, Value, Instance
 from Orange.data.util import get_unique_names
 from Orange.widgets import gui
 from Orange.widgets.settings import ContextSetting, DomainContextHandler
-from Orange.widgets.utils import itemmodels, vartype
+from Orange.widgets.utils import (
+    itemmodels, vartype, ftry, unique_everseen as unique
+)
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets import report
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
+from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
+
 
 FeatureDescriptor = \
     namedtuple("FeatureDescriptor", ["name", "expression"])
@@ -57,7 +64,6 @@ DiscreteDescriptor = \
 StringDescriptor = namedtuple("StringDescriptor", ["name", "expression"])
 
 #warningIcon = gui.createAttributePixmap('!', QColor((202, 0, 32)))
-
 
 def make_variable(descriptor, compute_value):
     if isinstance(descriptor, ContinuousDescriptor):
@@ -272,12 +278,11 @@ class DiscreteFeatureEditor(FeatureEditor):
         tooltip = \
             "If values are given, above expression must return zero-based " \
             "integer indices into that list."
-        self.valuesedit = QLineEdit(
-            placeholderText="A, B ...", toolTip=tooltip)
+        self.valuesedit = QLineEdit(placeholderText="A, B ...", toolTip=tooltip)
         self.valuesedit.textChanged.connect(self._invalidate)
 
         layout = self.layout()
-        label = QLabel(self.tr("取值(可选)"))
+        label = QLabel(self.tr("Values (optional)"))
         label.setToolTip(tooltip)
         layout.addRow(label, self.valuesedit)
 
@@ -290,8 +295,7 @@ class DiscreteFeatureEditor(FeatureEditor):
     def editorData(self):
         values = self.valuesedit.text()
         values = re.split(r"(?<!\\),", values)
-        values = tuple(
-            filter(None, [v.replace(r"\,", ",").strip() for v in values]))
+        values = tuple(filter(None, [v.replace(r"\,", ",").strip() for v in values]))
         return DiscreteDescriptor(
             name=self.nameedit.text(),
             values=values,
@@ -476,7 +480,7 @@ class FeatureConstructorHandler(DomainContextHandler):
         return True
 
 
-class OWFeatureConstructor(OWWidget):
+class OWFeatureConstructor(OWWidget, ConcurrentWidgetMixin):
     name = "特征构造器(Feature Constructor)"
     description = "用输入数据集中的现有特征构造新特征。"
     icon = "icons/FeatureConstructor.svg"
@@ -508,6 +512,7 @@ class OWFeatureConstructor(OWWidget):
     class Error(OWWidget.Error):
         more_values_needed = Msg("Categorical feature {} needs more values.")
         invalid_expressions = Msg("Invalid expressions: {}.")
+        transform_error = Msg("{}")
 
     class Warning(OWWidget.Warning):
         renamed_var = Msg("Recently added variable has been renamed, "
@@ -515,6 +520,7 @@ class OWFeatureConstructor(OWWidget):
 
     def __init__(self):
         super().__init__()
+        ConcurrentWidgetMixin.__init__(self)
         self.data = None
         self.editors = {}
 
@@ -619,8 +625,7 @@ class OWFeatureConstructor(OWWidget):
             self.buttonsArea, self, "Upgrade Expressions",
             callback=self.fix_expressions)
         self.fix_button.setHidden(True)
-        gui.button(self.buttonsArea, self, "Send",
-                   callback=self.apply, default=True)
+        gui.button(self.buttonsArea, self, "Send", callback=self.apply, default=True)
 
     def setCurrentIndex(self, index):
         index = min(index, len(self.featuremodel) - 1)
@@ -703,8 +708,13 @@ class OWFeatureConstructor(OWWidget):
         if self.data is not None:
             self.apply()
         else:
+            self.cancel()
             self.Outputs.data.send(None)
             self.fix_button.setHidden(True)
+
+    def onDeleteWidget(self):
+        self.shutdown()
+        super().onDeleteWidget()
 
     def addFeature(self, descriptor):
         self.featuremodel.append(descriptor)
@@ -732,11 +742,14 @@ class OWFeatureConstructor(OWWidget):
 
     @staticmethod
     def check_attrs_values(attr, data):
-        for i in range(len(data)):
-            for var in attr:
-                if not math.isnan(data[i, var]) \
-                        and int(data[i, var]) >= len(var.values):
-                    return var.name
+        for var in attr:
+            col, _ = data.get_column_view(var)
+            mask = ~np.isnan(col)
+            grater_or_equal = np.greater_equal(
+                col, len(var.values), out=mask, where=mask
+            )
+            if grater_or_equal.any():
+                return var.name
         return None
 
     def _validate_descriptors(self, desc):
@@ -764,47 +777,17 @@ class OWFeatureConstructor(OWWidget):
         return final
 
     def apply(self):
-        def report_error(err):
-            log = logging.getLogger(__name__)
-            log.error("", exc_info=True)
-            self.error("".join(format_exception_only(type(err), err)).rstrip())
-
+        self.cancel()
         self.Error.clear()
-
         if self.data is None:
             return
 
         desc = list(self.featuremodel)
         desc = self._validate_descriptors(desc)
-        try:
-            new_variables = construct_variables(
-                desc, self.data, self.expressions_with_values)
-        # user's expression can contain arbitrary errors
-        except Exception as err:  # pylint: disable=broad-except
-            report_error(err)
-            return
+        self.start(run, self.data, desc, self.expressions_with_values)
 
-        attrs = [var for var in new_variables if var.is_primitive()]
-        metas = [var for var in new_variables if not var.is_primitive()]
-        new_domain = Orange.data.Domain(
-            self.data.domain.attributes + tuple(attrs),
-            self.data.domain.class_vars,
-            metas=self.data.domain.metas + tuple(metas)
-        )
-
-        try:
-            for variable in new_variables:
-                variable.compute_value.mask_exceptions = False
-            data = self.data.transform(new_domain)
-        # user's expression can contain arbitrary errors
-        # pylint: disable=broad-except
-        except Exception as err:
-            report_error(err)
-            return
-        finally:
-            for variable in new_variables:
-                variable.compute_value.mask_exceptions = True
-
+    def on_done(self, result: "Result") -> None:
+        data, attrs = result.data, result.attributes
         disc_attrs_not_ok = self.check_attrs_values(
             [var for var in attrs if var.is_discrete], data)
         if disc_attrs_not_ok:
@@ -812,6 +795,17 @@ class OWFeatureConstructor(OWWidget):
             return
 
         self.Outputs.data.send(data)
+
+    def on_exception(self, ex: Exception):
+        log = logging.getLogger(__name__)
+        log.error("", exc_info=ex)
+        self.Error.transform_error(
+            "".join(format_exception_only(type(ex), ex)).rstrip(),
+            exc_info=ex
+        )
+
+    def on_partial_result(self, _):
+        pass
 
     def send_report(self):
         items = OrderedDict()
@@ -854,9 +848,9 @@ class OWFeatureConstructor(OWWidget):
                 return "".join(mo.group(1, 2, 4))
             # Uses ints: get them by indexing
             return mo.group(1) + "{" + \
-                ", ".join(f"'{val}': {i}"
-                          for i, val in enumerate(var.values)) + \
-                f"}}[{var.name}]" + mo.group(4)
+                   ", ".join(f"'{val}': {i}"
+                             for i, val in enumerate(var.values)) + \
+                   f"}}[{var.name}]" + mo.group(4)
 
         domain = self.data.domain
         disc_vars = "|".join(f"{var.name}"
@@ -888,6 +882,38 @@ class OWFeatureConstructor(OWWidget):
                          if vtype == 1}
             if used_vars & disc_vars:
                 context.values["expressions_with_values"] = True
+
+
+@dataclass
+class Result:
+    data: Table
+    attributes: List[Variable]
+    metas: List[Variable]
+
+
+def run(data: Table, desc, use_values, task: TaskState) -> Result:
+    if task.is_interruption_requested():
+        raise CancelledError  # pragma: no cover
+    new_variables = construct_variables(desc, data, use_values)
+    # Explicit cancellation point after `construct_variables` which can
+    # already run `compute_value`.
+    if task.is_interruption_requested():
+        raise CancelledError  # pragma: no cover
+    attrs = [var for var in new_variables if var.is_primitive()]
+    metas = [var for var in new_variables if not var.is_primitive()]
+    new_domain = Orange.data.Domain(
+        data.domain.attributes + tuple(attrs),
+        data.domain.class_vars,
+        metas=data.domain.metas + tuple(metas)
+    )
+    try:
+        for variable in new_variables:
+            variable.compute_value.mask_exceptions = False
+        data = data.transform(new_domain)
+    finally:
+        for variable in new_variables:
+            variable.compute_value.mask_exceptions = True
+    return Result(data, attrs, metas)
 
 
 def validate_exp(exp):
@@ -1155,7 +1181,6 @@ class FeatureFunc:
         A function for casting the expressions result to the appropriate
         type (e.g. string representation of date/time variables to floats)
     """
-
     def __init__(self, expression, args, extra_env=None, cast=None, use_values=False):
         self.expression = expression
         self.args = args
@@ -1166,25 +1191,59 @@ class FeatureFunc:
         self.mask_exceptions = True
         self.use_values = use_values
 
-    def __call__(self, instance, *_):
-        if isinstance(instance, Orange.data.Table):
-            return [self(inst) for inst in instance]
+    def __call__(self, table, *_):
+        if isinstance(table, Table):
+            return self.__call_table(table)
         else:
-            try:
-                args = [str(instance[var]) if var.is_string
-                        else var.values[int(instance[var])] if var.is_discrete and not self.use_values
-                        else instance[var]
-                        for _, var in self.args]
-                y = self.func(*args)
-            # user's expression can contain arbitrary errors
-            # this also covers missing attributes
-            except:  # pylint: disable=bare-except
-                if not self.mask_exceptions:
-                    raise
-                return np.nan
-            if self.cast:
-                y = self.cast(y)
-            return y
+            return self.__call_instance(table)
+
+    def __call_table(self, table):
+        try:
+            cols = [self.extract_column(table, var) for _, var in self.args]
+        except ValueError:
+            if self.mask_exceptions:
+                return np.full(len(table), np.nan)
+            else:
+                raise
+
+        if not cols:
+            args = [()] * len(table)
+        else:
+            args = zip(*cols)
+        f = self.func
+        if self.mask_exceptions:
+            y = list(starmap(ftry(f, Exception, np.nan), args))
+        else:
+            y = list(starmap(f, args))
+        if self.cast is not None:
+            cast = self.cast
+            y = [cast(y_) for y_ in y]
+        return y
+
+    def __call_instance(self, instance: Instance):
+        table = Table.from_numpy(
+            instance.domain,
+            np.array([instance.x]),
+            np.array([instance.y]),
+            np.array([instance.metas]),
+        )
+        return self.__call_table(table)[0]
+
+    def extract_column(self, table: Table, var: Variable):
+        data, _ = table.get_column_view(var)
+        if var.is_string:
+            return list(map(var.str_val, data))
+        elif var.is_discrete and not self.use_values:
+            values = np.array([*var.values, None], dtype=object)
+            idx = data.astype(int)
+            idx[~np.isfinite(data)] = len(values) - 1
+            return values[idx].tolist()
+        elif var.is_time:  # time always needs Values due to str(val) formatting
+            return Value._as_values(var, data.tolist())  # pylint: disable=protected-access
+        elif not self.use_values:
+            return data.tolist()
+        else:
+            return Value._as_values(var, data.tolist())  # pylint: disable=protected-access
 
     def __reduce__(self):
         return type(self), (self.expression, self.args,
@@ -1192,16 +1251,6 @@ class FeatureFunc:
 
     def __repr__(self):
         return "{0.__name__}{1!r}".format(*self.__reduce__())
-
-
-def unique(seq):
-    seen = set()
-    unique_el = []
-    for el in seq:
-        if el not in seen:
-            unique_el.append(el)
-            seen.add(el)
-    return unique_el
 
 
 if __name__ == "__main__":  # pragma: no cover

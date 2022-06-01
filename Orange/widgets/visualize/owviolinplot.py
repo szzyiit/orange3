@@ -38,10 +38,8 @@ from Orange.widgets.utils.annotated_data import (
 from Orange.widgets.utils.itemmodels import VariableListModel
 from Orange.widgets.utils.sql import check_sql_input
 from Orange.widgets.visualize.owboxplot import SortProxyModel
-from Orange.widgets.visualize.utils.customizableplot import (
-    CommonParameterSetter,
-    Updater,
-)
+from Orange.widgets.visualize.utils.customizableplot import \
+    CommonParameterSetter, Updater
 from Orange.widgets.visualize.utils.plotutils import AxisItem, PlotWidget
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 
@@ -407,17 +405,10 @@ class ViolinPlot(PlotWidget):
     SELECTION_PADDING_FACTOR = 1.20
     selection_changed = Signal(list, list)
 
-    def __init__(
-        self,
-        parent: OWWidget,
-        kernel: str,
-        scale: int,
-        orientation: Qt.Orientations,
-        show_box_plot: bool,
-        show_strip_plot: bool,
-        show_rug_plot: bool,
-        sort_items: bool,
-    ):
+    def __init__(self, parent: OWWidget, kernel: str, scale: int,
+                 orientation: Qt.Orientations, show_box_plot: bool,
+                 show_strip_plot: bool, show_rug_plot: bool, show_grid: bool,
+                 sort_items: bool):
 
         # data
         self.__values: Optional[np.ndarray] = None
@@ -432,6 +423,7 @@ class ViolinPlot(PlotWidget):
         self.__show_box_plot = show_box_plot
         self.__show_strip_plot = show_strip_plot
         self.__show_rug_plot = show_rug_plot
+        self.__show_grid = show_grid
         self.__sort_items = sort_items
 
         # items
@@ -445,12 +437,10 @@ class ViolinPlot(PlotWidget):
         self.__selection_rects: List[SelectionRect] = []
 
         view_box = ViolinPlotViewBox(self)
-        super().__init__(
-            parent,
-            viewBox=view_box,
-            enableMenu=False,
-            axisItems={"bottom": AxisItem("bottom"), "left": AxisItem("left")},
-        )
+        super().__init__(parent, viewBox=view_box,
+                         enableMenu=False,
+                         axisItems={"bottom": AxisItem("bottom"),
+                                    "left": AxisItem("left")})
         self.setAntialiasing(True)
         self.hideButtons()
         self.getPlotItem().setContentsMargins(10, 10, 10, 10)
@@ -533,6 +523,11 @@ class ViolinPlot(PlotWidget):
             self.__show_rug_plot = show
             for item in self.__violin_items:
                 item.set_show_rug_plot(show)
+
+    def set_show_grid(self, show: bool):
+        if self.__show_grid != show:
+            self.__show_grid = show
+            self._update_grid()
 
     def set_sort_items(self, sort_items: bool):
         if self.__sort_items != sort_items:
@@ -629,6 +624,11 @@ class ViolinPlot(PlotWidget):
 
         # apply selection ranges
         self._selection_ranges = ranges
+        self._update_grid()
+
+    def _update_grid(self):
+        self.showGrid(x=self.__show_grid and self.__orientation == Qt.Horizontal,
+                      y=self.__show_grid and self.__orientation == Qt.Vertical)
 
     def _set_violin_item(self, values: np.ndarray, color: QColor):
         values = values[~np.isnan(values)]
@@ -699,12 +699,8 @@ class ViolinPlot(PlotWidget):
         self.__selection_rects.clear()
 
     def _clear_axes(self):
-        self.setAxisItems(
-            {
-                "bottom": AxisItem(orientation="bottom"),
-                "left": AxisItem(orientation="left"),
-            }
-        )
+        self.getAxis("left").setTicks(None)
+        self.getAxis("bottom").setTicks(None)
         Updater.update_axes_titles_font(
             self.parameter_setter.axis_items, **self.parameter_setter.titles_settings
         )
@@ -806,6 +802,7 @@ class OWViolinPlot(OWWidget):
     show_box_plot = Setting(True)
     show_strip_plot = Setting(False)
     show_rug_plot = Setting(False)
+    show_grid = Setting(False)
     order_violins = Setting(False)
     orientation_index = Setting(1)  # Vertical
     kernel_index = Setting(0)  # Normal kernel
@@ -839,16 +836,11 @@ class OWViolinPlot(OWWidget):
 
     def _add_graph(self):
         box = gui.vBox(self.mainArea)
-        self.graph = ViolinPlot(
-            self,
-            self.kernel,
-            self.scale_index,
-            self.orientation,
-            self.show_box_plot,
-            self.show_strip_plot,
-            self.show_rug_plot,
-            self.order_violins,
-        )
+        self.graph = ViolinPlot(self, self.kernel,
+                                self.scale_index, self.orientation,
+                                self.show_box_plot, self.show_strip_plot,
+                                self.show_rug_plot, self.show_grid,
+                                self.order_violins)
         self.graph.selection_changed.connect(self.__selection_changed)
         box.layout().addWidget(self.graph)
 
@@ -936,15 +928,14 @@ class OWViolinPlot(OWWidget):
             "子组排序",
             callback=self.__order_violins_changed,
         )
-        gui.radioButtons(
-            box,
-            self,
-            "orientation_index",
-            ["横向", "纵向"],
-            label="方向: ",
-            orientation=Qt.Horizontal,
-            callback=self.__orientation_changed,
+        gui.checkBox(
+            box, self, "show_grid", "显示网格线",
+            callback=self.__show_grid_changed,
         )
+        gui.radioButtons(box, self, "orientation_index",
+                         ["横向", "纵向"], label="方向: ",
+                         orientation=Qt.Horizontal,
+                         callback=self.__orientation_changed)
 
         box = gui.vBox(
             self.controlArea,
@@ -1000,6 +991,9 @@ class OWViolinPlot(OWWidget):
 
     def __order_violins_changed(self):
         self.graph.set_sort_items(self.order_violins)
+
+    def __show_grid_changed(self):
+        self.graph.set_show_grid(self.show_grid)
 
     def __orientation_changed(self):
         self.graph.set_orientation(self.orientation)

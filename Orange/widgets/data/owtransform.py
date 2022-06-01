@@ -13,7 +13,7 @@ class OWTransform(OWWidget):
     description = "在数据表上应用模板域"
     category = "数据(Data)"
     icon = "icons/Transform.svg"
-    priority = 2110
+    priority = 1230
     keywords = ["transform"]
 
     class Inputs:

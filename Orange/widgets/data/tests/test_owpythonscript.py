@@ -135,6 +135,13 @@ class TestOWPythonScript(WidgetTest):
 
         self.send_signal("数据(Data)", Input.Closed, 2)
         click()
+        datas = console_locals["in_datas"]
+        self.assertEqual(len(datas), 2)
+        self.assertIs(datas[0], self.iris)
+        self.assertIs(datas[1], None)
+
+        self.send_signal("Data", Input.Closed, 2)
+        click()
         self.assertIs(console_locals["in_data"], self.iris)
         datas = console_locals["in_datas"]
         self.assertEqual(len(datas), 1)

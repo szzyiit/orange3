@@ -657,8 +657,7 @@ class OWROCAnalysis(widget.OWWidget):
             axis_bottom.setTicks(None)
             axis_left.setTicks(None)
         else:
-            data = self.curve_data(
-                self.target_index, self.selected_classifiers[0])
+            data = self.curve_data(self.target_index, self.selected_classifiers[0])
             points = data.merged.points
             axis_bottom.setTicks(enumticks(points.fpr))
             axis_left.setTicks(enumticks(points.tpr))

@@ -187,8 +187,7 @@ class OWDataTable(OWWidget):
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:
-        data = MultiInput("数据(Data)", Table,
-                          auto_summary=False, filter_none=True, replaces=['Data'])
+        data = MultiInput("数据(Data)", Table, auto_summary=False, filter_none=True, replaces=['Data'])
 
     class Outputs:
         selected_data = Output("选定的数据(Selected Data)",

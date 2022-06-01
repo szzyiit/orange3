@@ -40,7 +40,7 @@ import Orange.data
 
 from Orange.preprocess.transformation import Transformation, Identity, Lookup
 from Orange.widgets import widget, gui, settings
-from Orange.widgets.utils import itemmodels
+from Orange.widgets.utils import itemmodels, ftry
 from Orange.widgets.utils.buttons import FixedSizeButton
 from Orange.widgets.utils.itemmodels import signal_blocking
 from Orange.widgets.utils.widgetpreview import WidgetPreview
@@ -50,8 +50,6 @@ ndarray = np.ndarray  # pylint: disable=invalid-name
 MArray = np.ma.MaskedArray
 DType = Union[np.dtype, type]
 
-A = TypeVar("A")  # pylint: disable=invalid-name
-B = TypeVar("B")  # pylint: disable=invalid-name
 V = TypeVar("V", bound=Orange.data.Variable)  # pylint: disable=invalid-name
 H = TypeVar("H", bound=Hashable)  # pylint: disable=invalid-name
 
@@ -2664,21 +2662,6 @@ def apply_transform_string(var, trs):
     return variable
 
 
-def ftry(
-        func: Callable[..., A],
-        error: Union[Type[BaseException], Tuple[Type[BaseException]]],
-        default: B
-) -> Callable[..., Union[A, B]]:
-    """
-    Wrap a `func` such that if `errors` occur `default` is returned instead."""
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except error:
-            return default
-    return wrapper
-
-
 class DictMissingConst(dict):
     """
     `dict` with a constant for `__missing__()` value.
@@ -2805,8 +2788,7 @@ def apply_reinterpret_c(var, tr, data: MArray):
         tstr = ToStringTransform(var)
         rvar = Orange.data.StringVariable(name=var.name, compute_value=tstr)
     elif isinstance(tr, AsTime):
-        rvar = Orange.data.TimeVariable(
-            name=var.name, compute_value=Identity(var))
+        rvar = Orange.data.TimeVariable(name=var.name, compute_value=Identity(var))
     else:
         assert False
     return copy_attributes(rvar, var)
@@ -2911,8 +2893,7 @@ class ToContinuousTransform(Transformation):
 
 def datetime_to_epoch(dti: pd.DatetimeIndex, only_time) -> np.ndarray:
     """Convert datetime to epoch"""
-    delta = dti - (dti.normalize()
-                   if only_time else pd.Timestamp("1970-01-01"))
+    delta = dti - (dti.normalize() if only_time else pd.Timestamp("1970-01-01"))
     return (delta / pd.Timedelta("1s")).values
 
 
@@ -2920,7 +2901,6 @@ class ReparseTimeTransform(Transformation):
     """
     Re-parse the column's string repr as datetime.
     """
-
     def __init__(self, variable, tr):
         super().__init__(variable)
         self.tr = tr

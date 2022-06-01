@@ -170,9 +170,8 @@ class VariablesDelegate(QStyledItemDelegate):
                 painter.save()
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(option.palette.brush(QPalette.Button))
-                brect = QRect(
-                    rect.x() + rect.width() - 8 - txtw, rect.y(), txtw, rect.height()
-                )
+                brect = QRect(rect.x() + rect.width() - 8 - txtw, rect.y(),
+                              txtw, rect.height())
                 painter.drawRoundedRect(brect, 4, 4)
                 painter.setPen(option.palette.color(QPalette.ButtonText))
                 painter.drawText(brect, Qt.AlignCenter, txt)

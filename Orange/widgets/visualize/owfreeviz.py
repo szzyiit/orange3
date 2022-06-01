@@ -208,6 +208,11 @@ class OWFreeViz(OWAnchorProjectionWidget, ConcurrentWidgetMixin):
             Domain(self.effective_variables, self.data.domain.class_vars)
         )
 
+    @property
+    def effective_data(self):
+        return self.data.transform(Domain(self.effective_variables,
+                                          self.data.domain.class_vars))
+
     def __radius_slider_changed(self):
         self.graph.update_radius()
 

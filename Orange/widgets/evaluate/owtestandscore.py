@@ -228,6 +228,8 @@ class OWTestAndScore(OWWidget):
         test_data_transformed = Msg(
             "Test data has been transformed to match the train data.")
         cant_stratify_numeric = Msg("Stratification is ignored for regression")
+        cant_stratify_multitarget = Msg("Stratification is ignored when there are"
+                                        " multiple target variables.")
 
     def __init__(self):
         super().__init__()
@@ -392,8 +394,7 @@ class OWTestAndScore(OWWidget):
         key = next(self.__id_gen)
         self._learner_inputs.insert(index, (key, learner))
         self.learners[key] = InputLearner(learner, None, None, key)
-        self.learners = {key: self.learners[key]
-                         for key, _ in self._learner_inputs}
+        self.learners = {key: self.learners[key] for key, _ in self._learner_inputs}
         self._invalidate([key])
 
     @Inputs.learner.remove
@@ -423,7 +424,6 @@ class OWTestAndScore(OWWidget):
                     "Train data input requires a target variable.",
                     not data.domain.class_vars
                 ),
-                ("Too many target variables.", len(data.domain.class_vars) > 1),
                 ("Target variable has no values.", np.isnan(data.Y).all()),
                 (
                     "Target variable has only one value.",
@@ -482,7 +482,8 @@ class OWTestAndScore(OWWidget):
         if data is not None and not data:
             self.Error.test_data_empty()
             data = None
-        if data and not data.domain.class_var:
+
+        if data and not data.domain.class_vars:
             self.Error.class_required_test()
             data = None
         else:
@@ -522,10 +523,10 @@ class OWTestAndScore(OWWidget):
     # - we don't gain much with it
     # - it complicates the unit tests
     def _update_scorers(self):
-        if self.data and self.data.domain.class_var:
-            new_scorers = usable_scorers(self.data.domain.class_var)
-        else:
-            new_scorers = []
+        new_scorers = []
+        if self.data:
+            new_scorers = usable_scorers(self.data.domain)
+
         # Don't unnecessarily reset the combo because this would always reset
         # comparison_criterion; we also set it explicitly, though, for clarity
         if new_scorers != self.scorers:
@@ -923,6 +924,7 @@ class OWTestAndScore(OWWidget):
         self.Warning.test_data_missing.clear()
         self.Warning.cant_stratify.clear()
         self.Information.cant_stratify_numeric.clear()
+        self.Information.cant_stratify_multitarget.clear()
         self.Information.test_data_transformed(
             shown=self.resampling == self.TestOnTest
             and self.data is not None
@@ -951,7 +953,10 @@ class OWTestAndScore(OWWidget):
                 return
             do_stratify = self.cv_stratified
             if do_stratify:
-                if self.data.domain.class_var.is_discrete:
+                if len(self.data.domain.class_vars) > 1:
+                    self.Information.cant_stratify_multitarget()
+                    do_stratify = False
+                elif self.data.domain.class_var.is_discrete:
                     least = min(filter(None,
                                        np.bincount(self.data.Y.astype(int))))
                     if least < k:
@@ -1094,18 +1099,15 @@ class OWTestAndScore(OWWidget):
         assert all(learner in learner_key for learner in learners)
 
         # Update the results for individual learners
-        class_var = results.domain.class_var
         for learner, result in zip(learners, results.split_by_model()):
-            stats = None
-            if class_var.is_primitive():
-                ex = result.failed[0]
-                if ex:
-                    stats = [Try.Fail(ex)] * len(self.scorers)
-                    result = Try.Fail(ex)
-                else:
-                    stats = [Try(scorer_caller(scorer, result))
-                             for scorer in self.scorers]
-                    result = Try.Success(result)
+            ex = result.failed[0]
+            if ex:
+                stats = [Try.Fail(ex)] * len(self.scorers)
+                result = Try.Fail(ex)
+            else:
+                stats = [Try(scorer_caller(scorer, result))
+                         for scorer in self.scorers]
+                result = Try.Success(result)
             key = learner_key.get(learner)
             self.learners[key] = \
                 self.learners[key]._replace(results=result, stats=stats)

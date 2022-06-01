@@ -6,15 +6,8 @@ import numpy as np
 from scipy.stats import norm, rayleigh, beta, gamma, pareto, expon
 
 from AnyQt.QtWidgets import QGraphicsRectItem
-from AnyQt.QtGui import (
-    QColor,
-    QPen,
-    QBrush,
-    QPainter,
-    QPalette,
-    QPolygonF,
-    QFontMetrics,
-)
+from AnyQt.QtGui import QColor, QPen, QBrush, QPainter, QPalette, QPolygonF, \
+    QFontMetrics
 from AnyQt.QtCore import Qt, QRectF, QPointF, pyqtSignal as Signal
 from orangewidget.utils.listview import ListViewSearch
 import pyqtgraph as pg
@@ -34,7 +27,8 @@ from Orange.widgets.utils.annotated_data import (
 )
 from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.utils.widgetpreview import WidgetPreview
-from Orange.widgets.visualize.utils.plotutils import ElidedLabelsAxis, PlotWidget
+from Orange.widgets.visualize.utils.plotutils import ElidedLabelsAxis, \
+    PlotWidget
 from Orange.widgets.widget import Input, Output, OWWidget, Msg
 
 from Orange.widgets.visualize.owscatterplotgraph import LegendItem as SPGLegendItem
@@ -571,14 +565,17 @@ class OWDistributions(OWWidget):
 
     def _set_bin_width_slider_label(self):
         if self.number_of_bins < len(self.binnings):
-            text = self._short_text(self.binnings[self.number_of_bins].width_label)
+            text = self._short_text(
+                self.binnings[self.number_of_bins].width_label)
         else:
             text = ""
         self.bin_width_label.setText(text)
 
     @staticmethod
     def _short_text(label):
-        return reduce(lambda s, rep: s.replace(*rep), short_time_units.items(), label)
+        return reduce(
+            lambda s, rep: s.replace(*rep),
+            short_time_units.items(), label)
 
     def _on_show_probabilities_changed(self):
         label = self.controls.fitted_distribution.label
@@ -1011,18 +1008,13 @@ class OWDistributions(OWWidget):
                     self.binnings = time_binnings(column, min_unique=5)
                 else:
                     self.binnings = decimal_binnings(
-                        column,
-                        min_width=self.min_var_resolution(self.var),
-                        add_unique=10,
-                        min_unique=5,
-                    )
+                        column, min_width=self.min_var_resolution(self.var),
+                        add_unique=10, min_unique=5)
                 fm = QFontMetrics(self.font())
-                width = max(
-                    fm.size(
-                        Qt.TextSingleLine, self._short_text(binning.width_label)
-                    ).width()
-                    for binning in self.binnings
-                )
+                width = max(fm.size(Qt.TextSingleLine,
+                                    self._short_text(binning.width_label)
+                                    ).width()
+                            for binning in self.binnings)
                 self.bin_width_label.setFixedWidth(width)
                 max_bins = len(self.binnings) - 1
         else:
@@ -1031,8 +1023,8 @@ class OWDistributions(OWWidget):
 
         self.controls.number_of_bins.setMaximum(max_bins)
         self.number_of_bins = min(
-            max_bins, self._user_var_bins.get(self.var, self.number_of_bins)
-        )
+            max_bins, self._user_var_bins.get(self.var, self.number_of_bins))
+        self._user_var_bins[self.var] = self.number_of_bins
         self._set_bin_width_slider_label()
 
     @staticmethod
