@@ -80,18 +80,18 @@ class CNNPredict(OWWidget):
         return image
 
     def predict(self):
-        transform = transforms.Compose(
-            [transforms.Resize(28),
-                transforms.Grayscale(num_output_channels=1), 
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5], std=[0.5])])
+        data_transforms = transforms.Compose([
+            transforms.Resize([28,28]),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
 
-        image = self.image_loader(transform)
+        image = self.image_loader(data_transforms)
 
         output = self.model(image)
 
         prediction = int(torch.max(output.data, 1)[1].numpy())
 
-        number = 3 if prediction == 0 else 7
+        number = 0 if prediction == 0 else 1
 
-        self.info_label.setText(f'这个图片数字是 {number}')
+        self.info_label.setText(f'这个图片类别是 {number}')

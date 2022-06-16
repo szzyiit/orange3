@@ -262,12 +262,6 @@ class ModelTrainTest(OWWidget):
     def conv(self, ni, nf):
         return nn.Conv2d(ni, nf, kernel_size=3, stride=2, padding=1)
 
-    def train(self):
-        if self.learn is None:
-            return
-        self.learn.fit_one_cycle(3)
-
-
 def train_model(
     model, epochs, train_loader, test_loader, device, criterion, optimizer,
         train_button, callback=None):

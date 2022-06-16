@@ -23,7 +23,7 @@ import matplotlib.image as mpimg
 
 class ImageLoader(OWWidget):
     name = "图片加载器(Image Loader)"
-    description = "为 MNIST 模型载入图片数据, 也可以载入其他图片. 图片会转为灰度图片"
+    description = "载入训练和（或）测试图片，所有图片会被裁剪为28*28以加快训练速度。"
     icon = "icons/upload.png"
     keywords = ['tupian', 'tuxiang', 'zairu', 'zairutupian', 'jiazai', 'jiazaitupian', 'daoru']
     category = '深度学习(DeepLearning)'
@@ -189,17 +189,34 @@ class ImageLoader(OWWidget):
 
         try:
             if self.for_train_or_not[self.for_train]:
-                transform = transforms.Compose(
-                    [transforms.Grayscale(num_output_channels=1), transforms.ToTensor(),
-                     transforms.Normalize(mean=[0.5], std=[0.5])])
+                # https://medium.com/predict/using-pytorch-for-kaggles-famous-dogs-vs-cats-challenge-part-1-preprocessing-and-training-407017e1a10c
+                # Data augmentation and normalization for training
+                # Just normalization for validation
+                data_transforms = {
+                    'train': transforms.Compose([
+                        transforms.RandomRotation(5),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomResizedCrop(28, scale=(0.96, 1.0), ratio=(0.95, 1.05)),
+                        transforms.ToTensor(),
+                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                    ]),
+                    'val': transforms.Compose([
+                        transforms.Resize([28,28]),
+                        transforms.ToTensor(),
+                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                    ]),
+                }
+                # transform = transforms.Compose(
+                #     [transforms.Grayscale(num_output_channels=1), transforms.ToTensor(),
+                #      transforms.Normalize(mean=[0.5], std=[0.5])])
 
                 train_dataset = torchvision.datasets.ImageFolder(path/'training',
-                                                                 transform=transform)
+                                                                 transform=data_transforms['train'])
                 train_loader = torch.utils.data.DataLoader(train_dataset,
                                                            batch_size=self.batch_sizes[self.batch_size],
                                                            shuffle=True)
                 test_dataset = torchvision.datasets.ImageFolder(path/'testing',
-                                                                 transform=transform)
+                                                                 transform=data_transforms['val'])
                 test_loader = torch.utils.data.DataLoader(test_dataset,
                                                            batch_size=self.batch_sizes[self.batch_size],
                                                            shuffle=True)
