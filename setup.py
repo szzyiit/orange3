@@ -517,7 +517,6 @@ def setup_package():
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         url=URL,
-        project_urls=PROJECT_URLS,
         license=LICENSE,
         keywords=KEYWORDS,
         classifiers=CLASSIFIERS,

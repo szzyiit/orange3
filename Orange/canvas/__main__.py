@@ -86,23 +86,25 @@ def check_for_updates():
         class GetLatestVersion(QThread):
             resultReady = pyqtSignal(str)
 
+            # wall
             def run(self):
-                try:
-                    request = Request(
-                        "https://orange.biolab.si/version/",
-                        headers={
-                            "Accept": "text/plain",
-                            "Accept-Encoding": "gzip, deflate",
-                            "Connection": "close",
-                            "User-Agent": ua_string(),
-                        },
-                    )
-                    contents = urlopen(request, timeout=10).read().decode()
-                # Nothing that this fails with should make Orange crash
-                except Exception:  # pylint: disable=broad-except
-                    log.exception("Failed to check for updates")
-                else:
-                    self.resultReady.emit(contents)
+                pass
+                # try:
+                #     request = Request(
+                #         "https://orange.biolab.si/version/",
+                #         headers={
+                #             "Accept": "text/plain",
+                #             "Accept-Encoding": "gzip, deflate",
+                #             "Connection": "close",
+                #             "User-Agent": ua_string(),
+                #         },
+                #     )
+                #     contents = urlopen(request, timeout=10).read().decode()
+                # # Nothing that this fails with should make Orange crash
+                # except Exception:  # pylint: disable=broad-except
+                #     log.exception("Failed to check for updates")
+                # else:
+                #     self.resultReady.emit(contents)
 
         def compare_versions(latest):
             version = pkg_resources.parse_version

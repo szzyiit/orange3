@@ -167,7 +167,7 @@ class OWSilhouettePlot(widget.OWWidget):
             model=self.cluster_var_model
         )
         gui.checkBox(
-            box, self, "按簇分组", "Show in groups",
+            box, self, "group_by_cluster", "分组显示",
             callback=self._replot)
 
         box = gui.vBox(self.controlArea, "条")

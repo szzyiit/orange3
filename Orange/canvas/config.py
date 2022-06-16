@@ -97,25 +97,16 @@ class Config(config.Config):
         """
         Return the main application icon.
         """
-<<<<<<< HEAD
-        path = pkg_resources.resource_filename(__name__, "icons/orange-256.png")
-=======
         path = pkg_resources.resource_filename(
             __name__, "icons/orange-256.png"
         )
->>>>>>> upstream/master
         return QIcon(path)
 
     @staticmethod
     def splash_screen():
         splash_n = random.randint(1, 3)
         path = pkg_resources.resource_filename(
-<<<<<<< HEAD
-            __name__, f"icons/orange-splash-screen-{splash_n:02}.png"
-        )
-=======
             __name__, f"icons/orange-splash-screen-{splash_n:02}.png")
->>>>>>> upstream/master
         pm = QPixmap(path)
 
         version = Config.ApplicationVersion
@@ -190,12 +181,6 @@ class Config(config.Config):
         # them by name. The default is at the beginning, unless another
         # entrypoint precedes it alphabetically (e.g. starting with '!').
         default_ep = pkg_resources.EntryPoint(
-<<<<<<< HEAD
-            "000-Orange3",
-            "Orange.canvas.workflows",
-            dist=pkg_resources.get_distribution("Orange3-zh"),
-        )
-=======
             "000-Orange3", "Orange.canvas.workflows",
             dist=pkg_resources.get_distribution("Orange3"))
 
@@ -203,7 +188,6 @@ class Config(config.Config):
         all_ep.append(default_ep)
         all_ep.sort(key=lambda x: x.name)
         return iter(all_ep)
->>>>>>> upstream/master
 
         all_ep = list(pkg_resources.iter_entry_points("orange.widgets.tutorials"))
         all_ep.append(default_ep)
