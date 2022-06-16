@@ -787,6 +787,7 @@ class OWPythonScript(OWWidget):
         self.add_ui_list.verticalHeader().hide()
         self.add_ui_list.horizontalHeader().hide()
 
+        self.execute_button = gui.button(self.buttonsArea, self, '运行', callback=self.commit)
         self.run_action = QAction("Run script", self, triggered=self.commit,
                                   shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_R))
         self.addAction(self.run_action)
@@ -943,7 +944,7 @@ class OWPythonScript(OWWidget):
 
         for control in self.additional_controls:
             # opt_name_list = [option.name for option in control['options']]
-            if control['options'] == []:
+            if len(control['options']) == 1: # 填空题
                 self._add_row(control['name'], control['description'], control['options'], to_choose=False)
             else:
                 self._add_row(control['name'], control['description'], control['options'])
@@ -966,27 +967,23 @@ class OWPythonScript(OWWidget):
                 name, description, options = line.split('|')
             except ValueError:
                 return
-            # if not name.startswith('-'):
-            #     print('只有以 - 开头的会转为GUI控件')
-            #     continue
+
             name = name.split('-')[1].strip()
             discription = description.strip()
             options = ast.literal_eval(options)
 
-            options = [AddOpts._make(opt) for opt in options]
-                
-            self.additional_controls.append({'name': name, 'description': description, 'options': options})
-
             # 设置默认选项     
-            if (options == []): # 填空题
-                setattr(self, name, '')
+            if (len(options) == 1): # 填空题
+                setattr(self, name, options[0])
             else: # 选择题
+                options = [AddOpts._make(opt) for opt in options]
                 for i, opt in enumerate(options):
                     setattr(self, name, 0)
                     if opt.is_default:
                         setattr(self, name, i)
                         break
             
+            self.additional_controls.append({'name': name, 'description': description, 'options': options})
 
     def _add_row(self, name, description, options, to_choose=True):
         model = self.add_ui_list.model()
@@ -1013,6 +1010,7 @@ class OWPythonScript(OWWidget):
         else: # 填空题
             line_edit = QLineEdit()
             line_edit.setPlaceholderText(description)
+            line_edit.setText(f'{options[0]}')
             line_edit.textChanged.connect(lambda text: setattr(self, name, text))
             self.add_ui_list.setCellWidget(row, 1, line_edit)
 
@@ -1133,7 +1131,7 @@ class OWPythonScript(OWWidget):
         for control in self.additional_controls:
             name = control['name']
             v = getattr(self, name)
-            if control['options'] == []: # 填空题
+            if len(control['options']) == 1: # 填空题
                  d["in_params"][name] = v
             else:
                 d["in_params"][name] = control['options'][v].value
