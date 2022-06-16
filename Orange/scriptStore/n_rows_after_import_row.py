@@ -1,10 +1,14 @@
 # - 参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|')]
 '''
-如果每行一个日期，计算在某事件后的几天
-假设不能提前知道某特殊事件是否发生，也不知道会持续多久
+- nth_succesive_row|已经连续多少|[('生成', True, True), ('不生成', False, False)]
+- count|总共连续多少|[('生成', True, False), ('不生成', False, True)]
+- delete_this|是否删除原始特征|[('删除', True, False), ('不删除', False, True)]
+如果每行一个日期，计算在某事件后的几天，和总共持续几天
+注意：如果时序数据的话，可能提前不会知道总共连续多少时间
 返回值: 
-nth_succesive_row: 已经连续特殊或者正常了多长时间
+nth_succesive_row: 已经连续了多少某列的值
+count: 总共连续了多少某列的值
 '''
 
 from typing import List
@@ -32,10 +36,15 @@ def after_important_row(df):
     of course, but since we're grouping on both df[0] (the names) and group_ids, we're okay.
     ref: https://stackoverflow.com/questions/50430148/pandas-cumulative-sum-of-consecutive-ones
     '''
-    group_ids = df[fldname].diff().ne(0).cumsum()
-    df[fldname + 'int'] = df[fldname].astype(int) - 0.5
-    df["nth_succesive_row"] = abs(df[fldname+'int'].groupby([group_ids]).cumsum() * 2)
-    df.drop(fldname + 'int', axis=1, inplace=True)
+    if in_params['nth_succesive_row']:
+        group_ids = df[fldname].diff().ne(0).cumsum()
+        df[fldname + 'int'] = df[fldname].astype(int) - 0.5
+        df["nth_succesive_row"] = abs(df[fldname+'int'].groupby([group_ids]).cumsum() * 2)
+        df.drop(fldname + 'int', axis=1, inplace=True)
+    if in_params['count']:
+        df['count'] = df.groupby(fldname)[fldname].transform('count')
+    if in_params['delete_this']:
+        df.drop(fldname, axis=1, inplace=True)
 
     return df
 

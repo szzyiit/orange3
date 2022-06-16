@@ -1,5 +1,5 @@
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
-# - 填空题参数名|中文描述|')]
+# - 填空题参数名|中文描述|[默认值]
 '''
 将“时间（日期）”特征转换为一系列数值或者分类特征
 - time|包含时间（小时，分钟，秒）数据|[('是', True, True), ('否', False, False)]
@@ -27,8 +27,6 @@ import re
 import numpy as np
 import pandas as pd
 from Orange.data.pandas_compat import table_from_frame,table_to_frame
-from Orange.data import Domain, Table
-
 
 
 
@@ -51,7 +49,7 @@ def add_datepart(df, drop=in_params['drop'], time=in_params['time']):
     if drop: df.drop(fldname, axis=1, inplace=True)
 
 
-df = table_to_frame(in_data)
+df = table_to_frame(in_data, include_metas=True)
 assert(len(df.columns) == 1), "数据需只包括日期列，可以使用‘选择列’小部件选择要分析的列"
 
 add_datepart(df, drop=in_params['drop'], time=in_params['time'])

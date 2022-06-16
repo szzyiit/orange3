@@ -1,5 +1,5 @@
-# - 参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
-# - 填空题参数名|中文描述|')]
+# - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
+# - 填空题参数名|中文描述|[默认值]
 '''
 根据节日构造相关特征
 - cn|包括中国节日信息|[('是', True, True), ('否', False, False)]
@@ -97,7 +97,7 @@ def get_holidays(dates, include_cn_holidays=in_params['cn'], include_us_holidays
         dates['days_before_us_holiday']= dates.apply(lambda row: days_before_holiday(row[fldname], us_holidays), axis=1)
     return dates
 
-dates = table_to_frame(in_data)
+dates = table_to_frame(in_data, include_metas=True)
 assert(len(dates.columns) == 1), "数据需只包括日期列，可以使用‘选择列’小部件选择要分析的列"
 
 out_dates = get_holidays(dates)
