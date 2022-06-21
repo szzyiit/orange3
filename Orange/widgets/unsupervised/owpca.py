@@ -14,6 +14,8 @@ from Orange.widgets.utils.slidergraph import SliderGraph
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output
 
+import numpy as np
+
 
 # Maximum number of PCA components that we can set in the widget
 MAX_COMPONENTS = 100
@@ -22,7 +24,7 @@ LINE_NAMES = ["component variance", "cumulative variance"]
 
 class OWPCA(widget.OWWidget):
     name = "主成分分析(PCA)"
-    description = "主成分分析与 scree图。"
+    description = "主成分分析与 scree图。请只连接数值数据"
     icon = "icons/PCA.svg"
     priority = 3050
     keywords = ["principal component analysis", "linear transformation", 'zhuchengfen']
@@ -36,6 +38,9 @@ class OWPCA(widget.OWWidget):
         data = Output("数据(Data)", Table, default=True, replaces=['Data'])
         components = Output("成分(Components)", Table, replaces=['Components'])
         pca = Output("主成分分析(PCA)", PCA, dynamic=False, replaces=['PCA'])
+        reconstructed = Output("重构的数据(Reconstructed Data)", Table, replaces=['Reconstructed data', 'Reconstructed Data'])
+        residual = Output('残差平方(Residual square)', Table, replaces=['Residual square'])
+        sum_residual = Output('残差平方和(Sum of residual square)', Table, replaces=['Sum of residual square'])
 
     ncomponents = settings.Setting(2)
     variance_covered = settings.Setting(100)
@@ -89,11 +94,12 @@ class OWPCA(widget.OWWidget):
 
         # Options
         self.options_box = gui.vBox(self.controlArea, "选项")
-        self.normalize_box = gui.checkBox(
-            self.options_box, self, "normalize",
-            "归一化数据", callback=self._update_normalize,
-            attribute=Qt.WA_LayoutUsesWidgetRect
-        )
+        # 可能有bug，先不要用，如果需要归一化用预处理器去做
+        # self.normalize_box = gui.checkBox(
+        #     self.options_box, self, "normalize",
+        #     "归一化数据", callback=self._update_normalize,
+        #     attribute=Qt.WA_LayoutUsesWidgetRect
+        # )
 
         self.maxp_spin = gui.spin(
             self.options_box, self, "maxp", 1, MAX_COMPONENTS,
@@ -110,7 +116,7 @@ class OWPCA(widget.OWWidget):
             self._on_cut_changed)
 
         self.mainArea.layout().addWidget(self.plot)
-        self._update_normalize()
+        # self._update_normalize()
 
     @Inputs.data
     def set_data(self, data):
@@ -151,6 +157,7 @@ class OWPCA(widget.OWWidget):
 
         data = self.data
 
+        self.normalize = False
         if self.normalize:
             self._pca_projector.preprocessors = \
                 self._pca_preprocessors + [preprocess.Normalize(center=False)]
@@ -246,10 +253,10 @@ class OWPCA(widget.OWWidget):
         self.plot.set_cut_point(cut)
         self._invalidate_selection()
 
-    def _update_normalize(self):
-        self.fit()
-        if self.data is None:
-            self._invalidate_selection()
+    # def _update_normalize(self):
+    #     self.fit()
+    #     if self.data is None:
+    #         self._invalidate_selection()
 
     def _init_projector(self):
         self._pca_projector = PCA(n_components=MAX_COMPONENTS, random_state=0)
@@ -288,7 +295,7 @@ class OWPCA(widget.OWWidget):
 
     @gui.deferred
     def commit(self):
-        transformed = data = components = None
+        transformed = data = components = reconstructed = residual = sum_residual = None
         if self._pca is not None:
             if self._transformed is None:
                 # Compute the full transform (MAX_COMPONENTS components) once.
@@ -327,7 +334,7 @@ class OWPCA(widget.OWWidget):
                 metas=meta_vars)
             components = Table(dom, self._pca.components_[:self.ncomponents],
                                metas=metas)
-            components.name = 'components'
+            components.name = '成分'
 
             data_dom = Domain(
                 self.data.domain.attributes,
@@ -337,12 +344,32 @@ class OWPCA(widget.OWWidget):
                 data_dom, self.data.X, self.data.Y,
                 numpy.hstack((self.data.metas, transformed.X)),
                 ids=self.data.ids)
+            data.name = '数据'
+            reconstructed_data = transformed.X @ components.X + self._pca.mean_
+
+            reconstructed = Table.from_numpy(data_dom, reconstructed_data, self.data.Y,
+                            numpy.hstack((self.data.metas, transformed.X)),
+                            ids=self.data.ids)
+            reconstructed.name = '重构的数据'
+            residual_data = (self.data.X - reconstructed_data)**2
+            residual = Table.from_numpy(data_dom, residual_data, self.data.Y,
+                            numpy.hstack((self.data.metas, transformed.X)),
+                            ids=self.data.ids)
+            residual.name = '残差平方'
+
+            sum_residual_data = np.sum(residual_data, axis=1)
+            r_dom = Domain(
+                [ContinuousVariable('sum_residual')])
+            sum_residual = Table.from_numpy(r_dom, sum_residual_data.reshape(-1, 1))
 
         self._pca_projector.component = self.ncomponents
         self.Outputs.transformed_data.send(transformed)
         self.Outputs.components.send(components)
         self.Outputs.data.send(data)
         self.Outputs.pca.send(self._pca_projector)
+        self.Outputs.reconstructed.send(reconstructed)
+        self.Outputs.residual.send(residual)
+        self.Outputs.sum_residual.send(sum_residual)
 
     def send_report(self):
         if self.data is None:
