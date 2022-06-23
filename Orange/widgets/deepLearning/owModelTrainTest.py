@@ -104,7 +104,7 @@ class ModelTrainTest(OWWidget):
             self,
             "epochs",
             minv=1,
-            maxv=10,
+            maxv=100,
             step=1,
             label="训练周期:",
         )

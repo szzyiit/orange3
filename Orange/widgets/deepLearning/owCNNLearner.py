@@ -43,7 +43,7 @@ class CNNLearner(OWWidget):
     out_2 = 5  # 16
     out_3 = 7  # 32
     out_4 = 5  # 16
-    out_5 = 4  # 10
+    class_num = 4  # 10
 
     class Outputs:
         model = Output('CNN 模型 (CNN model)', nn.Module,
@@ -106,18 +106,28 @@ class CNNLearner(OWWidget):
             label='第 4 层卷积输出通道数目'
         )
 
-        grid_type_box5 = gui.comboBox(
+        # grid_type_box5 = gui.comboBox(
+        #     settings_box,
+        #     self,
+        #     'out_5',
+        #     items=self.out_channels,
+        #     label='第 5 层卷积输出通道数目'
+        # )
+
+        spin_last_layer = gui.spin(
             settings_box,
             self,
-            'out_5',
-            items=self.out_channels,
-            label='第 5 层卷积输出通道数目'
+            "class_num",
+            minv=1,
+            maxv=10,
+            step=1,
+            label="第 5 层卷积输出通道数目或分类个数:",
         )
         
         self.resnet18_disabled = True
         gui.checkBox(
             self.controlArea, self, 'resnet18_disabled', '自己构建网络',
-            disables=[grid_type_box1, grid_type_box2, grid_type_box3, grid_type_box4, grid_type_box5],
+            disables=[grid_type_box1, grid_type_box2, grid_type_box3, grid_type_box4],
             tooltip="自己构建网络，否则使用预训练模型 resnet18，第一次使用预训练模型会比较慢，因为需要先下载模型."
         )
 
@@ -127,7 +137,7 @@ class CNNLearner(OWWidget):
                         self.out_channels[self.out_2],
                         self.out_channels[self.out_3],
                         self.out_channels[self.out_4],
-                        self.out_channels[self.out_5],
+                        self.class_num,
                         ]
         out_channels = [channel for channel in out_channels if channel > 0]
         in_channels = [3] + out_channels[:-1]
@@ -149,7 +159,7 @@ class CNNLearner(OWWidget):
 
             # Parameters of newly constructed modules have requires_grad=True by default
             num_ftrs = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_ftrs, 2)
+            self.model.fc = nn.Linear(num_ftrs, self.class_num)
 
                 
 

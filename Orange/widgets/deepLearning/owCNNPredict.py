@@ -30,8 +30,18 @@ class CNNPredict(OWWidget):
     want_main_area = False
 
     class Inputs:
+        data = Input('训练数据(Data)', DataLoader, replaces=['Data'])
         img_path = Input('图片路径', Path, default=True)
         model = Input('模型(Model)', nn.Module, replaces=['Model'])
+
+    @Inputs.data
+    def set_data(self, data):
+        if data is None:
+            self.model_ready = False
+        else:
+            self.data = data
+            if self.model is not None:
+                self.model_ready = True
 
     @Inputs.img_path
     def set_image(self, img_path):
@@ -52,11 +62,13 @@ class CNNPredict(OWWidget):
         else:
             self.model = model
             # self.predict(self.img_path)
-            self.model_ready = True
+            if self.data is not None:
+                self.model_ready = True
 
     def __init__(self):
         super().__init__()
         self.model = None
+        self.data = None
         self.model_summary = None
         self.model_ready = False
         self.data_ready = False
@@ -91,7 +103,7 @@ class CNNPredict(OWWidget):
         output = self.model(image)
 
         prediction = int(torch.max(output.data, 1)[1].numpy())
+        classes = self.data.dataset.classes
 
-        number = 0 if prediction == 0 else 1
 
-        self.info_label.setText(f'这个图片类别是 {number}')
+        self.info_label.setText(f'这个图片类别是 {classes[prediction]}')
