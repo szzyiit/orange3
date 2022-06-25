@@ -104,7 +104,7 @@ class ModelTrainTest(OWWidget):
             self,
             "epochs",
             minv=1,
-            maxv=100,
+            maxv=1000,
             step=1,
             label="训练周期:",
         )
@@ -156,6 +156,7 @@ class ModelTrainTest(OWWidget):
 
     # def handleNewSignals(self):
     def start(self):
+        self.output_results = []
         self._update()
 
     def _update(self):
@@ -270,7 +271,7 @@ def train_model(
     train_button.setEnabled(False)
 
     total_step = len(train_loader)
-    print(total_step)
+    # print(total_step)
     for epoch in range(epochs):
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(device)
@@ -285,7 +286,7 @@ def train_model(
             loss.backward()
             optimizer.step()
 
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 10 == 0 or total_step < 10:
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                       .format(epoch + 1, epochs, i + 1, total_step, loss.item()))
                 progress = 1.0 / epochs * i / total_step + float(epoch) / epochs
