@@ -21,7 +21,7 @@ class OWDataSampler(OWWidget):
     icon = "icons/DataSampler.svg"
     priority = 100
     category = "数据(Data)"
-    keywords = ["random", 'caiyang', 'chouyang']
+    keywords = ["random", 'caiyang', 'chouyang', "shujucaiyang"]
 
     _MAX_SAMPLE_SIZE = 2 ** 31 - 1
 

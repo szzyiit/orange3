@@ -17,7 +17,7 @@ class OWRandomize(OWWidget):
     category = "数据(Data)"
     icon = "icons/Random.svg"
     priority = 2100
-    keywords = ['suiji']
+    keywords = ['suijihua']
 
     class Inputs:
         data = Input("数据(Data)", Table, replaces=['Data'])
