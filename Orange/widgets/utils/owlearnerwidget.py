@@ -174,8 +174,8 @@ class OWBaseLearner(OWWidget, metaclass=OWBaseLearnerMeta, openclass=True):
                     "Select a single one with the Select Columns widget.")
             else:
                 self.Error.data_error(
-                    "Data has no target variable.\n"
-                    "Select one with the Select Columns widget.")
+                    "数据无目标变量.\n"
+                    "请在文件或者选择列小部件设置目标.")
             self.data = None
 
         # invalidate the model so that handleNewSignals will update it

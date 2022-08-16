@@ -384,13 +384,13 @@ class OWROCAnalysis(widget.OWWidget):
         sp = gui.spin(box, self, "fp_cost", 1, 1000, 10,
                       alignment=Qt.AlignRight,
                       callback=self._on_display_perf_line_changed)
-        grid.addWidget(QLabel("假阳性率损失:"), 0, 0)
+        grid.addWidget(QLabel("假阳性损失:"), 0, 0)
         grid.addWidget(sp, 0, 1)
 
         sp = gui.spin(box, self, "fn_cost", 1, 1000, 10,
                       alignment=Qt.AlignRight,
                       callback=self._on_display_perf_line_changed)
-        grid.addWidget(QLabel("假阴性率损失:"))
+        grid.addWidget(QLabel("假阴性损失:"))
         grid.addWidget(sp, 1, 1)
         self.target_prior_sp = gui.spin(box, self, "target_prior", 1, 99,
                                         alignment=Qt.AlignRight,

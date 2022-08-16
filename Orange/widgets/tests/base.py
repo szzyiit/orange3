@@ -513,7 +513,7 @@ class WidgetOutputsTestMixin:
         self.wait_until_finished(timeout=timeout)
 
         # check selected data output
-        output = self.get_output("选定的数据(Selected Data)")
+        output = self.get_output("选中的数据(Selected Data)")
         if self.output_all_on_no_selection:
             self.assertEqual(output, self.signal_data)
         else:
@@ -528,7 +528,7 @@ class WidgetOutputsTestMixin:
         selected_indices = self._select_data()
 
         # check selected data output
-        selected = self.get_output("选定的数据(Selected Data)")
+        selected = self.get_output("选中的数据(Selected Data)")
         n_sel, n_attr = len(selected), len(self.data.domain.attributes)
         self.assertGreater(n_sel, 0)
         self.assertEqual(selected.domain == self.data.domain,
@@ -549,7 +549,7 @@ class WidgetOutputsTestMixin:
 
         # check output when data is removed
         self.send_signal(self.signal_name, None)
-        self.assertIsNone(self.get_output("选定的数据(Selected Data)"))
+        self.assertIsNone(self.get_output("选中的数据(Selected Data)"))
         self.assertIsNone(self.get_output("数据(Data)"))
 
     def _select_data(self):

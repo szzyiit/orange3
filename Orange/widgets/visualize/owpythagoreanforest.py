@@ -1,6 +1,7 @@
 """Pythagorean forest widget for visualizing random forests."""
 from math import log, sqrt
-from typing import Any, Callable, Optional
+from typing import Any, Optional
+from statistics import mean, median
 
 from AnyQt.QtCore import (
     Qt,
@@ -11,7 +12,6 @@ from AnyQt.QtCore import (
     QModelIndex,
     QItemSelection,
     QItemSelectionModel,
-    QT_VERSION,
 )
 from AnyQt.QtGui import QPainter, QPen, QColor, QBrush, QMouseEvent
 from AnyQt.QtWidgets import (
@@ -21,7 +21,6 @@ from AnyQt.QtWidgets import (
     QSlider,
     QListView,
     QStyledItemDelegate,
-    QStyleOptionViewItem,
     QStyle,
 )
 
@@ -201,6 +200,7 @@ class OWPythagoreanForest(OWWidget):
     target_class_index = settings.ContextSetting(0)
     size_calc_idx = settings.Setting(0)
     zoom = settings.Setting(200)
+    freeze = settings.Setting(True)
 
     selected_index = settings.ContextSetting(None)
 
@@ -271,6 +271,10 @@ class OWPythagoreanForest(OWWidget):
             intOnly=False,
         )  # type: QSlider
 
+        self.refresh_label = gui.checkBox(
+            box_display, self, "freeze",
+            "冻结绘制", callback=self.freeze_paint)
+
         # Stretch to fit the rest of the unsused area
         gui.rubber(self.controlArea)
 
@@ -306,6 +310,12 @@ class OWPythagoreanForest(OWWidget):
         # Clear to set sensible default values
         self.clear()
 
+    def freeze_paint(self):
+        if self.freeze:
+            self.forest_model[:] = []
+        else:
+            self.forest_model[:] = self.forest.trees
+
     @Inputs.random_forest
     def set_rf(self, model=None):
         """When a different forest is given."""
@@ -318,7 +328,8 @@ class OWPythagoreanForest(OWWidget):
             self._update_target_class_combo()
 
             self.forest = self._get_forest_adapter(self.rf_model)
-            self.forest_model[:] = self.forest.trees
+            if not self.freeze:
+                self.forest_model[:] = self.forest.trees
 
             self._update_info_box()
             self._update_depth_slider()
@@ -346,14 +357,19 @@ class OWPythagoreanForest(OWWidget):
         self._clear_depth_slider()
 
     def _update_info_box(self):
-        self.ui_info.setText("Trees: {}".format(len(self.forest.trees)))
+        text = f"""
+树数量：{len(self.forest.trees)}
+平均树深度：{self._get_mean_depth()}
+树深度中位数：{self._get_median_depth()}
+        """
+        self.ui_info.setText(text)
 
     def _update_depth_slider(self):
         self.depth_limit = self._get_max_depth()
 
         self.ui_depth_slider.parent().setEnabled(True)
         self.ui_depth_slider.setMaximum(self.depth_limit)
-        self.ui_depth_slider.setValue(self.depth_limit)
+        self.ui_depth_slider.setValue(1)
 
     def _update_target_class_combo(self):
         self._clear_target_class_combo()
@@ -368,7 +384,7 @@ class OWPythagoreanForest(OWWidget):
             values = [c.title() for c in self.instances.domain.class_vars[0].values]
             values.insert(0, "无")
         else:
-            label_text = "Node color"
+            label_text = "节点颜色"
             values = list(ContinuousTreeNode.COLOR_METHODS.keys())
         label.setText(label_text)
         self.ui_target_class_combo.addItems(values)
@@ -388,6 +404,12 @@ class OWPythagoreanForest(OWWidget):
 
     def _get_max_depth(self):
         return max(tree.max_depth for tree in self.forest.trees)
+
+    def _get_mean_depth(self):
+        return mean(tree.max_depth for tree in self.forest.trees)
+
+    def _get_median_depth(self):
+        return median(tree.max_depth for tree in self.forest.trees)
 
     def _get_forest_adapter(self, model):
         return SklRandomForestAdapter(model)

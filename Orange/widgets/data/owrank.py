@@ -50,11 +50,11 @@ ScoreMeta = namedtuple("score_meta", ["name", "shortname", "scorer", 'problem_ty
 
 # Default scores.
 CLS_SCORES = [
-    ScoreMeta("Information Gain", "Info. gain",
+    ScoreMeta("信息增益", "增益",
               score.InfoGain, ProblemType.CLASSIFICATION, False),
-    ScoreMeta("Information Gain Ratio", "Gain ratio",
+    ScoreMeta("信息增益率", "增益率",
               score.GainRatio, ProblemType.CLASSIFICATION, True),
-    ScoreMeta("Gini Decrease", "Gini",
+    ScoreMeta("基尼下降", "基尼",
               score.Gini, ProblemType.CLASSIFICATION, True),
     ScoreMeta("ANOVA", "ANOVA",
               score.ANOVA, ProblemType.CLASSIFICATION, False),
@@ -65,6 +65,7 @@ CLS_SCORES = [
     ScoreMeta("FCBF", "FCBF",
               score.FCBF, ProblemType.CLASSIFICATION, False)
 ]
+# https://www.cnblogs.com/muzixi/p/6566803.htm
 REG_SCORES = [
     ScoreMeta("Univariate Regression", "Univar. reg.",
               score.UnivariateLinearRegression, ProblemType.REGRESSION, True),
@@ -97,7 +98,7 @@ class TableView(QTableView):
 
         header = self.horizontalHeader()
         header.setSectionResizeMode(header.Fixed)
-        header.setFixedHeight(24)
+        header.setFixedHeight(40)
         header.setDefaultSectionSize(80)
         header.setTextElideMode(Qt.ElideMiddle)
 
@@ -250,7 +251,7 @@ class OWRank(OWWidget, ConcurrentWidgetMixin):
     icon = "icons/Rank.svg"
     priority = 1102
     keywords = []
-
+    category = "数据(Data)"
     buttons_area_orientation = Qt.Vertical
 
     class Inputs:

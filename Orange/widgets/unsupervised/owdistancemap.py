@@ -272,7 +272,7 @@ class OWDistanceMap(widget.OWWidget):
         distances = Input("距离(Distances)", Orange.misc.DistMatrix, replaces=['Distances'])
 
     class Outputs:
-        selected_data = Output("选定的数据(Selected Data)", Orange.data.Table, default=True, replaces=['Selected Data'])
+        selected_data = Output("选中的数据(Selected Data)", Orange.data.Table, default=True, replaces=['Selected Data'])
         annotated_data = Output("数据(Data)", Orange.data.Table, replaces=['Data'])
         features = Output("特征(Features)", widget.AttributeList, dynamic=False, replaces=['Features'])
 

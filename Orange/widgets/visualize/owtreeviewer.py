@@ -197,7 +197,7 @@ class OWTreeGraph(OWTreeViewer2D):
 
     class Outputs:
         selected_data = Output(
-            "选定的数据(Selected Data)",
+            "选中的数据(Selected Data)",
             Table,
             default=True,
             id="selected-data",
