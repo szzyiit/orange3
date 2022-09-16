@@ -1,19 +1,18 @@
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|['默认值']
 '''
-- y_name|目标名称|['NumVehicles']
-- time_name|时间特征名称|['Day']
-- order|傅里叶对儿数|[10]
+- y_name|目标名称|['FoodAndBeverage']
+- time_name|时间特征名称|['Month']
+- order|傅里叶对儿数|[6]
 - graph_title|图名|['Trend Forecast']
-- draw_start| 画图起始时间|["2004-01"]
-如果每行一个日期，计算在某事件后的几天，和总共持续几天
-注意：如果时序数据的话，可能提前不会知道总共连续多少时间
+- draw_start| 画图起始时间|["1992-01"]
+
+结合使用（趋势、）季节性指标和傅里叶特征进行时序预测
 返回值: 
-nth_succesive_row: 已经连续了多少某列的值
-count: 总共连续了多少某列的值
+
 '''
 
-from Orange.data.pandas_compat import table_from_frame,table_to_frame
+from Orange.data.pandas_compat import table_to_frame
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -136,7 +135,7 @@ fourier = CalendarFourier(freq="A", order=int(order))  # 10 sin/cos pairs for "A
 dp = DeterministicProcess(
     index=df.index,
     constant=True,               # dummy feature for bias (y-intercept)
-    order=1,                     # trend (order 1 means linear)
+    order=0,                     # trend (order 1 means linear)
     seasonal=True,               # weekly seasonality (indicators)
     additional_terms=[fourier],  # annual seasonality (fourier)
     drop=True,                   # drop terms to avoid collinearity

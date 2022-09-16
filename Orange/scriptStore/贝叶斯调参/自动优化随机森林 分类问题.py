@@ -1,18 +1,30 @@
 # pip install bayesian-optimization
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|[默认值]
+# 安装： pip install bayesian-optimization
 '''
- y_name|目标名称|['sales']
+- y_name|目标名称|['sales']
+- min_tree|最小树数量|[10]
+- max_tree|最大树数量|[250]
+- min_min_samples_split|最小分叉的最少节点数|[2]
+- max_min_samples_split|最小分叉的最多节点数|[25]
+- min_max_features|最小分叉考虑的特征比例|[0.1]
+- max_max_features|最小分叉考虑的特征比例|[0.999]
 返回值: 
-
 '''
 
-from sklearn.datasets import make_classification
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier as RFC
 
 from bayes_opt import BayesianOptimization
 from bayes_opt.util import Colours
+
+min_tree = int(in_params['min_tree'])
+max_tree = int(in_params['max_tree'])
+min_min_samples_split = int(in_params['min_min_samples_split'])
+max_min_samples_split = int(in_params['max_min_samples_split'])
+min_max_features = float(in_params['min_max_features'])
+max_max_features = float(in_params['max_max_features'])
 
 # def get_data():
 #     """Synthetic binary classification dataset."""
@@ -66,9 +78,9 @@ def optimize_rfc(data, targets):
     optimizer = BayesianOptimization(
         f=rfc_crossval,
         pbounds={
-            "n_estimators": (10, 250),
-            "min_samples_split": (2, 25),
-            "max_features": (0.1, 0.999),
+            "n_estimators": (min_tree, max_tree),
+            "min_samples_split": (min_min_samples_split, max_min_samples_split),
+            "max_features": (min_max_features, max_max_features),
         },
         random_state=1234,
         verbose=2

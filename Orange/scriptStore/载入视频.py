@@ -4,11 +4,10 @@
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|[默认值]
 '''
-- file_path|视频位置|[r"D:\OneDrive - HKUST Connect\jupyterNote\ML\fastAI\numerical-linear-algebra-master\nbs\__temp__.mp4"]
+- file_path|视频位置|[r"D:\OneDrive - HKUST Connect\课程\图说图解机器学习2\workflow\书\8\视频处理\original.mp4"]
 '''
 
 from skimage.transform import resize
-from skimage import data
 import moviepy.editor as mpe
 import numpy as np
 import scipy

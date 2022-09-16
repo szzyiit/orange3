@@ -1,10 +1,11 @@
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|[默认值]
+# 需要安装：pip install chinesecalendar
 '''
 根据节日构造相关特征
 - cn|包括中国节日信息|[('是', True, True), ('否', False, False)]
 - us|包括美国节日信息|[('是', True, False), ('否', False, True)]
-
+- fldname|时间特征|['Month']
 返回值: 
 cn_holiday: 是否中国节日
 days_after_cn_holiday: 中国节日后的几天
@@ -19,7 +20,7 @@ from pandas import DatetimeIndex
 import numpy as np
 
 import pandas as pd
-from datetime import datetime, timedelta, date
+from datetime import datetime
 from Orange.data.pandas_compat import table_from_frame,table_to_frame
 
 
@@ -47,8 +48,7 @@ def days_before_holiday(date, holidays):
         return (holiday-date).days
     return  -1
 
-def get_holidays(dates, include_cn_holidays=in_params['cn'], include_us_holidays=in_params['us']):
-    fldname = dates.columns[0]
+def get_holidays(dates, include_cn_holidays=in_params['cn'], include_us_holidays=in_params['us'], fldname=in_params['fldname']):
     fld = dates[fldname]
     fld_dtype = fld.dtype
     if isinstance(fld_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
@@ -98,7 +98,6 @@ def get_holidays(dates, include_cn_holidays=in_params['cn'], include_us_holidays
     return dates
 
 dates = table_to_frame(in_data, include_metas=True)
-assert(len(dates.columns) == 1), "数据需只包括日期列，可以使用‘选择列’小部件选择要分析的列"
 
 out_dates = get_holidays(dates)
 

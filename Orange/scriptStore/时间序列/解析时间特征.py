@@ -4,6 +4,7 @@
 将“时间（日期）”特征转换为一系列数值或者分类特征
 - time|包含时间（小时，分钟，秒）数据|[('是', True, True), ('否', False, False)]
 - drop|删除原始日期特征|[('是', True, False), ('否', False, True)]
+- fldname|时间特征|['Month']
 返回值：
 datesYear: 年份
 datesMonth: 月份
@@ -30,9 +31,8 @@ from Orange.data.pandas_compat import table_from_frame,table_to_frame
 
 
 
-def add_datepart(df, drop=in_params['drop'], time=in_params['time']):
+def add_datepart(df, drop=in_params['drop'], time=in_params['time'], fldname=in_params['fldname']):
     "Helper function that adds columns relevant to a date."
-    fldname = df.columns[0]
     fld = df[fldname]
     fld_dtype = fld.dtype
     if isinstance(fld_dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
@@ -50,7 +50,6 @@ def add_datepart(df, drop=in_params['drop'], time=in_params['time']):
 
 
 df = table_to_frame(in_data, include_metas=True)
-assert(len(df.columns) == 1), "数据需只包括日期列，可以使用‘选择列’小部件选择要分析的列"
 
 add_datepart(df, drop=in_params['drop'], time=in_params['time'])
 

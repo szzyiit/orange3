@@ -12,6 +12,7 @@ from AnyQt.QtCore import (
     QModelIndex,
     QItemSelection,
     QItemSelectionModel,
+    QT_VERSION
 )
 from AnyQt.QtGui import QPainter, QPen, QColor, QBrush, QMouseEvent
 from AnyQt.QtWidgets import (
@@ -359,6 +360,7 @@ class OWPythagoreanForest(OWWidget):
     def _update_info_box(self):
         text = f"""
 树数量：{len(self.forest.trees)}
+节点总数：{self._get_num_nodes()}
 平均树深度：{self._get_mean_depth()}
 树深度中位数：{self._get_median_depth()}
         """
@@ -413,6 +415,10 @@ class OWPythagoreanForest(OWWidget):
 
     def _get_forest_adapter(self, model):
         return SklRandomForestAdapter(model)
+
+    def _get_num_nodes(self):
+        """Return the total number of decision and leaf nodes in all trees of the forest."""
+        return sum(tree.num_nodes for tree in self.forest.trees)
 
     def onDeleteWidget(self):
         """When deleting the widget."""

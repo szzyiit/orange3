@@ -1,21 +1,20 @@
 # - 选择题参数名|中文描述|选项,格式为: [('选项1', 值, 是否默认), ('选项2', 值, 是否默认)]
 # - 填空题参数名|中文描述|[默认值]
 '''
-- y_name|目标名称|['NumVehicles']
-- time_name|时间特征名称|['Day']
+- y_name|目标名称|['FoodAndBeverage']
+- time_name|时间特征名称|['Month']
 - order|幂数|[1]
-- graph_title|图名|['Tunnel Traffic - Linear Trend Forecast']
-- draw_start| 画图起始时间|["2005-05"]
-如果每行一个日期，计算在某事件后的几天，和总共持续几天
-注意：如果时序数据的话，可能提前不会知道总共连续多少时间
+- graph_title|图名|['Trend Forecast']
+- draw_start| 画图起始时间|["1992-01"]
+
+使用趋势预测时序数据
 返回值: 
-nth_succesive_row: 已经连续了多少某列的值
-count: 总共连续了多少某列的值
+趋势
 '''
 
 from statsmodels.tsa.deterministic import DeterministicProcess
 import pandas as pd
-from Orange.data.pandas_compat import table_from_frame,table_to_frame
+from Orange.data.pandas_compat import table_to_frame,table_from_frame
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt 
 
@@ -61,3 +60,5 @@ ax = y_fore.plot(ax=ax, linewidth=3, label="Trend Forecast", color="C3")
 _ = ax.legend()
 
 plt.show()
+
+out_data = table_from_frame(y_pred)

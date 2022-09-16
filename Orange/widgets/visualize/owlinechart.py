@@ -1,10 +1,7 @@
-from numbers import Number
-from collections import OrderedDict
 from os.path import join, dirname
 
-import numpy as np
 
-from Orange.data import TimeVariable, Table
+from Orange.data import Table
 from Orange.widgets import widget, gui, settings
 from Orange.widgets.widget import Input
 
@@ -15,7 +12,7 @@ from AnyQt.QtCore import QSize, pyqtSignal, QTimer
 from Orange.widgets.utils.itemmodels import VariableListModel
 
 # from orangecontrib.timeseries import Timeseries
-from .utils.highcharts import Highchart
+from Orange.widgets.visualize.utils.highcharts import Highchart
 
 
 class PlotConfigWidget(QWidget, gui.OWComponent):
