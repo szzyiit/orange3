@@ -8,7 +8,6 @@ import warnings
 
 import os
 import sys
-import itertools
 from distutils.version import LooseVersion
 
 from typing import Dict, Any, Optional, Iterable, List
@@ -140,7 +139,7 @@ class Config(config.Config):
         # yields them in unspecified order.
         all_eps = sorted(
             pkg_resources.iter_entry_points(WIDGETS_ENTRY),
-            key=lambda ep: 0 if ep.dist.project_name.lower() == "orange3" else 1,
+            key=lambda ep: 0 if ep.dist.project_name.lower() == "orange3-zh" else 1,
         )
         return iter(all_eps)
 
@@ -182,7 +181,7 @@ class Config(config.Config):
         # entrypoint precedes it alphabetically (e.g. starting with '!').
         default_ep = pkg_resources.EntryPoint(
             "000-Orange3", "Orange.canvas.workflows",
-            dist=pkg_resources.get_distribution("Orange3"))
+            dist=pkg_resources.get_distribution("Orange3-zh"))
 
         all_ep = list(pkg_resources.iter_entry_points("orange.widgets.tutorials"))
         all_ep.append(default_ep)
