@@ -188,3 +188,6 @@ pip install -e orange3
 ```
 
 It's crucial to install `orange-base-widget` and `orange-canvas-core` before `orange3` to ensure that `orange3` will use your local versions.
+
+## 贡献者感谢
+* 感谢 LW404 打包 Mac的安装包及各种bug反馈。
